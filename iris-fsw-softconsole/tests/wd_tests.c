@@ -34,7 +34,7 @@ void vTestWD(void *pvParameters)
     }
    uint8_t pinState = 0;
 
-    uint8_t pinState=0;
+//    uint8_t pinState=0;
     MSS_GPIO_set_output(MSS_GPIO_19, 1);
 
     for (;;)

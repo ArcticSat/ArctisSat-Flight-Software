@@ -32,6 +32,7 @@
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
 
+
 /* Application includes. */
 #include "drivers/protocol/uart.h"
 #include "version.h"

@@ -189,7 +189,7 @@ int main( void )
 
 #endif
 //
-    init_rtc();
+//    init_rtc();
 
 
 
@@ -275,17 +275,17 @@ int main( void )
 static void prvSetupHardware( void )
 {
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
-//    vInitializeLEDs();
+    vInitializeLEDs();
 //
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-//    vInitializeUARTs(MSS_UART_115200_BAUD);
+    vInitializeUARTs(MSS_UART_115200_BAUD);
 //
 //    init_WD();
     init_spi();
-//    init_rtc();
+    init_rtc();
 //    init_mram();
-    //init_CAN(CAN_BAUD_RATE_250K,NULL);
+    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
     flash_device_init(flash_devices[DATA_FLASH]);
 //    initADC();
