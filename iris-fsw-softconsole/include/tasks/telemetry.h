@@ -28,7 +28,7 @@
 /***********************************************************/
 //Put the commands/telemtry here.
 
-//Payload telemetry.
+// Payload Telemetry.
 typedef enum {
 PAYLOAD_POWER_GOOD_ID = 0,
 PAYLOAD_BOARD_TEMP_ID,
@@ -42,7 +42,6 @@ PAYLOAD_CAMERA_TIME_ID,
 PAYLOAD_ERROR_ID,
 NUM_PAYLOAD_TELEMETRY
 } payloadTelemetry_t;
-
 typedef enum {
 PAYLOAD_POWER_GOOD_CMD = 0,
 PAYLOAD_BOARD_TEMP_CMD,
@@ -57,14 +56,30 @@ PAYLOAD_ERROR_CMD,
 NUM_PAYLOAD_COMMANDS
 } payloadCommands_t;
 
+// Power Telemetry
+typedef enum
+{
+POWER_READ_TEMP_ID = 0,
+POWER_READ_SOLAR_CURRENT_ID,
+POWER_READ_LOAD_CURRENT_ID,
+POWER_READ_MSB_VOLTAGE_ID,
+} powerTelemetry_t;
+typedef enum
+{
+POWER_READ_TEMP_CMD = 0,
+POWER_READ_SOLAR_CURRENT_CMD,
+POWER_READ_LOAD_CURRENT_CMD,
+POWER_READ_MSB_VOLTAGE_CMD,
+POWER_SET_POW_MODE_CMD,
+} powerCommands_t;
 
+// CDH Telemetry
 typedef enum {
 CDH_TIME_ID =0,
 CDH_BOARD_TEMP_ID,
 CDH_TTT_LIST_ID,
 NUM_CDH_TELEMETRY
 } cdhTelemetry_t;
-
 typedef enum {
 CDH_SCHEDULE_TTT_CMD =0,
 CDH_SET_TIME_CMD,
@@ -72,7 +87,6 @@ CDH_GET_TIME_CMD,
 CDH_DOWNLOAD_IMAGE_CMD,
 NUM_CDH_COMMANDS
 } cdhCommands_t;
-
 typedef enum {
 TASK_TAKE_IMAGE =0,
 NUM_CDH_TASK
