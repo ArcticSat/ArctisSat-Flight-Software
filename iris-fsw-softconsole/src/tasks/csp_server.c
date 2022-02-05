@@ -29,6 +29,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
+#define USING_EM_OR_FM 0
 
 
 //------------------------------------------------------------------------------
@@ -65,6 +66,7 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
+#if USING_EM_OR_FM
     int result_fs = 1;
     uint32_t boot_count = 0;
 
@@ -100,6 +102,7 @@ void vCSP_Server(void * pvParameters){
    // remember the storage is not updated until the file is closed successfully
    result_fs = fs_file_close( &file);
    if(result_fs < 0) while(1){}
+#endif
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {

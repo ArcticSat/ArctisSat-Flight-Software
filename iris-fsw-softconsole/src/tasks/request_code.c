@@ -61,6 +61,25 @@ void handle_request(cdhTask_t req,Calendar_t time){
 
 			break;
 		}
+		/* POWER FLATSAT TEST TTTs */
+		case 1:{ // Get power to send 8 byte msg
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 1;
+			cmd.data[0] = 0;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case 2:{ // Read temperature value command
+	        uint8_t therm = 0; // ADC Channel 0
+	        CANMessage_t cmd = {0};
+	        cmd.id = POW_TXID;
+	        cmd.dlc = 2;
+	        cmd.data[0] = POWER_READ_TEMP_CMD;
+	        cmd.data[1] = therm;
+			CAN_transmit_message(&cmd);
+			break;
+		}
 //		case(TEST_CODE_1):
 //			temp = 456; // Do other stuff
 //			break;

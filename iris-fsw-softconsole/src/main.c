@@ -77,6 +77,8 @@
 
 //#define SERVER
 //#define CLIENT
+#define CAN_SERVER
+#define CSP_SERVER
 
 
 
@@ -87,6 +89,8 @@ extern TaskHandle_t xUART0RxTaskToNotify;
  * Set up the hardware ready to run this demo.
  */
 static void prvSetupHardware( void );
+
+static void vTestCanServer(void * pvParameters);
 
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
@@ -111,13 +115,14 @@ int main( void )
     BaseType_t status;
 
     /* Prepare the hardware to run this demo. */
+
     prvSetupHardware();
 
 
     // Create LED spinning task
     status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
                             "LED Spinner",               // Text name for debugging
-                            1000,                        // Size of the stack allocated for this task
+                            100,                        // Size of the stack allocated for this task
                             NULL,                        // Task parameter is not used
                             1,                           // Task runs at priority 1
                             NULL);                       // Task handle is not used
@@ -160,13 +165,13 @@ int main( void )
 //                         NULL,
 //                         1,
 //                         NULL);
-////
-//    status = xTaskCreate(vTestCANRx,
-//                         "Test CAN Rx",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         NULL);
+
+    status = xTaskCreate(vTestCANRx,
+                         "Test CAN Rx",
+                         500,
+                         NULL,
+                         1,
+                         NULL);
 
 #ifdef SERVER
     status = xTaskCreate(vTestCspServer,
@@ -194,8 +199,24 @@ int main( void )
 
 
 
-
+#ifdef CSP_SERVER
     status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, NULL);
+#endif
+
+#ifdef CAN_SERVER
+    status = xTaskCreate(vTestCanServer,
+                         "Test CAN Rx",
+						 1000,
+                         NULL,
+                         1,
+                         NULL);
+//    status = xTaskCreate(vTestCANRx,
+//                         "Test CAN Rx",
+//                         500,
+//                         NULL,
+//                         1,
+//                         NULL);
+#endif
 
     status = xTaskCreate(vTestWD,
                          "Test WD",
@@ -287,7 +308,7 @@ static void prvSetupHardware( void )
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
-    flash_device_init(flash_devices[DATA_FLASH]);
+//    flash_device_init(flash_devices[DATA_FLASH]);
 //    initADC();
 //    asMram_init();
 
@@ -296,6 +317,71 @@ static void prvSetupHardware( void )
 
 
 /*-----------------------------------------------------------*/
+extern QueueHandle_t can_rx_queue;
+uint8_t numCanMsgs = 0;
+CANMessage_t can_q[10] = {0};
+uint8_t telem_id = 0;
+static void vTestCanServer(void * pvParameters)
+{
+	int messages_processed = 0;
+	CANMessage_t rx_msg;
+	while(1)
+	{
+//		BaseType_t q_rec = xQueueReceive(can_rx_queue, &rx_msg, portMAX_DELAY);
+//		UBaseType_t numMsgs = uxQueueMessagesWaitingFromISR(can_rx_queue);
+//		if (q_rec == pdTRUE)
+//		{
+//			messages_processed++;
+//			// Ground output to terminal
+//			telemetryPacket_t telemetry={0};
+//			Calendar_t ts = {0};
+//			// Send telemetry value
+//			telemetry.telem_id = POWER_READ_TEMP_ID;
+//			telemetry.timestamp = ts;
+//			telemetry.length = 4;
+//			telemetry.data = rx_msg.data;
+//			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+//
+//		}
+
+		if(numCanMsgs > 0)
+		{
+			numCanMsgs--;
+			if(numCanMsgs < 0) continue;
+			// Check if msg is telem_id
+			uint8_t telem_mask = 0;
+			int i;
+			for(i=0; i < 3; i++) telem_mask |= can_q[numCanMsgs].data[i];
+			if(telem_mask == 0)
+			{
+				telem_id = can_q[numCanMsgs].data[3];
+			}
+			else
+			{
+				switch(telem_id)
+				{
+					case POWER_READ_TEMP_ID:{
+						// -1016389261
+						// C3 6B 21 73
+						telemetryPacket_t telemetry;
+//						Calendar_t ts = {0};
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_TEMP_ID;
+//						telemetry.timestamp = ts;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+				}
+			}
+
+		}
+
+		vTaskDelay(1000);
+
+	}
+}
 static void vTestCspServer(void * pvParameters){
 
 	struct csp_can_config can_conf = {0};
@@ -391,6 +477,13 @@ static void vTestCspClient(void * pvParameters){
 		csp_send(conn,packet,0);
 		csp_close(conn);
 		vTaskDelay(10000);
+
+//		CANMessage_t msg = {0};
+//		msg.id = 0x144;
+//		msg.dlc = 8;
+//		sprintf(msg.data,"SHEEEESH");
+//		CAN_transmit_message(&msg);
+//		vTaskDelay(5000);
 	}
 }
 

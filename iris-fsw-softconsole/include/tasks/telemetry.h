@@ -28,6 +28,22 @@
 /***********************************************************/
 //Put the commands/telemtry here.
 
+// Power telemetry.
+typedef enum {
+POWER_READ_TEMP_ID = 50,
+POWER_READ_SOLAR_CURRENT_ID,
+POWER_READ_LOAD_CURRENT_ID,
+POWER_READ_MSB_VOLTAGE_ID,
+POWER_MSG_ID
+} powerTelemetry_t;
+typedef enum {
+POWER_READ_TEMP_CMD = 1,
+POWER_READ_SOLAR_CURRENT_CMD,
+POWER_READ_LOAD_CURRENT_CMD,
+POWER_READ_MSB_VOLTAGE_CMD,
+POWER_SET_POW_MODE_CMD,
+} powerCommands_t;
+
 //Payload telemetry.
 typedef enum {
 PAYLOAD_POWER_GOOD_ID = 0,
