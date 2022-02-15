@@ -87,8 +87,27 @@ request_code_t check_queue(mss_rtc_calendar_t time_now){
 	return result;
 }
 
+time_tagged_task_t * check_queue_for_task(mss_rtc_calendar_t time_now){
+
+	time_tagged_task_t* task;
+	task->request_code = INVALID_REQUEST_CODE; // Initially assume invalid
+
+	if(isEmpty(&priority_queue_handler)){
+		return task; // Queue is currently empty
+	}
+
+	task = peek(&priority_queue_handler); // look at task which has the soonest time
+
+	if(compare_time(&(task->time_tag), &time_now) <= 0){ //if soonest task is scheduled for current time or sooner
+		pop(&priority_queue_handler); //We have dealt with the task, so remove the task from the queue.
+	}
+
+	return task;
+}
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 void vTestTaskScheduler(void *pvParameters){
+	/*
 	request_code_t request;
 	init_TaskScheduler();
 
@@ -132,51 +151,31 @@ void vTestTaskScheduler(void *pvParameters){
 
 		vTaskDelay(pdMS_TO_TICKS(SCHEDULER_TASK_DELAY_MS));
 	}
+	*/
 }
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 void vTTT_Scheduler(void *pvParameters){
     request_code_t request;
+    time_tagged_task_t * task;
     init_TaskScheduler();
-
-//    static BaseType_t rslt; // Variable to hold result of various functions
-//    static time_tagged_task_t task_buf; // Buffer variable to hold a task
-//
-//    MSS_RTC_get_calendar_count(&p_rtc_calendar); // get current time
-//
-//    // add 60s to current time
-//    mss_rtc_calendar_t p_rtc_cal_1 = p_rtc_calendar;
-//    p_rtc_cal_1.minute += 1;
-//    schedule_task(TEST_CODE_1, p_rtc_cal_1); // create task to be executed in 60s
-//
-//    // add 90s to current time
-//    mss_rtc_calendar_t p_rtc_cal_2 = p_rtc_calendar;
-//    p_rtc_cal_2.second += 30;
-//    p_rtc_cal_2.minute += 1;
-//    schedule_task(TEST_CODE_2, p_rtc_cal_2); // create task to be executed in 90s
-//
-//    // add 30s to current time
-//    mss_rtc_calendar_t p_rtc_cal_0 = p_rtc_calendar;
-//    p_rtc_cal_0.second += 30;
-//    schedule_task(TEST_CODE_0, p_rtc_cal_0); // create task to be executed in 30s
-//
-//    MSS_RTC_start(); // Start RTC
 
     for( ;; ) {
         MSS_RTC_get_calendar_count(&p_rtc_calendar); // get current time
 
-        request = check_queue(p_rtc_calendar); // check queue for tasks at this current time
+//        request = check_queue(p_rtc_calendar); // check queue for tasks at this current time
+        task = check_queue_for_task(p_rtc_calendar); // check queue for tasks at this current time
 
         if(request != INVALID_REQUEST_CODE){
-            handle_request(request,p_rtc_calendar);
+            handle_request(task->request_code, task->parameter, p_rtc_calendar);
         }
 
         vTaskDelay(pdMS_TO_TICKS(SCHEDULER_TASK_DELAY_MS));
     }
 }
 
-int schedule_task(request_code_t req, mss_rtc_calendar_t time){
+int schedule_task(request_code_t req, uint8_t param, mss_rtc_calendar_t time){
 	// construct time_tagged_task_t w/ given values
 	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.
 	if(pvTask == NULL){
@@ -185,6 +184,7 @@ int schedule_task(request_code_t req, mss_rtc_calendar_t time){
 
 	pvTask->request_code = req;
 	pvTask->time_tag = time;
+	pvTask->parameter = param;
 	unsigned long priority = CALENDAR_TO_LONG(&time);
 
 	if(isEmpty(&priority_queue_handler)){ // Check if priority queue is empty

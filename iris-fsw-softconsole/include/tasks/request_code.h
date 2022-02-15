@@ -62,6 +62,6 @@ typedef enum {
 // Returns:
 //  VOID
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-void handle_request(cdhTask_t req,Calendar_t time);
+void handle_request(cdhTask_t req, uint8_t param, Calendar_t time);
 
 #endif // REQUEST_CODE_H

@@ -36,6 +36,7 @@ POWER_READ_LOAD_CURRENT_ID,
 POWER_READ_MSB_VOLTAGE_ID,
 POWER_MSG_ID
 } powerTelemetry_t;
+
 typedef enum {
 POWER_READ_TEMP_CMD = 1,
 POWER_READ_SOLAR_CURRENT_CMD,
@@ -90,8 +91,16 @@ NUM_CDH_COMMANDS
 } cdhCommands_t;
 
 typedef enum {
-TASK_TAKE_IMAGE =0,
-NUM_CDH_TASK
+// Payload tasks
+TASK_TAKE_IMAGE = 0,
+// Power tasks,
+TASK_POWER_READ_TEMP,
+TASK_POWER_READ_SOLAR_CURRENT,
+TASK_POWER_READ_LOAD_CURRENT,
+TASK_POWER_READ_MSB_VOLTAGE,
+TASK_POWER_SET_MODE,
+// Total number of tasks
+NUM_CDH_TASKS
 } cdhTask_t;
 
 /**********************************************************/

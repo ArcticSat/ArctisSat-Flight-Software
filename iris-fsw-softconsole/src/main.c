@@ -77,8 +77,9 @@
 
 //#define SERVER
 //#define CLIENT
-#define CAN_SERVER
-#define CSP_SERVER
+//#define CAN_SERVER
+//#define CSP_SERVER
+//#define TEST_COMMS
 
 
 
@@ -95,6 +96,7 @@ static void vTestCanServer(void * pvParameters);
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
 static void vTestingTask(void * pvParams);
+static void vTestCommsCsp(void * pvParameters);
 
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented
 within this file. */
@@ -166,12 +168,12 @@ int main( void )
 //                         1,
 //                         NULL);
 
-    status = xTaskCreate(vTestCANRx,
-                         "Test CAN Rx",
-                         500,
-                         NULL,
-                         1,
-                         NULL);
+//    status = xTaskCreate(vTestCANRx,
+//                         "Test CAN Rx",
+//                         500,
+//                         NULL,
+//                         1,
+//                         NULL);
 
 #ifdef SERVER
     status = xTaskCreate(vTestCspServer,
@@ -206,7 +208,7 @@ int main( void )
 #ifdef CAN_SERVER
     status = xTaskCreate(vTestCanServer,
                          "Test CAN Rx",
-						 1000,
+						 500,
                          NULL,
                          1,
                          NULL);
@@ -224,7 +226,14 @@ int main( void )
                          NULL,
                          1,
                          NULL);
-
+#ifdef TEST_COMMS
+    status = xTaskCreate(vTestCommsCsp,
+                             "Test COMMS",
+                             configMINIMAL_STACK_SIZE,
+                             NULL,
+                             1,
+                             NULL);
+#endif
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
 //                         1000,
@@ -302,7 +311,7 @@ static void prvSetupHardware( void )
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //
-//    init_WD();
+    init_WD();
     init_spi();
     init_rtc();
 //    init_mram();
@@ -317,6 +326,26 @@ static void prvSetupHardware( void )
 
 
 /*-----------------------------------------------------------*/
+
+static void vTestCommsCsp(void * pvParameters)
+{
+/*
+	while(1)
+	{
+		telemetryPacket_t telemetry;
+		Calendar_t ts = {0};
+		telemetry->timestamp = ts; // Don't care about the time stamp send to comms.
+		telemetry->telem_id = 0;
+		telemetry->length = 8;
+		uint8_t data[8] = {0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
+		telemetry->data = data;
+		sendTelemetryAddr(&telemetry,COMMS_CSP_ADDRESS);
+		vTaskDelay(5000);
+	}
+	*/
+}
+
+
 extern QueueHandle_t can_rx_queue;
 uint8_t numCanMsgs = 0;
 CANMessage_t can_q[10] = {0};
