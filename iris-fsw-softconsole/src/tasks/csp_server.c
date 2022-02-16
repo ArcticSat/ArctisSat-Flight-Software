@@ -122,65 +122,67 @@ void vCSP_Server(void * pvParameters){
 
             switch(dest_port){
 
-            	case CSP_CMD_PORT:{
+            case CSP_CMD_PORT:{
 
                     telemetryPacket_t t ;
                     unpackTelemetry(packet->data, &t);
 
                     switch(t.telem_id){
 
-						case CDH_SCHEDULE_TTT_CMD:{
+                    case CDH_SCHEDULE_TTT_CMD:{
 
-							uint8_t taskCode = t.data[0];
-							uint8_t parameter = t.data[1];
-							Calendar_t timeTag = *((Calendar_t*)&t.data[2]);
+                            uint8_t taskCode = t.data[0];
+                            Calendar_t timeTag = *((Calendar_t*)&t.data[1]);
 
-							schedule_task(taskCode, parameter, timeTag);
+                            schedule_task(taskCode, timeTag);
 
-						} // telem_id = CDH_SCHEDULE_TTT_CMD
+                        }
 
-						case CDH_SET_TIME_CMD:{
-							//They send us a Calendar_t
-							Calendar_t *newTime = t.data;
-							int err = time_valid(newTime);
+                    case CDH_SET_TIME_CMD:{
 
-							if(err == TIME_SUCCESS){
-								  //Uncomment for cdh with rtc installed.
-	//                            ds1393_write_time(newTime);
-	//                            resync_rtc();
-								MSS_RTC_set_calendar_count(newTime);//This is just for testing without actual external rtc. Comment out if using the CDH EM board.
-							}else{
+                        //They send us a Calendar_t
+                        Calendar_t *newTime = t.data;
+                        int err = time_valid(newTime);
 
-								//Log error...
-							}
+                        if(err == TIME_SUCCESS){
+                              //Uncomment for cdh with rtc installed.
+//                            ds1393_write_time(newTime);
+//                            resync_rtc();
+                            MSS_RTC_set_calendar_count(newTime);//This is just for testing without actual external rtc. Comment out if using the CDH EM board.
+                        }else{
 
-						} // telem_id = CDH_SET_TIME_CMD
+                            //Log error...
+                        }
 
-						case CDH_GET_TIME_CMD:{
-							//They send us a Calendar_t
-							Calendar_t currTime;
-							MSS_RTC_get_calendar_count(&currTime);
-							telemetryPacket_t telem;
-							telem.telem_id = CDH_TIME_ID;
-							telem.timestamp = currTime;
-							telem.length =0;//No data, since the data is in the timestamp.
-							telem.data = NULL;
-							sendTelemetry_direct(&telem, conn);
-						} // telem_id =
-                    } // switch telem_id
+                    }
+
+                    case CDH_GET_TIME_CMD:{
+
+                        //They send us a Calendar_t
+                        Calendar_t currTime;
+                        MSS_RTC_get_calendar_count(&currTime);
+                        telemetryPacket_t telem;
+                        telem.telem_id = CDH_TIME_ID;
+                        telem.timestamp = currTime;
+                        telem.length =0;//No data, since the data is in the timestamp.
+                        telem.data = NULL;
+
+                        sendTelemetry_direct(&telem, conn);
+
+                    }
+
+                    }
                     break;
-                } // dest_port = CSP_CMD_PORT
+                }
 
-				case CSP_TELEM_PORT:{
-					break;
-				} // dest_port = CSP_TELEM_PORT
+            case CSP_TELEM_PORT:
 
-				default:{
-					csp_service_handler(conn,packet);
-					break;
-				} // dest_port = default
+                    break;
 
-            } // switch dest_port
+                default:
+                    csp_service_handler(conn,packet);
+                    break;
+            }
             //Should buffer free be here? Example doesn't call this after csp_service handler.
             csp_buffer_free(packet);
 			csp_close(conn);

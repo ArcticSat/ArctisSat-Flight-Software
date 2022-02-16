@@ -34,8 +34,8 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 typedef struct {
 	mss_rtc_calendar_t time_tag;
-	request_code_t request_code;
 	uint8_t parameter;
+	request_code_t request_code;
 } time_tagged_task_t;
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -62,7 +62,6 @@ typedef struct {
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 int schedule_task(
     request_code_t req,
-	uint8_t param,
 	mss_rtc_calendar_t time
 	);
 
@@ -76,5 +75,6 @@ int schedule_task(
 void vTestTaskScheduler(void *pvParameters);
 
 void vTTT_Scheduler(void *pvParameters);
+time_tagged_task_t * check_queue_for_task(mss_rtc_calendar_t time_now);
 
 #endif // SCHEDULER_H

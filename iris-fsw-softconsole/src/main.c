@@ -77,9 +77,8 @@
 
 //#define SERVER
 //#define CLIENT
-//#define CAN_SERVER
-//#define CSP_SERVER
-//#define TEST_COMMS
+#define CAN_SERVER
+#define CSP_SERVER
 
 
 
@@ -96,7 +95,6 @@ static void vTestCanServer(void * pvParameters);
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
 static void vTestingTask(void * pvParams);
-static void vTestCommsCsp(void * pvParameters);
 
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented
 within this file. */
@@ -168,12 +166,12 @@ int main( void )
 //                         1,
 //                         NULL);
 
-//    status = xTaskCreate(vTestCANRx,
-//                         "Test CAN Rx",
-//                         500,
-//                         NULL,
-//                         1,
-//                         NULL);
+    status = xTaskCreate(vTestCANRx,
+                         "Test CAN Rx",
+                         500,
+                         NULL,
+                         1,
+                         NULL);
 
 #ifdef SERVER
     status = xTaskCreate(vTestCspServer,
@@ -208,7 +206,7 @@ int main( void )
 #ifdef CAN_SERVER
     status = xTaskCreate(vTestCanServer,
                          "Test CAN Rx",
-						 500,
+						 1000,
                          NULL,
                          1,
                          NULL);
@@ -226,14 +224,7 @@ int main( void )
                          NULL,
                          1,
                          NULL);
-#ifdef TEST_COMMS
-    status = xTaskCreate(vTestCommsCsp,
-                             "Test COMMS",
-                             configMINIMAL_STACK_SIZE,
-                             NULL,
-                             1,
-                             NULL);
-#endif
+
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
 //                         1000,
@@ -311,7 +302,7 @@ static void prvSetupHardware( void )
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //
-    init_WD();
+//    init_WD();
     init_spi();
     init_rtc();
 //    init_mram();
@@ -326,26 +317,6 @@ static void prvSetupHardware( void )
 
 
 /*-----------------------------------------------------------*/
-
-static void vTestCommsCsp(void * pvParameters)
-{
-/*
-	while(1)
-	{
-		telemetryPacket_t telemetry;
-		Calendar_t ts = {0};
-		telemetry->timestamp = ts; // Don't care about the time stamp send to comms.
-		telemetry->telem_id = 0;
-		telemetry->length = 8;
-		uint8_t data[8] = {0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
-		telemetry->data = data;
-		sendTelemetryAddr(&telemetry,COMMS_CSP_ADDRESS);
-		vTaskDelay(5000);
-	}
-	*/
-}
-
-
 extern QueueHandle_t can_rx_queue;
 uint8_t numCanMsgs = 0;
 CANMessage_t can_q[10] = {0};
@@ -393,10 +364,38 @@ static void vTestCanServer(void * pvParameters)
 						// -1016389261
 						// C3 6B 21 73
 						telemetryPacket_t telemetry;
-//						Calendar_t ts = {0};
 						// Send telemetry value
 						telemetry.telem_id = POWER_READ_TEMP_ID;
-//						telemetry.timestamp = ts;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_READ_SOLAR_CURRENT_ID:{
+						// 0x40CDE131 ~= 6.434
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_READ_LOAD_CURRENT_ID:{
+						// 0x40CDE131 ~= 6.434
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_READ_MSB_VOLTAGE_ID:{
+						// 0x40CDE131 ~= 6.434
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
 						telemetry.length = 4;
 						telemetry.data = can_q[numCanMsgs].data;
 						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
