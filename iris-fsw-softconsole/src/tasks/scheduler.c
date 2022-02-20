@@ -206,6 +206,28 @@ void vTTT_Scheduler(void *pvParameters){
     }
 }
 
+int schedule_task_with_param(request_code_t req, uint8_t param, mss_rtc_calendar_t time){
+	// construct time_tagged_task_t w/ given values
+	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.
+	if(pvTask == NULL){
+		return -1; // memory allocation error
+	}
+
+	pvTask->request_code = req;
+	pvTask->parameter = param;
+	pvTask->time_tag = time;
+	unsigned long priority = CALENDAR_TO_LONG(&time);
+
+	if(isEmpty(&priority_queue_handler)){ // Check if priority queue is empty
+		priority_queue_handler = newNode((void*) pvTask, priority); //	set priority queue = new Node(data)
+	}
+	else{
+		push(&priority_queue_handler, (void*) pvTask, priority); // just put task into priority queue
+	}
+
+	return 0; // success
+}
+
 int schedule_task(request_code_t req, mss_rtc_calendar_t time){
 	// construct time_tagged_task_t w/ given values
 	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.

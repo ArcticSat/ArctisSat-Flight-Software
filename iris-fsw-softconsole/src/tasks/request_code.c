@@ -75,8 +75,6 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			CANMessage_t cmd = {0};
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
-			cmd.data[0] = POWER_READ_TEMP_CMD;
-			cmd.data[1] = param;
 			cmd.data[0] = POWER_READ_SOLAR_CURRENT_CMD;
 			cmd.data[1] = param;
 			CAN_transmit_message(&cmd);
@@ -96,6 +94,42 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 1;
 			cmd.data[0] = POWER_READ_MSB_VOLTAGE_CMD;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_POWER_SET_LOAD_OFF:{
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 2;
+			cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
+			cmd.data[1] = param;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_POWER_SET_LOAD_ON:{
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 2;
+			cmd.data[0] = POWER_SET_LOAD_ON_CMD;
+			cmd.data[1] = param;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_POWER_SET_SOLAR_OFF:{
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 2;
+			cmd.data[0] = POWER_SET_SOLAR_OFF_CMD;
+			cmd.data[1] = param;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_POWER_SET_SOLAR_ON:{
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 2;
+			cmd.data[0] = POWER_SET_SOLAR_ON_CMD;
+			cmd.data[1] = param;
 			CAN_transmit_message(&cmd);
 			break;
 		}

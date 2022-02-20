@@ -361,8 +361,6 @@ static void vTestCanServer(void * pvParameters)
 				switch(telem_id)
 				{
 					case POWER_READ_TEMP_ID:{
-						// -1016389261
-						// C3 6B 21 73
 						telemetryPacket_t telemetry;
 						// Send telemetry value
 						telemetry.telem_id = POWER_READ_TEMP_ID;
@@ -372,7 +370,6 @@ static void vTestCanServer(void * pvParameters)
 						break;
 					}
 					case POWER_READ_SOLAR_CURRENT_ID:{
-						// 0x40CDE131 ~= 6.434
 						telemetryPacket_t telemetry;
 						// Send telemetry value
 						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
@@ -382,7 +379,6 @@ static void vTestCanServer(void * pvParameters)
 						break;
 					}
 					case POWER_READ_LOAD_CURRENT_ID:{
-						// 0x40CDE131 ~= 6.434
 						telemetryPacket_t telemetry;
 						// Send telemetry value
 						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
@@ -392,7 +388,6 @@ static void vTestCanServer(void * pvParameters)
 						break;
 					}
 					case POWER_READ_MSB_VOLTAGE_ID:{
-						// 0x40CDE131 ~= 6.434
 						telemetryPacket_t telemetry;
 						// Send telemetry value
 						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
