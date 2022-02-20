@@ -13,6 +13,10 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+#include "tasks/telemetry.h"    //Request Codes are here.
+// FOR FLATSAT POWER INTERFACING
+#include "drivers/protocol/can.h"
+#include "drivers/device/power_driver.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -58,6 +62,7 @@ typedef enum {
 // Returns:
 //  VOID
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-void handle_request(request_code_t req);
+void handle_request(cdhTask_t req,Calendar_t time);
+void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time);
 
 #endif // REQUEST_CODE_H

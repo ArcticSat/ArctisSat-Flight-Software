@@ -42,6 +42,31 @@ void vTestCANRx(void *pvParameters)
         if (xQueueReceive(can_rx_queue, &rx_msg, portMAX_DELAY) == pdTRUE)
         {
             messages_processed++;
+            // Ground output to terminal
+			telemetryPacket_t telemetry={0};
+			Calendar_t ts = {0};
+			// Send telemetry value
+			telemetry.telem_id = POWER_READ_TEMP_ID;
+			telemetry.timestamp = ts;
+			telemetry.length = 4;
+			telemetry.data = rx_msg.data;
+			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+
+        }
+        else if(uxQueueMessagesWaitingFromISR(can_rx_queue) > 0)
+        {
+        	telemetryPacket_t telemetry={0};
+			Calendar_t ts = {0};
+			// Send telemetry value
+			telemetry.telem_id = POWER_READ_TEMP_ID;
+			telemetry.timestamp = ts;
+			telemetry.length = 4;
+			telemetry.data = rx_msg.data;
+			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+        }
+        else
+        {
+    		vTaskDelay(1000);
         }
     }
 }

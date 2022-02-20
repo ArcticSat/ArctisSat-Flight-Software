@@ -69,12 +69,16 @@
 #include "drivers/device/adcs_driver.h"
 #include "drivers/filesystem_driver.h"
 #include "tests.h"
+#include "tasks/telemetry.h"
+#include "tasks/csp_server.h"
 #include "drivers/device/adc/AD7928.h"
 
 
 
-#define SERVER
+//#define SERVER
 //#define CLIENT
+#define CAN_SERVER
+#define CSP_SERVER
 
 
 
@@ -86,8 +90,11 @@ extern TaskHandle_t xUART0RxTaskToNotify;
  */
 static void prvSetupHardware( void );
 
+static void vTestCanServer(void * pvParameters);
+
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
+static void vTestingTask(void * pvParams);
 
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented
 within this file. */
@@ -108,24 +115,31 @@ int main( void )
     BaseType_t status;
 
     /* Prepare the hardware to run this demo. */
+
     prvSetupHardware();
 
 
     // Create LED spinning task
-//    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
-//                            "LED Spinner",               // Text name for debugging
-//                            1000,                        // Size of the stack allocated for this task
-//                            NULL,                        // Task parameter is not used
-//                            1,                           // Task runs at priority 1
-//                            NULL);                       // Task handle is not used
-//
-//    // Create UART0 RX Task
-//    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
-//                            "UART0 Receiver",            // Text name for debugging
-//                            1000,                        // Size of the stack allocated for this task
-//                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-//                            2,                           // Task runs at priority 2
-//                            &xUART0RxTaskToNotify);      // Task handle for task notification
+    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
+                            "LED Spinner",               // Text name for debugging
+                            100,                        // Size of the stack allocated for this task
+                            NULL,                        // Task parameter is not used
+                            1,                           // Task runs at priority 1
+                            NULL);                       // Task handle is not used
+
+    // Create UART0 RX Task
+    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
+                            "UART0 Receiver",            // Text name for debugging
+                            1000,                        // Size of the stack allocated for this task
+                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
+                            2,                           // Task runs at priority 2
+                            &xUART0RxTaskToNotify);      // Task handle for task notification
+    status = xTaskCreate(vTTT_Scheduler,
+                         "TTT",
+                         1000,
+                         NULL,
+                         1,
+                         NULL);
 
 
 //    status = xTaskCreate(vTestSPI,
@@ -151,18 +165,18 @@ int main( void )
 //                         NULL,
 //                         1,
 //                         NULL);
-////
-//    status = xTaskCreate(vTestCANRx,
-//                         "Test CAN Rx",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         NULL);
+
+    status = xTaskCreate(vTestCANRx,
+                         "Test CAN Rx",
+                         500,
+                         NULL,
+                         1,
+                         NULL);
 
 #ifdef SERVER
     status = xTaskCreate(vTestCspServer,
                          "Test CSP Server",
-                         160,
+                         1000,
                          NULL,
                          1,
                          NULL);
@@ -179,13 +193,37 @@ int main( void )
 
 
 #endif
-////
-//    status = xTaskCreate(vTestWD,
-//                         "Test WD",
-//                         configMINIMAL_STACK_SIZE,
+//
+//    init_rtc();
+
+
+
+
+#ifdef CSP_SERVER
+    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, NULL);
+#endif
+
+#ifdef CAN_SERVER
+    status = xTaskCreate(vTestCanServer,
+                         "Test CAN Rx",
+						 1000,
+                         NULL,
+                         1,
+                         NULL);
+//    status = xTaskCreate(vTestCANRx,
+//                         "Test CAN Rx",
+//                         500,
 //                         NULL,
 //                         1,
 //                         NULL);
+#endif
+
+    status = xTaskCreate(vTestWD,
+                         "Test WD",
+                         configMINIMAL_STACK_SIZE,
+                         NULL,
+                         1,
+                         NULL);
 
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
@@ -258,29 +296,123 @@ int main( void )
 static void prvSetupHardware( void )
 {
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
-//    vInitializeLEDs();
+    vInitializeLEDs();
 //
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-//    vInitializeUARTs(MSS_UART_115200_BAUD);
+    vInitializeUARTs(MSS_UART_115200_BAUD);
 //
 //    init_WD();
     init_spi();
-//    initADC();
-//    init_rtc();
+    init_rtc();
 //    init_mram();
-//    asMram_init();
-//    init_CAN(CAN_BAUD_RATE_250K,NULL);
+    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
 //    flash_device_init(flash_devices[DATA_FLASH]);
+//    initADC();
+//    asMram_init();
+
 }
 
 
 
 /*-----------------------------------------------------------*/
+extern QueueHandle_t can_rx_queue;
+uint8_t numCanMsgs = 0;
+CANMessage_t can_q[10] = {0};
+uint8_t telem_id = 0;
+static void vTestCanServer(void * pvParameters)
+{
+	int messages_processed = 0;
+	CANMessage_t rx_msg;
+	while(1)
+	{
+//		BaseType_t q_rec = xQueueReceive(can_rx_queue, &rx_msg, portMAX_DELAY);
+//		UBaseType_t numMsgs = uxQueueMessagesWaitingFromISR(can_rx_queue);
+//		if (q_rec == pdTRUE)
+//		{
+//			messages_processed++;
+//			// Ground output to terminal
+//			telemetryPacket_t telemetry={0};
+//			Calendar_t ts = {0};
+//			// Send telemetry value
+//			telemetry.telem_id = POWER_READ_TEMP_ID;
+//			telemetry.timestamp = ts;
+//			telemetry.length = 4;
+//			telemetry.data = rx_msg.data;
+//			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+//
+//		}
+
+		if(numCanMsgs > 0)
+		{
+			numCanMsgs--;
+			if(numCanMsgs < 0) continue;
+			// Check if msg is telem_id
+			uint8_t telem_mask = 0;
+			int i;
+			for(i=0; i < 3; i++) telem_mask |= can_q[numCanMsgs].data[i];
+			if(telem_mask == 0)
+			{
+				telem_id = can_q[numCanMsgs].data[3];
+			}
+			else
+			{
+				switch(telem_id)
+				{
+					case POWER_READ_TEMP_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_TEMP_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_READ_SOLAR_CURRENT_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_READ_LOAD_CURRENT_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_READ_MSB_VOLTAGE_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+				}
+			}
+
+		}
+
+		vTaskDelay(1000);
+
+	}
+}
 static void vTestCspServer(void * pvParameters){
 
-	struct csp_can_config can_conf;
+	struct csp_can_config can_conf = {0};
+    csp_conn_t * conn = NULL;
+    csp_packet_t * packet= NULL;
+    csp_socket_t * socket  = NULL;
+
+
 	can_conf.bitrate=250000;
 	can_conf.clock_speed=250000;
 	can_conf.ifc = "CAN";
@@ -288,8 +420,9 @@ static void vTestCspServer(void * pvParameters){
 	/* Init buffer system with 5 packets of maximum 256 bytes each */
 	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
 
-	/* Init CSP with address 4 */
-	csp_init(4);
+	/* Init CSP with address 0 */
+	csp_init(CDH_CSP_ADDRESS);
+
 
 	/* Init the CAN interface with hardware filtering */
 	csp_can_init(CSP_CAN_MASKED, &can_conf);
@@ -302,10 +435,10 @@ static void vTestCspServer(void * pvParameters){
 	csp_route_start_task(100, 1);
 
 
-	csp_conn_t * conn = NULL;
-	csp_packet_t * packet= NULL;
-	csp_socket_t * socket = csp_socket(0);
-	csp_bind(socket, CSP_ANY);
+	 conn = NULL;
+	 packet= NULL;
+	socket = csp_socket(0);
+	csp_bind(socket, CSP_TELEM_PORT);
 	csp_listen(socket,4);
 
 	while(1) {
@@ -315,6 +448,18 @@ static void vTestCspServer(void * pvParameters){
 				packet = csp_read(conn,0);
 				//prvUARTSend(&g_mss_uart0, packet->data, packet->length);
 				//printf(“%S\r\n”, packet->data);
+				uint32_t addr = packet->id.src;
+				if(addr ==  PAYLOAD_CSP_ADDRESS){
+
+				    telemetryPacket_t t = {0};
+				    unpackTelemetry(packet->data, &t);
+
+				    double temp = *(double *)t.data;
+
+				    double a = temp;//Does nothing... just a place for breakpoint, while temp is in scope.
+				}
+
+
 				csp_buffer_free(packet);
 				csp_close(conn);
 			}
@@ -342,7 +487,7 @@ static void vTestCspClient(void * pvParameters){
 
 	size_t freSpace = xPortGetFreeHeapSize();
 	/* Start router task with 100 word stack, OS task priority 1 */
-	csp_route_start_task(100, 1);
+	csp_route_start_task(200, 1);
 
 
 	while(1){
@@ -355,9 +500,62 @@ static void vTestCspClient(void * pvParameters){
 		csp_send(conn,packet,0);
 		csp_close(conn);
 		vTaskDelay(10000);
+
+//		CANMessage_t msg = {0};
+//		msg.id = 0x144;
+//		msg.dlc = 8;
+//		sprintf(msg.data,"SHEEEESH");
+//		CAN_transmit_message(&msg);
+//		vTaskDelay(5000);
 	}
 }
 
+void vTestingTask(void * pvParams){
+
+    csp_conn_t * conn = NULL;
+    csp_packet_t * outPacket = NULL;
+
+    while(1){
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        static Calendar_t buffer = {
+                59u, // seconds
+                59u, // minutes
+                23u, // hours
+                28u, // day
+                2u, // February
+                20u, // year (2020)
+                1u, // weekday
+                1u, // week (not used), HOWEVER it must be 1 or greater.
+        };
+
+
+        conn = csp_connect(2,PAYLOAD_CSP_ADDRESS,CSP_CMD_PORT,1000,0);    //Create a connection. This tells CSP where to send the data (address and destination port).
+        outPacket = csp_buffer_get(sizeof(Calendar_t)+2);
+//        uint8_t testbuff[20];
+        payloadTelemetry_t cmd = PAYLOAD_BOARD_TEMP_ID;
+        uint8_t length = 0;///cmd so no data.
+
+
+//        memcpy(&testbuff[0],&buffer,sizeof(Calendar_t));
+//        memcpy(&testbuff[sizeof(Calendar_t)],&cmd,1);
+//        memcpy(&testbuff[sizeof(Calendar_t)+1],&length,1);
+
+        memcpy(&outPacket->data[0],&buffer,sizeof(Calendar_t));
+        memcpy(&outPacket->data[sizeof(Calendar_t)],&cmd,1);
+        memcpy(&outPacket->data[sizeof(Calendar_t)+1],&length,1);
+        outPacket->length = sizeof(Calendar_t )+2;
+
+        int good = csp_send(conn,outPacket,0);
+        csp_close(conn);
+
+        if(!good){
+
+            csp_buffer_free(outPacket);
+        }
+
+
+    }
+}
 /*-----------------------------------------------------------*/
 
 void vApplicationMallocFailedHook( void )
@@ -375,8 +573,8 @@ void vApplicationMallocFailedHook( void )
 
  // TODO - Log event!
 
-    taskDISABLE_INTERRUPTS();
-    for( ;; );
+//    taskDISABLE_INTERRUPTS();
+//    for( ;; );
 }
 /*-----------------------------------------------------------*/
 

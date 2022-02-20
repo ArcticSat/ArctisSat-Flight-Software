@@ -130,6 +130,8 @@ int CAN_transmit_message(CANMessage_t * message)
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+extern uint8_t numCanMsgs;
+extern CANMessage_t can_q[10];
 // Interrupt handler for the CAN interrupt. Received CAN messages are placed into a Queue.
 __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 {
@@ -151,11 +153,36 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
               q_buf.data[ix] = rx_buf.DATA[ix];
           }
 
-          //xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
-
+//          xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
+          if(q_buf.id == POW_RXID)
+          {
+//        	  handlePowTelemetry(q_buf.data);
+        	  BaseType_t res1 = xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
+        	  if(numCanMsgs < 10){
+        		  can_q[numCanMsgs++] = q_buf;
+        		  numCanMsgs %= 10;
+        	  }
+//        	  UBaseType_t numMsgs = uxQueueMessagesWaitingFromISR(can_rx_queue);
+//        	  CANMessage_t buf = {0};
+//        	  int ii = 0;
+//        	  // Ground output to terminal
+//			telemetryPacket_t telemetry={0};
+////			Calendar_t ts = {0};
+//			// Send telemetry value
+////			telemetry.telem_id = POWER_READ_TEMP_ID;
+//			telemetry.telem_id = 13;
+////			telemetry.timestamp = ts;
+//			telemetry.length = 4;
+//			telemetry.data = q_buf.data;
+//			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+          }
+          else
+          {
+              BaseType_t res = xQueueSendToBackFromISR(csp_rx_queue, &q_buf,NULL);
+          }
           //NOTE: The queue (and CSP) use an internal can_frame_t but we are sending a CANMessage_t.
           // Make sure these are the same otherwise CSP will interpret the messages wrong.
-          BaseType_t res = xQueueSendToBackFromISR(csp_rx_queue, &q_buf,NULL);
+//          BaseType_t res = xQueueSendToBackFromISR(csp_rx_queue, &q_buf,NULL);
         }
         MSS_CAN_clear_int_status(&g_can0, CAN_INT_RX_MSG); // This is needed to indicate the interrupt was serviced.
     }

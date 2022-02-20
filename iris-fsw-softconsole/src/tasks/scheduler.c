@@ -27,12 +27,12 @@
 #include "tasks/scheduler.h"
 #include "tasks/priority_queue.h"
 #include "drivers/device/rtc/rtc_time.h"
-#include "request_code.h"
+#include "tasks/request_code.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define SCHEDULER_TASK_DELAY_MS				(2000)	// The delay time of each task cycle in ms.
+#define SCHEDULER_TASK_DELAY_MS				(500)	// The delay time of each task cycle in ms.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
@@ -64,6 +64,31 @@ void init_TaskScheduler(void){
 
 	//set up static variables
 	priority_queue_handler = NULL;
+}
+
+time_tagged_task_t * check_queue_for_task(mss_rtc_calendar_t time_now){
+	request_code_t result;
+
+	time_tagged_task_t * temp = {0};
+	if(isEmpty(&priority_queue_handler)){
+		time_tagged_task_t temp1 = {0};
+		temp1.request_code = INVALID_REQUEST_CODE;
+		temp = &temp1;
+		return temp; // Queue is currently empty
+	}
+
+	temp = peek(&priority_queue_handler); // look at task which has the soonest time
+
+	if(compare_time(&(temp->time_tag), &time_now) <= 0){ //if soonest task is scheduled for current time or sooner
+		result = temp->request_code;  // Save request code of the current task
+		pop(&priority_queue_handler); //We have dealt with the task, so remove the task from the queue.
+	}
+	else{
+		temp->request_code = INVALID_REQUEST_CODE;
+		result = INVALID_REQUEST_CODE; // No task for this time
+	}
+
+	return temp;
 }
 
 request_code_t check_queue(mss_rtc_calendar_t time_now){
@@ -127,11 +152,80 @@ void vTestTaskScheduler(void *pvParameters){
 		request = check_queue(p_rtc_calendar); // check queue for tasks at this current time
 
 		if(request != INVALID_REQUEST_CODE){
-			handle_request(request);
+			handle_request(request,p_rtc_calendar);
 		}
 
 		vTaskDelay(pdMS_TO_TICKS(SCHEDULER_TASK_DELAY_MS));
 	}
+}
+
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void vTTT_Scheduler(void *pvParameters){
+    request_code_t request;
+    time_tagged_task_t * task;
+    init_TaskScheduler();
+
+//    static BaseType_t rslt; // Variable to hold result of various functions
+//    static time_tagged_task_t task_buf; // Buffer variable to hold a task
+//
+//    MSS_RTC_get_calendar_count(&p_rtc_calendar); // get current time
+//
+//    // add 60s to current time
+//    mss_rtc_calendar_t p_rtc_cal_1 = p_rtc_calendar;
+//    p_rtc_cal_1.minute += 1;
+//    schedule_task(TEST_CODE_1, p_rtc_cal_1); // create task to be executed in 60s
+//
+//    // add 90s to current time
+//    mss_rtc_calendar_t p_rtc_cal_2 = p_rtc_calendar;
+//    p_rtc_cal_2.second += 30;
+//    p_rtc_cal_2.minute += 1;
+//    schedule_task(TEST_CODE_2, p_rtc_cal_2); // create task to be executed in 90s
+//
+//    // add 30s to current time
+//    mss_rtc_calendar_t p_rtc_cal_0 = p_rtc_calendar;
+//    p_rtc_cal_0.second += 30;
+//    schedule_task(TEST_CODE_0, p_rtc_cal_0); // create task to be executed in 30s
+//
+//    MSS_RTC_start(); // Start RTC
+
+    for( ;; ) {
+        MSS_RTC_get_calendar_count(&p_rtc_calendar); // get current time
+
+//        request = check_queue(p_rtc_calendar); // check queue for tasks at this current time
+        task = check_queue_for_task(p_rtc_calendar);
+        request = task->request_code;
+
+        if(request != INVALID_REQUEST_CODE){
+//            handle_request(request,p_rtc_calendar);
+        	uint8_t param = task->parameter;
+            handle_request_with_param(request,param,p_rtc_calendar);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(SCHEDULER_TASK_DELAY_MS));
+    }
+}
+
+int schedule_task_with_param(request_code_t req, uint8_t param, mss_rtc_calendar_t time){
+	// construct time_tagged_task_t w/ given values
+	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.
+	if(pvTask == NULL){
+		return -1; // memory allocation error
+	}
+
+	pvTask->request_code = req;
+	pvTask->parameter = param;
+	pvTask->time_tag = time;
+	unsigned long priority = CALENDAR_TO_LONG(&time);
+
+	if(isEmpty(&priority_queue_handler)){ // Check if priority queue is empty
+		priority_queue_handler = newNode((void*) pvTask, priority); //	set priority queue = new Node(data)
+	}
+	else{
+		push(&priority_queue_handler, (void*) pvTask, priority); // just put task into priority queue
+	}
+
+	return 0; // success
 }
 
 int schedule_task(request_code_t req, mss_rtc_calendar_t time){
