@@ -52,7 +52,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 	int temp = 0;
 	switch(req){
 		case(TASK_TAKE_IMAGE):{
-			uint8_t imgNum =1;
+			uint8_t imgNum = param;
 			telemetryPacket_t telemetry={0};
 			telemetry.telem_id= PAYLOAD_FULL_IMAGE_CMD;
 			telemetry.timestamp = time;
@@ -136,8 +136,9 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 		case TASK_POWER_SET_MODE:{ // Read solar current command
 			CANMessage_t cmd = {0};
 			cmd.id = POW_TXID;
-			cmd.dlc = 1;
+			cmd.dlc = 2;
 			cmd.data[0] = POWER_SET_POW_MODE_CMD;
+			cmd.data[1] = param;
 			CAN_transmit_message(&cmd);
 			break;
 		}
