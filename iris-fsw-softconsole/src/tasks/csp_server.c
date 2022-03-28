@@ -18,6 +18,7 @@
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
 #include "drivers/filesystem_driver.h"
+#include "utilities/logUtilities.h"
 #include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/device/rtc/rtc_time.h"
 
@@ -29,8 +30,9 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-#define USING_EM_OR_FM 0
-
+#define NOT_USING_BREADBOARD 1
+int ping_val_pld = -1;
+int ping_val_comms = -1;
 
 //------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
@@ -66,7 +68,7 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
-#if USING_EM_OR_FM
+#if NOT_USING_BREADBOARD
     int result_fs = 1;
     uint32_t boot_count = 0;
 
@@ -102,7 +104,11 @@ void vCSP_Server(void * pvParameters){
    // remember the storage is not updated until the file is closed successfully
    result_fs = fs_file_close( &file);
    if(result_fs < 0) while(1){}
+
+   // Create log files
+   createLogFiles();
 #endif
+
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -135,6 +141,14 @@ void vCSP_Server(void * pvParameters){
                             uint8_t parameter = t.data[1];
                             Calendar_t timeTag = *((Calendar_t*)&t.data[2]);
 
+                            // Log the event
+                            time_tagged_task_t ttt;
+                            ttt.request_code  = taskCode;
+                            ttt.parameter = parameter;
+                            ttt.time_tag = timeTag;
+                            logTask(&ttt);
+
+                            // Dispatch appropriate task
                             schedule_task_with_param(taskCode, parameter, timeTag);
 
                         }

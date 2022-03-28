@@ -142,6 +142,16 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			CAN_transmit_message(&cmd);
 			break;
 		}
+		case(TASK_COMMS_SEND_MESSSAGE):{
+			telemetryPacket_t telemetry={0};
+			telemetry.telem_id= COMMS_SEND_MESSAGE_CMD;
+			telemetry.timestamp = time;
+			telemetry.length = 2;
+			telemetry.data[0] = 0xAA;
+			telemetry.data[1] = 0xAA;
+			sendCommand(&telemetry, COMMS_CSP_ADDRESS);
+			break;
+		}
 		default:
 			break;
 	}

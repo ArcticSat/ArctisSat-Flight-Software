@@ -28,6 +28,14 @@
 /***********************************************************/
 //Put the commands/telemtry here.
 
+typedef enum
+{
+COMMS_SEND_MESSAGE_ID = 60
+} commsTelemetry_t;
+typedef enum
+{
+COMMS_SEND_MESSAGE_CMD = 0
+} commsCommand_t;
 // Power Telemetry
 typedef enum
 {
@@ -111,6 +119,7 @@ TASK_POWER_SET_SOLAR_OFF,
 TASK_POWER_SET_SOLAR_ON,
 TASK_POWER_READ_MSB_VOLTAGE,
 TASK_POWER_SET_MODE,
+TASK_COMMS_SEND_MESSSAGE,
 // Total number of tasks
 NUM_CDH_TASKS
 } cdhTask_t;
