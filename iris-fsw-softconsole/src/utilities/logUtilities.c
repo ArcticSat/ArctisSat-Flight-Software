@@ -31,13 +31,13 @@ void createLogFiles(void)
 	if(result_fs < 0) while(1){}
 
 	// Create telemetry log
-	result_fs = fs_file_open( &logfile, TELEMETRY_LOG_FILE_PATH, LFS_O_CREAT);
+	result_fs = fs_file_open( &logfile, CDH_TELEMETRY_LOG_FILE_PATH, LFS_O_CREAT);
 	if(result_fs < 0) while(1){}
 	result_fs = fs_file_close( &logfile);
 	if(result_fs < 0) while(1){}
 
 	// Create error log
-	result_fs = fs_file_open( &logfile, ERROR_LOG_FILE_PATH, LFS_O_CREAT);
+	result_fs = fs_file_open( &logfile, CDH_ERROR_LOG_FILE_PATH, LFS_O_CREAT);
 	if(result_fs < 0) while(1){}
 	result_fs = fs_file_close( &logfile);
 	if(result_fs < 0) while(1){}

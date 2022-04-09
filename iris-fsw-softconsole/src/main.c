@@ -218,12 +218,12 @@ int main( void )
 //                         NULL);
 #endif
 
-    status = xTaskCreate(vTestWD,
-                         "Test WD",
-                         configMINIMAL_STACK_SIZE,
-                         NULL,
-                         1,
-                         NULL);
+//    status = xTaskCreate(vTestWD,
+//                         "Test WD",
+//                         configMINIMAL_STACK_SIZE,
+//                         NULL,
+//                         1,
+//                         NULL);
 
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
