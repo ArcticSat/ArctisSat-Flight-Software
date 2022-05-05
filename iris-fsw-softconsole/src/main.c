@@ -225,12 +225,12 @@ int main( void )
                          1,
                          NULL);
 
-//    status = xTaskCreate(vTestFS,
-//                         "Test FS",
-//                         1000,
-//                         NULL,
-//                         1,
-//                         NULL);
+    status = xTaskCreate(vTestFS,
+                         "Test FS",
+                         1000,
+                         NULL,
+                         1,
+                         NULL);
 
 //    status = xTaskCreate(vTestRTC,
 //                         "Test RTC",
@@ -308,7 +308,7 @@ static void prvSetupHardware( void )
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
-//    flash_device_init(flash_devices[DATA_FLASH]);
+    flash_device_init(flash_devices[DATA_FLASH]);
 //    initADC();
 //    asMram_init();
 
