@@ -15,9 +15,9 @@
 // INCLUDES
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#include    "tasks/fw_update_mgr.h"
-#include "FreeRTOS.h"
-#include "queue.h"
+#include "tasks/fw_update_mgr.h"
+#include "drivers/filesystem_driver.h"
+
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -66,6 +66,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
     int rx_byte_index=0;
     uint8_t rxDataBuff[FW_CHUNK_SIZE];
     char tempFileName[64];
+    uint8_t fwTempFileOpen = 0;
 
     fwDataQueue = xQueueCreate(5,sizeof(uint8_t)*FW_CHUNK_SIZE);
     if(fwDataQueue == NULL){
@@ -89,8 +90,9 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 }
                 else{
 
+
                     //Open up the file.
-                    if(!fwfile){
+                    if(fwTempFileOpen){
 
                         snprintf(tempFileName,64,"%s.tmp",fwFileNames[rx_slot_index]);//We will upload our file to .tmp. once complete, delete original and rename the temp file.
 
@@ -98,7 +100,9 @@ void vFw_Update_Mgr_Task(void * pvParams){
                         if(result_fs < 0){
                             printf("Could not open temp file to write fw to: %d\n",result_fs);
                             updateState(FW_STATE_IDLE);
+                            break;
                         }
+                        fwTempFileOpen=1;
                     }
 
                     //Now we can wait for data and write to the file.
@@ -119,7 +123,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                             }
 
                             //Now calculate the checksum;
-                            uint32_t check = checksum_file();
+                            uint32_t check = 0;//checksum_file();
 
                             if(check == fwFiles[rx_slot_index].checksum){
 
@@ -128,22 +132,26 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                 if(res<0){
                                     printf("FwMgr: Could not finish uploading fw, cant remove original: %s\n",res);
                                     updateState(FW_STATE_IDLE);
+                                    break;
                                 }
                                 res = fs_rename(tempFileName, fwFileNames[rx_slot_index]);
                                 if(res<0){
                                     printf("FwMgr: Could not finish uploading fw, cant rename temp: %s\n",res);
                                     updateState(FW_STATE_IDLE);
+                                    break;
                                 }
                                 res = fs_remove(tempFileName);
                                 if(res<0){
                                     printf("FwMgr: Could not finish uploading fw, cant remove temp: %s\n",res);
                                     updateState(FW_STATE_IDLE);
+                                    break;
                                 }
 
                                 //If we make it here we are done!
-                                rx_byte_index = 0;
+                                rx_byte_index  =0;
                                 rx_in_progress =0;
-                                updateState(FW_STATE_IDLE);z
+                                fwTempFileOpen =0;
+                                updateState(FW_STATE_IDLE);
                             }
                         }
 

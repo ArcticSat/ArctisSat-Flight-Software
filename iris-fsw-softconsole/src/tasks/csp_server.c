@@ -17,6 +17,8 @@
 #include "tasks/csp_server.h"
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
+#include "tasks/fw_update_mgr.h"
+
 #include "drivers/filesystem_driver.h"
 #include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/device/rtc/rtc_time.h"
@@ -25,6 +27,7 @@
 #include "csp/interfaces/csp_if_can.h"
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
+
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -181,9 +184,39 @@ void vCSP_Server(void * pvParameters){
                         break;
                     }
 
-                    case CDH_LIST_FILES_CMD:{
+                    case CDH_LIST_FW_CMD:{
 
-                        fs_list_dir("/",0);
+                        listFwFiles();
+                        break;
+                    }
+                    case CDH_FW_IDLE_CMD:{
+
+                        setFwManagerState(FW_STATE_IDLE);
+                        break;
+                    }
+                    case CDH_FW_RX_FW_CMD:{
+                        setFwManagerState(FW_STATE_RX_FW);
+
+                        break;
+                    }
+                    case CDH_FW_PUT_DATA_CMD:{
+
+
+                        break;
+                    }
+                    case CDH_FW_GET_STATE_CMD:{
+
+                        uint8_t state = getFwManagerState();
+                        //They send us a Calendar_t
+                        Calendar_t currTime;
+                        MSS_RTC_get_calendar_count(&currTime);
+                        telemetryPacket_t telem;
+                        telem.telem_id = CDH_FW_STATE_ID;
+                        telem.timestamp = currTime;
+                        telem.length =1;//No data, since the data is in the timestamp.
+                        telem.data = &state;
+
+                        sendTelemetry_direct(&telem, conn);
                         break;
                     }
 
