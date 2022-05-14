@@ -34,7 +34,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 typedef struct {
 	mss_rtc_calendar_t time_tag;
-	uint8_t parameter;
+	uint8_t * parameters;
 	request_code_t request_code;
 } time_tagged_task_t;
 
@@ -62,7 +62,7 @@ typedef struct {
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 int schedule_task_with_param(
 		request_code_t req,
-		uint8_t param,
+		uint8_t * params,
 		mss_rtc_calendar_t time
 		);
 int schedule_task(

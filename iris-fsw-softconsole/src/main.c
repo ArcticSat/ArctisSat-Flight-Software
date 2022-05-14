@@ -141,6 +141,26 @@ int main( void )
                          1,
                          NULL);
 
+#ifdef CSP_SERVER
+    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, NULL);
+#endif
+
+#ifdef CAN_SERVER
+    status = xTaskCreate(vTestCanServer,
+                         "Test CAN Rx",
+						 1000,
+                         NULL,
+                         1,
+                         NULL);
+#endif
+
+    status = xTaskCreate(vTestWD,
+                         "Test WD",
+                         configMINIMAL_STACK_SIZE,
+                         NULL,
+                         1,
+                         NULL);
+
 
 //    status = xTaskCreate(vTestSPI,
 //                         "Test SPI",
@@ -166,12 +186,12 @@ int main( void )
 //                         1,
 //                         NULL);
 
-    status = xTaskCreate(vTestCANRx,
-                         "Test CAN Rx",
-                         500,
-                         NULL,
-                         1,
-                         NULL);
+//    status = xTaskCreate(vTestCANRx,
+//                         "Test CAN Rx",
+//                         500,
+//                         NULL,
+//                         1,
+//                         NULL);
 
 #ifdef SERVER
     status = xTaskCreate(vTestCspServer,
@@ -198,32 +218,6 @@ int main( void )
 
 
 
-
-#ifdef CSP_SERVER
-    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, NULL);
-#endif
-
-#ifdef CAN_SERVER
-    status = xTaskCreate(vTestCanServer,
-                         "Test CAN Rx",
-						 1000,
-                         NULL,
-                         1,
-                         NULL);
-//    status = xTaskCreate(vTestCANRx,
-//                         "Test CAN Rx",
-//                         500,
-//                         NULL,
-//                         1,
-//                         NULL);
-#endif
-
-    status = xTaskCreate(vTestWD,
-                         "Test WD",
-                         configMINIMAL_STACK_SIZE,
-                         NULL,
-                         1,
-                         NULL);
 
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
@@ -392,6 +386,24 @@ static void vTestCanServer(void * pvParameters)
 						// Send telemetry value
 						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
 						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_GET_BATTERY_SOC_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_GET_BATTERY_SOC_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+						break;
+					}
+					case POWER_GET_ECLIPSE_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_GET_ECLIPSE_ID;
+						telemetry.length = 1;
 						telemetry.data = can_q[numCanMsgs].data;
 						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
 						break;

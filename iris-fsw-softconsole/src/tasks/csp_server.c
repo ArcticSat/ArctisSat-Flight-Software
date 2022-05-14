@@ -132,8 +132,8 @@ void vCSP_Server(void * pvParameters){
                     case CDH_SCHEDULE_TTT_CMD:{
 
                             uint8_t taskCode = t.data[0];
-                            uint8_t parameter = t.data[1];
-                            Calendar_t timeTag = *((Calendar_t*)&t.data[2]);
+                            uint8_t * parameter = t.data[1];
+                            Calendar_t timeTag = *((Calendar_t*)&t.data[5]);
 
                             schedule_task_with_param(taskCode, parameter, timeTag);
 

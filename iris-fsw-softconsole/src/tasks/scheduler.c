@@ -198,15 +198,15 @@ void vTTT_Scheduler(void *pvParameters){
 
         if(request != INVALID_REQUEST_CODE){
 //            handle_request(request,p_rtc_calendar);
-        	uint8_t param = task->parameter;
-            handle_request_with_param(request,param,p_rtc_calendar);
+        	uint8_t * params = task->parameters;
+            handle_request_with_param(request,params,p_rtc_calendar);
         }
 
         vTaskDelay(pdMS_TO_TICKS(SCHEDULER_TASK_DELAY_MS));
     }
 }
 
-int schedule_task_with_param(request_code_t req, uint8_t param, mss_rtc_calendar_t time){
+int schedule_task_with_param(request_code_t req, uint8_t * params, mss_rtc_calendar_t time){
 	// construct time_tagged_task_t w/ given values
 	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.
 	if(pvTask == NULL){
@@ -214,7 +214,7 @@ int schedule_task_with_param(request_code_t req, uint8_t param, mss_rtc_calendar
 	}
 
 	pvTask->request_code = req;
-	pvTask->parameter = param;
+	pvTask->parameters = params;
 	pvTask->time_tag = time;
 	unsigned long priority = CALENDAR_TO_LONG(&time);
 

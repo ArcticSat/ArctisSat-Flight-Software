@@ -47,12 +47,12 @@
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
+void handle_request_with_param(cdhTask_t req, uint8_t * params, Calendar_t time)
 {
 	int temp = 0;
 	switch(req){
 		case(TASK_TAKE_IMAGE):{
-			uint8_t imgNum = param;
+			uint8_t imgNum = params[0];
 			telemetryPacket_t telemetry={0};
 			telemetry.telem_id= PAYLOAD_FULL_IMAGE_CMD;
 			telemetry.timestamp = time;
@@ -67,7 +67,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_READ_TEMP_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -76,7 +76,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_READ_SOLAR_CURRENT_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -85,7 +85,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_READ_LOAD_CURRENT_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -97,12 +97,28 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			CAN_transmit_message(&cmd);
 			break;
 		}
+		case TASK_POWER_GET_BATTERY_SOC:{ // Read solar current command
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 1;
+			cmd.data[0] = POWER_GET_BATTERY_SOC_CMD;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case POWER_GET_ECLIPSE_CMD:{ // Read solar current command
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 1;
+			cmd.data[0] = POWER_GET_ECLIPSE_CMD;
+			CAN_transmit_message(&cmd);
+			break;
+		}
 		case TASK_POWER_SET_LOAD_OFF:{
 			CANMessage_t cmd = {0};
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -111,7 +127,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_SET_LOAD_ON_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -120,7 +136,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_SET_SOLAR_OFF_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -129,7 +145,7 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_SET_SOLAR_ON_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
@@ -138,7 +154,25 @@ void handle_request_with_param(cdhTask_t req, uint8_t param, Calendar_t time)
 			cmd.id = POW_TXID;
 			cmd.dlc = 2;
 			cmd.data[0] = POWER_SET_POW_MODE_CMD;
-			cmd.data[1] = param;
+			cmd.data[1] = params[0];
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_AIT_POWER_SET_BATTERY_SOC:{ // Read solar current command
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 5;
+			cmd.data[0] = AIT_POWER_SET_BATTERY_SOC_CMD;
+			cmd.data[1] = params[0];
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_AIT_POWER_SET_ECLIPSE:{ // Read solar current command
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 2;
+			cmd.data[0] = AIT_POWER_SET_ECLIPSE;
+			cmd.data[1] = params[0];
 			CAN_transmit_message(&cmd);
 			break;
 		}
