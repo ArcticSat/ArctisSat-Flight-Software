@@ -115,6 +115,37 @@ static SemaphoreHandle_t fs_lock_handle;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+int fs_list_dir(char * path,int recursive){
+//From here: https://github.com/littlefs-project/littlefs/issues/542
+
+    lfs_dir_t dir;
+    struct lfs_info info;
+    int err = lfs_dir_open(&lfs, &dir, "/");
+    if (err) {
+        return err;
+    }
+
+    while (true) {
+        int res = lfs_dir_read(&lfs, &dir, &info);
+        if (res < 0) {
+            lfs_dir_close(&lfs, &dir);
+            return err;
+        }
+
+        if (!res) {
+            break;
+        }
+
+        printf("%s %d", info.name, info.type);
+    }
+
+    err = lfs_dir_close(&lfs, &dir);
+    if (err) {
+        return err;
+    }
+
+}
+
  FilesystemError_t fs_init(){
 
 	 FilesystemError_t result = FS_OK;

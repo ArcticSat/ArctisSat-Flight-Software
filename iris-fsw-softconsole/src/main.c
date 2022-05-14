@@ -225,12 +225,12 @@ int main( void )
                          1,
                          NULL);
 
-    status = xTaskCreate(vTestFS,
-                         "Test FS",
-                         1000,
-                         NULL,
-                         1,
-                         NULL);
+//    status = xTaskCreate(vTestFS,
+//                         "Test FS",
+//                         1000,
+//                         NULL,
+//                         1,
+//                         NULL);
 
 //    status = xTaskCreate(vTestRTC,
 //                         "Test RTC",

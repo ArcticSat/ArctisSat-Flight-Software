@@ -16,10 +16,29 @@
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #include    "tasks/fw_update_mgr.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+static uint8_t fwMgrState = FW_STATE_IDLE;
+static uint8_t fwMgrArmed = 0;
+static uint8_t fwMgrExeConfirmed = 0;
+static uint8_t rx_in_progress = 0;
+static uint8_t rx_slot_index = 0;
 
+static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
+
+static char * fwFileNames[4]={
+        "goldenFW.spi",
+        "updateFW.spi",
+        "goldenFW_bak.spi",
+        "updateFW_bak.spi"
+};
+
+
+QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -35,9 +54,217 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+static int updateState(int state);
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void vFw_Update_Mgr_Task(void * pvParams){
 
+
+    lfs_file_t fwfile = {0};
+    int rx_byte_index=0;
+    uint8_t rxDataBuff[FW_CHUNK_SIZE];
+    char tempFileName[64];
+
+    fwDataQueue = xQueueCreate(5,sizeof(uint8_t)*FW_CHUNK_SIZE);
+    if(fwDataQueue == NULL){
+       printf("Cannot create fw data queue! Fw updates will not work...\n");
+    }
+
+    //Run the state machine.
+    while(1){
+
+        switch(fwMgrState){
+
+            case FW_STATE_IDLE:{
+
+                break;
+            }
+            case FW_STATE_RX_FW:{
+
+                if(!rx_in_progress){
+                   //Our metadata was received properly, go back to idle.
+                    updateState(FW_STATE_IDLE);
+                }
+                else{
+
+                    //Open up the file.
+                    if(!fwfile){
+
+                        snprintf(tempFileName,64,"%s.tmp",fwFileNames[rx_slot_index]);//We will upload our file to .tmp. once complete, delete original and rename the temp file.
+
+                        int result_fs = fs_file_open( &fwfile, tempFileName, LFS_O_RDWR | LFS_O_CREAT);
+                        if(result_fs < 0){
+                            printf("Could not open temp file to write fw to: %d\n",result_fs);
+                            updateState(FW_STATE_IDLE);
+                        }
+                    }
+
+                    //Now we can wait for data and write to the file.
+                    BaseType_t res = xQueueReceive(fwDataQueue,rxDataBuff,pdMS_TO_TICKS(10000));
+
+                    if(res == pdTRUE){
+
+                        fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
+                        rx_byte_index += FW_CHUNK_SIZE;
+
+                        if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
+
+                            fs_file_close( &fwfile);
+
+                            //If file is not multiple of chunk size then we will have extra data(garbage) at the end, so truncate.
+                            if(rx_byte_index > fwFiles[rx_slot_index].filesize){
+                                fs_file_truncate(&fwfile, fwFiles[rx_slot_index].filesize);
+                            }
+
+                            //Now calculate the checksum;
+                            uint32_t check = checksum_file();
+
+                            if(check == fwFiles[rx_slot_index].checksum){
+
+                                //now delete the actual fw, and rename the temp file.
+                                int res = fs_remove(fwFileNames[rx_slot_index]);
+                                if(res<0){
+                                    printf("FwMgr: Could not finish uploading fw, cant remove original: %s\n",res);
+                                    updateState(FW_STATE_IDLE);
+                                }
+                                res = fs_rename(tempFileName, fwFileNames[rx_slot_index]);
+                                if(res<0){
+                                    printf("FwMgr: Could not finish uploading fw, cant rename temp: %s\n",res);
+                                    updateState(FW_STATE_IDLE);
+                                }
+                                res = fs_remove(tempFileName);
+                                if(res<0){
+                                    printf("FwMgr: Could not finish uploading fw, cant remove temp: %s\n",res);
+                                    updateState(FW_STATE_IDLE);
+                                }
+
+                                //If we make it here we are done!
+                                rx_byte_index = 0;
+                                rx_in_progress =0;
+                                updateState(FW_STATE_IDLE);z
+                            }
+                        }
+
+                    }
+
+                }
+
+
+
+                break;
+            }
+            case FW_STATE_PRE_VERIFY:{
+
+                break;
+            }
+            case FW_STATE_ARMED:{
+
+                break;
+            }
+            case FW_STATE_UPDATE:{
+
+                break;
+            }
+            case FW_STATE_POST_VERIFY:{
+
+                break;
+            }
+
+        }
+
+
+    }
+}
+
+void listFwFiles(){
+
+
+}
+
+int updateFwMetaData(Fw_metadata_t* data){
+
+    int res = -1;
+    if(data->fileIndex <= 1 && data->fileIndex >= 0){
+        memcpy(&fwFiles[data->fileIndex],data, sizeof(Fw_metadata_t));
+        res = 0;
+        rx_in_progress = 1;
+        rx_slot_index = data->fileIndex;
+    }
+
+        return res;
+}
+
+int getFwManagerState(){
+
+    return fwMgrState;
+}
+
+int setFwManagerState(int state){
+
+    int res = updateState(state);
+    if(getFwManagerState() != state || res<0){
+        printf("Unable to set state!");
+    }
+}
+
+int updateState(int state){
+
+    int setState = state;
+
+    switch(fwMgrState){
+
+        case FW_STATE_IDLE:{
+
+            //From IDLE we are not allowed to go to UPDATE, otherwise any state is valid.
+            if(state == FW_STATE_UPDATE) return -1;
+
+            //Special case: If we go to ARMED, we should pre-verify first, and then set armed.
+            if(state == FW_STATE_ARMED){
+                setState = FW_STATE_PRE_VERIFY;
+                fwMgrArmed = 1;
+            }
+
+            break;
+        }
+        case FW_STATE_RX_FW:{
+
+            //Only valid choice is back to idle.
+            if(state != FW_STATE_IDLE) return -1;
+
+            break;
+        }
+        case FW_STATE_PRE_VERIFY:{
+
+            if(state != FW_STATE_IDLE && state != FW_STATE_ARMED) return -1;
+
+            if(state == FW_STATE_ARMED){
+                fwMgrArmed = 1;
+            }
+
+            break;
+        }
+        case FW_STATE_ARMED:{
+
+            if(state != FW_STATE_IDLE && state != FW_STATE_UPDATE) return -1;
+            break;
+        }
+        case FW_STATE_UPDATE:{
+
+            if(state != FW_STATE_IDLE) return -1;
+            break;
+        }
+        case FW_STATE_POST_VERIFY:{
+
+            if(state != FW_STATE_IDLE) return -1;
+            break;
+        }
+
+    }
+
+    fwMgrState = state;
+
+
+}
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

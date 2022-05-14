@@ -29,7 +29,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-#define USING_EM_OR_FM 0
+#define USING_EM_OR_FM 1
 
 
 //------------------------------------------------------------------------------
@@ -102,6 +102,8 @@ void vCSP_Server(void * pvParameters){
    // remember the storage is not updated until the file is closed successfully
    result_fs = fs_file_close( &file);
    if(result_fs < 0) while(1){}
+
+   printf("CDH has started for the %dth time\n",boot_count);//Log this instead or send as telem.
 #endif
 
     //TODO: Check return of csp_bind and listen, then handle errors.
@@ -136,7 +138,7 @@ void vCSP_Server(void * pvParameters){
                             Calendar_t timeTag = *((Calendar_t*)&t.data[2]);
 
                             schedule_task_with_param(taskCode, parameter, timeTag);
-
+                            break;
                         }
 
                     case CDH_SET_TIME_CMD:{
@@ -154,7 +156,7 @@ void vCSP_Server(void * pvParameters){
 
                             //Log error...
                         }
-
+                        break;
                     }
 
                     case CDH_GET_TIME_CMD:{
@@ -169,7 +171,20 @@ void vCSP_Server(void * pvParameters){
                         telem.data = NULL;
 
                         sendTelemetry_direct(&telem, conn);
+                        break;
 
+                    }
+
+                    case CDH_LIST_FILES_CMD:{
+
+                        fs_list_dir("/",0);
+                        break;
+                    }
+
+                    case CDH_LIST_FILES_CMD:{
+
+                        fs_list_dir("/",0);
+                        break;
                     }
 
                     }
@@ -193,6 +208,7 @@ void vCSP_Server(void * pvParameters){
 
 uint8_t configure_csp(){
 
+    csp_debug_set_level(CSP_ERROR, false);
     uint8_t result = 1; //Sucess
     // CAN parameters are not actually used. Need to decide where we are doing
     // CAN init. Right now the csp driver does this, but uses hard coded params.

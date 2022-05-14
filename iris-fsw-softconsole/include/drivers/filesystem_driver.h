@@ -87,6 +87,10 @@ int fs_mount();
 int fs_unmount();
 
 /// General operations ///
+///
+
+//Lists all the files
+int fs_list_dir(char * path,int recursive);
 
 // Removes a file or directory
 //
