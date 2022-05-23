@@ -17,6 +17,7 @@
 
 #include "tasks/fw_update_mgr.h"
 #include "drivers/filesystem_driver.h"
+#include "Libraries/libcrc/include/checksum.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -59,6 +60,52 @@ static int updateState(int state);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void checksum_file(uint32_t * out, char * filename){
+
+    //Based on the libcrc example/test program.
+    uint32_t crc_32_val = 0xffffffffL;
+    char ch;
+    unsigned char prev_byte;
+    lfs_file_t file = {0};
+    int result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
+    if(result_fs < 0){
+        printf("Could not open file to checksum: %d\n",result_fs);
+        return;
+    }
+
+    fs_file_seek(&file, 0, SEEK_SET);
+
+    uint8_t byte_buff[256];
+    //Use a buffer here to reduce filesystem overhead...
+    //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
+
+//    TickType_t start = xTaskGetTickCount();
+    int count = 0;
+    int bytes_to_process = 0;
+    while( (bytes_to_process = fs_file_read(&file, byte_buff, 256)) >0 ) {
+
+        for(int i =0; i < bytes_to_process; i++){
+            crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+            count ++;
+        }
+
+    }
+
+    fs_file_seek(&file, 0, SEEK_SET);
+
+    fs_file_close(&file);
+
+
+    crc_32_val        ^= 0xffffffffL;
+
+    *out = crc_32_val;
+
+//    TickType_t time = xTaskGetTickCount()-start;
+//    printf("Checksum took %d ms\n",time);
+    printf("crc32'd %d bytes\n",count);
+}
+
+
 void vFw_Update_Mgr_Task(void * pvParams){
 
 
@@ -85,18 +132,20 @@ void vFw_Update_Mgr_Task(void * pvParams){
             case FW_STATE_RX_FW:{
 
                 if(!rx_in_progress){
-                   //Our metadata was received properly, go back to idle.
+                   //Our metadata wasn't received properly, go back to idle.
                     updateState(FW_STATE_IDLE);
+                    //Log error
+                    printf("Exiting RX_FW state, no update metadata received.\n");
                 }
                 else{
 
 
                     //Open up the file.
-                    if(fwTempFileOpen){
+                    if(!fwTempFileOpen){
 
                         snprintf(tempFileName,64,"%s.tmp",fwFileNames[rx_slot_index]);//We will upload our file to .tmp. once complete, delete original and rename the temp file.
 
-                        int result_fs = fs_file_open( &fwfile, tempFileName, LFS_O_RDWR | LFS_O_CREAT);
+                        int result_fs = fs_file_open( &fwfile, tempFileName, LFS_O_RDWR | LFS_O_CREAT | LFS_O_TRUNC);//For now truncate if already exists.
                         if(result_fs < 0){
                             printf("Could not open temp file to write fw to: %d\n",result_fs);
                             updateState(FW_STATE_IDLE);
@@ -115,15 +164,20 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                         if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
 
-                            fs_file_close( &fwfile);
+                            fs_file_sync(&fwfile);
 
                             //If file is not multiple of chunk size then we will have extra data(garbage) at the end, so truncate.
                             if(rx_byte_index > fwFiles[rx_slot_index].filesize){
                                 fs_file_truncate(&fwfile, fwFiles[rx_slot_index].filesize);
                             }
 
+                            fs_file_close( &fwfile);
+
+
+
                             //Now calculate the checksum;
-                            uint32_t check = 0;//checksum_file();
+                            uint32_t check = 0;
+                            checksum_file(&check,tempFileName);
 
                             if(check == fwFiles[rx_slot_index].checksum){
 
@@ -164,6 +218,9 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 break;
             }
             case FW_STATE_PRE_VERIFY:{
+
+                //Start by checksuming the two files.
+
 
                 break;
             }
@@ -274,5 +331,14 @@ int updateState(int state){
     fwMgrState = state;
 
 
+}
+
+void uploadFwChunk(uint8_t * data, uint16_t length){
+
+    if(length>FW_CHUNK_SIZE){
+        printf("fw chunk larger than chunk size!Not ok\n");
+        return;
+    }
+    xQueueSendToBack(fwDataQueue,data,100);
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -136,7 +136,7 @@ int fs_list_dir(char * path,int recursive){
             break;
         }
 
-        printf("%s %d", info.name, info.type);
+        printf("%s %d %d", info.name, info.type, info.size);
     }
 
     err = lfs_dir_close(&lfs, &dir);

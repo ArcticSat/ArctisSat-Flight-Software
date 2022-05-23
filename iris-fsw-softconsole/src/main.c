@@ -71,6 +71,7 @@
 #include "tests.h"
 #include "tasks/telemetry.h"
 #include "tasks/csp_server.h"
+#include "tasks/fw_update_mgr.h"
 #include "drivers/device/adc/AD7928.h"
 
 
@@ -285,6 +286,8 @@ int main( void )
 //                         NULL,
 //                         1,
 //                         NULL);
+
+    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,1,NULL);
 
     vTaskStartScheduler();
 

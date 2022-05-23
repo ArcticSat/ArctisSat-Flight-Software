@@ -17,6 +17,7 @@ iris-fsw-libero/designer/MSS_C0/export/
 iris-fsw-softconsole/Libraries/FreeRTOS-Kernel
 iris-fsw-softconsole/Libraries/libcsp
 iris-fsw-softconsole/Libraries/littlefs
+iris-fsw-softconsole/Libraries/libcrc
 
 # log files
 *.log

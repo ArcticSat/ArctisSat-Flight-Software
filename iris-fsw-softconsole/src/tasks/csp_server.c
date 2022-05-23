@@ -107,6 +107,15 @@ void vCSP_Server(void * pvParameters){
    if(result_fs < 0) while(1){}
 
    printf("CDH has started for the %dth time\n",boot_count);//Log this instead or send as telem.
+
+   result_fs = fs_file_open( &file, "test_file.txt", LFS_O_RDWR | LFS_O_CREAT | LFS_O_TRUNC);
+  if(result_fs < 0) while(1){}
+
+  result_fs = fs_file_write( &file, "hello world", strlen("hello world"));
+  if(result_fs < 0) while(1){}
+  result_fs = fs_file_close( &file);
+  if(result_fs < 0) while(1){}
+
 #endif
 
     //TODO: Check return of csp_bind and listen, then handle errors.
@@ -195,12 +204,23 @@ void vCSP_Server(void * pvParameters){
                         break;
                     }
                     case CDH_FW_RX_FW_CMD:{
+
+                        if(t.length == sizeof(Fw_metadata_t)){
+                            updateFwMetaData((Fw_metadata_t*)t.data);
+                        }
                         setFwManagerState(FW_STATE_RX_FW);
+
+                        break;
+                    }
+                    case CDH_FW_PRE_VER_CMD:{
+
+                        setFwManagerState(FW_STATE_PRE_VERIFY);
 
                         break;
                     }
                     case CDH_FW_PUT_DATA_CMD:{
 
+                        uploadFwChunk(t.data,t.length);
 
                         break;
                     }
@@ -213,10 +233,18 @@ void vCSP_Server(void * pvParameters){
                         telemetryPacket_t telem;
                         telem.telem_id = CDH_FW_STATE_ID;
                         telem.timestamp = currTime;
-                        telem.length =1;//No data, since the data is in the timestamp.
+                        telem.length =1;
                         telem.data = &state;
 
-                        sendTelemetry_direct(&telem, conn);
+                        sendTelemetryAddr(&telem, GROUND_CSP_ADDRESS);
+                        break;
+                    }
+                    case CDH_CHECKSUM_FILE_CMD:{
+
+                        uint32_t check =0;
+                        printf("checksum file: %s\n",t.data);
+                        checksum_file(&check, t.data);
+                        printf("checksum: %0x\n",check);
                         break;
                     }
 

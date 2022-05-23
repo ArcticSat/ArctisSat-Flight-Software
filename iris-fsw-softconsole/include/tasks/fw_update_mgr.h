@@ -17,7 +17,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define FW_CHUNK_SIZE   250
+#define FW_CHUNK_SIZE   150
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
@@ -80,7 +80,8 @@ int updateFwMetaData(Fw_metadata_t* data);
 
 int getFwManagerState();
 int setFwManagerState(int state);
-
+void uploadFwChunk(uint8_t * data, uint16_t length);//Will length ever be larger than 256? should be smaller than chunk size...
+void checksum_file(uint32_t * out, char * filename);
 
 
 #endif // FW_UPDATE_MGR_H
