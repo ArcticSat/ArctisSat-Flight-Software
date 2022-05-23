@@ -150,5 +150,10 @@ finally:
 ################################################################
 # littlefs
 print("Downloading littlefs...")
-version_libcsp = "v2.3.0"
+version_libcsp = "v2.5.0"
 utils.download_git_branch(version_libcsp, "https://github.com/littlefs-project/littlefs", libraries_path, "littlefs")
+
+# libcrc
+print("Downloading libcrc...")
+version_libcsp = "v2.0"
+utils.download_git_branch(version_libcsp, "https://github.com/lammertb/libcrc", libraries_path, "libcrc")
