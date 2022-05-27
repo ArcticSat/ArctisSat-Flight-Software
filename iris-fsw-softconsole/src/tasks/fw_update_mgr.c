@@ -182,25 +182,34 @@ void vFw_Update_Mgr_Task(void * pvParams){
                             if(check == fwFiles[rx_slot_index].checksum){
 
                                 //now delete the actual fw, and rename the temp file.
-                                int res = fs_remove(fwFileNames[rx_slot_index]);
-                                if(res<0){
-                                    printf("FwMgr: Could not finish uploading fw, cant remove original: %s\n",res);
-                                    updateState(FW_STATE_IDLE);
-                                    break;
+                                //Check file exists first...
+                                int exist = fs_file_open(&fwfile, fwFileNames[rx_slot_index], LFS_O_RDONLY);
+                                fs_file_close(&fwfile);
+                                if(exist >=0){
+                                    int res = fs_remove(fwFileNames[rx_slot_index]);
+                                    if(res<0){
+                                        printf("FwMgr: Could not finish uploading fw, cant remove original: %d \n",res);
+                                        updateState(FW_STATE_IDLE);
+                                        break;
+                                    }
                                 }
                                 res = fs_rename(tempFileName, fwFileNames[rx_slot_index]);
                                 if(res<0){
-                                    printf("FwMgr: Could not finish uploading fw, cant rename temp: %s\n",res);
-                                    updateState(FW_STATE_IDLE);
-                                    break;
-                                }
-                                res = fs_remove(tempFileName);
-                                if(res<0){
-                                    printf("FwMgr: Could not finish uploading fw, cant remove temp: %s\n",res);
+                                    printf("FwMgr: Could not finish uploading fw, cant rename temp: %d\n",res);
                                     updateState(FW_STATE_IDLE);
                                     break;
                                 }
 
+                                exist = fs_file_open(&fwfile, fwFileNames[rx_slot_index], LFS_O_RDONLY);
+                                fs_file_close(&fwfile);
+                                if(exist >=0){
+                                    res = fs_remove(tempFileName);
+                                    if(res<0){
+                                        printf("FwMgr: Could not finish uploading fw, cant remove temp: %d\n",res);
+                                        updateState(FW_STATE_IDLE);
+                                        break;
+                                    }
+                                }
                                 //If we make it here we are done!
                                 rx_byte_index  =0;
                                 rx_in_progress =0;

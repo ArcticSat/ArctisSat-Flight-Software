@@ -112,7 +112,7 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 
-
+    //TODO: Are time tagged tasks persistent over restart?
     BaseType_t status;
 
     /* Prepare the hardware to run this demo. */
