@@ -408,15 +408,15 @@ static void vTestCanServer(void * pvParameters)
 						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
 						break;
 					}
-					case POWER_GET_BOOT_COUNT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_GET_BOOT_COUNT_ID;
-						telemetry.length = 2;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
+//					case POWER_GET_BOOT_COUNT_ID:{
+//						telemetryPacket_t telemetry;
+//						// Send telemetry value
+//						telemetry.telem_id = POWER_GET_BOOT_COUNT_ID;
+//						telemetry.length = 2;
+//						telemetry.data = can_q[numCanMsgs].data;
+//						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
+//						break;
+//					}
 				}
 			}
 
