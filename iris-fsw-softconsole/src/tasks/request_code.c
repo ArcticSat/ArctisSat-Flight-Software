@@ -105,11 +105,19 @@ void handle_request_with_param(cdhTask_t req, uint8_t * params, Calendar_t time)
 			CAN_transmit_message(&cmd);
 			break;
 		}
-		case POWER_GET_ECLIPSE_CMD:{ // Read solar current command
+		case TASK_POWER_GET_ECLIPSE:{ // Read solar current command
 			CANMessage_t cmd = {0};
 			cmd.id = POW_TXID;
 			cmd.dlc = 1;
 			cmd.data[0] = POWER_GET_ECLIPSE_CMD;
+			CAN_transmit_message(&cmd);
+			break;
+		}
+		case TASK_POWER_GET_BOOT_COUNT:{ // Read solar current command
+			CANMessage_t cmd = {0};
+			cmd.id = POW_TXID;
+			cmd.dlc = 1;
+			cmd.data[0] = POWER_GET_BOOT_COUNT_CMD;
 			CAN_transmit_message(&cmd);
 			break;
 		}
