@@ -135,3 +135,13 @@ void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr){
         csp_buffer_free(outPacket);
     }
 }
+void printMsg(char * msg){
+	telemetryPacket_t telemetry;
+	Calendar_t time = {0};
+	telemetry.timestamp = time;
+	telemetry.telem_id = CDH_MSG_ID;
+	telemetry.length =  strlen(msg)+1;
+	telemetry.data = (uint8_t*) msg;
+	sendTelemetryAddr(&telemetry,GROUND_CSP_ADDRESS);
+
+}

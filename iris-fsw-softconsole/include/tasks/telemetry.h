@@ -70,13 +70,17 @@ PAYLOAD_POWER_GOOD_ID = 0,
 PAYLOAD_BOARD_TEMP_ID,
 PAYLOAD_SAMPLE_TEMP_ID,
 PAYLOAD_FULL_IMAGE_ID,
-PAYLOAD_R_REFLECTANCE_ID,
-PAYLOAD_G_REFLECTANCE_ID,
-PAYLOAD_B_REFLECTANCE_ID,
 PAYLOAD_SAMPLE_LOC_ID,
 PAYLOAD_CAMERA_TIME_ID,
 PAYLOAD_ERROR_ID,
-NUM_PAYLOAD_TELEMETRY
+PAYLOAD_FULL_IMAGE_RX, //Only for debugging remove later
+PAYLOAD_FILE_LIST_ID,
+PAYLOAD_META_ID,
+PAYLOAD_IMAGE_INFO,
+PAYLOAD_IMAGE_CAPTURE_ERROR_ID,
+PAYLOAD_ACK,
+PAYLOAD_MSG_ID,
+NUM_PAYLOAD_TELEMETRY,
 } payloadTelemetry_t;
 
 typedef enum {
@@ -98,6 +102,7 @@ typedef enum {
 CDH_TIME_ID =0,
 CDH_BOARD_TEMP_ID,
 CDH_TTT_LIST_ID,
+CDH_MSG_ID,
 NUM_CDH_TELEMETRY
 } cdhTelemetry_t;
 
@@ -162,6 +167,7 @@ void sendTelemetry(telemetryPacket_t * packet);//Sends telemetry to CDH.
 void sendTelemetry_direct(telemetryPacket_t * packet,csp_conn_t * conn); //For directly responding to a message.
 void sendCommand(telemetryPacket_t * packet,uint8_t addr);//Sends a cmd packet to the cmd port of the subsytem at address addr.
 void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr); //Sends telemetry directly to a subsystem.
+void printMsg(char * msg);
 
 /**********************************************************/
 
