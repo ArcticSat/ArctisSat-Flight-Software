@@ -110,7 +110,8 @@ void vCSP_Server(void * pvParameters){
    InitApplication();
 	//TODO: Check return of csp_bind and listen, then handle errors.
 	while(1) {
-	conn = csp_accept(socket, 1000);
+//		printMsg("Hello from CDH");
+		conn = csp_accept(socket, 1000);
 		if(conn){
 
 			packet = csp_read(conn,0);
@@ -181,9 +182,7 @@ void vCSP_Server(void * pvParameters){
 			}
 
 			case CSP_TELEM_PORT:{
-				telemetryPacket_t tm_pkt;
-				unpackTelemetry(packet->data, &tm_pkt);
-				HandleTm(&tm_pkt);
+				HandleTm(conn,packet);
 				break;
 			}
 			default:

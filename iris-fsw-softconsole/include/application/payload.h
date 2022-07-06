@@ -9,8 +9,9 @@
 #define INCLUDE_APPLICATION_PAYLOAD_H_
 
 #include "tasks/telemetry.h"
+#include "csp/csp.h"
 
-void HandlePayloadTlm(telemetryPacket_t * tm_pkt);
+void HandlePayloadTlm(csp_conn_t * conn, csp_packet_t * packet);
 
 
 #endif /* INCLUDE_APPLICATION_PAYLOAD_H_ */

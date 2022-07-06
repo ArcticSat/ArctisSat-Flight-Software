@@ -18,14 +18,18 @@ typedef enum
 	PIXEL_AVG_THRESHOLD_ERROR,
 } ImageCaptureError_t ;
 
-void HandlePayloadTlm(telemetryPacket_t * tm_pkt)
+void HandlePayloadTlm(csp_conn_t * conn, csp_packet_t * packet)
 {
-	switch(tm_pkt->telem_id)
+	telemetryPacket_t tm_pkt;
+	unpackTelemetry(packet->data, &tm_pkt);
+	switch(tm_pkt.telem_id)
 	{
+	// Handle the error:
+
 	// Send error to virtual GS/Log error
 	case PAYLOAD_IMAGE_CAPTURE_ERROR_ID:{
 		char msg[50];
-		uint8_t error_id = tm_pkt->data[0];
+		uint8_t error_id = tm_pkt.data[0];
 		switch(error_id)
 		{
 		case CAMERA_SENSOR_INIT_ERROR:{

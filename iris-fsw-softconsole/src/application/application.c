@@ -11,10 +11,18 @@
 
 bool ls_rst_status[NUM_LOAD_SWITCHES];
 
-void HandleTm(telemetryPacket_t * tm_pkt)
+void HandleTm(csp_conn_t * conn, csp_packet_t * packet)
 {
-	if(tm_pkt->telem_id < NUM_PAYLOAD_TELEMETRY)
-		HandlePayloadTlm(tm_pkt);
+	int src = csp_conn_src(conn);
+	switch(src){
+		case PAYLOAD_CSP_ADDRESS:{
+			HandlePayloadTlm(conn,packet);
+			break;
+		}
+		default:{
+			break;
+		}
+	}
 }
 
 bool GetLsRstStatus(uint8_t switchNumber)

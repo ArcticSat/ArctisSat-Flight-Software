@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "tasks/telemetry.h"
+#include "csp/csp.h"
 
 // Enums
 typedef enum
@@ -23,7 +24,7 @@ typedef enum
 } LoadSwitchNumbers_t;
 
 // Functions
-void HandleTm(telemetryPacket_t * tm_pkt);
+void HandleTm(csp_conn_t * conn, csp_packet_t * packet);
 bool GetLsRstStatus(uint8_t switchNumber);
 bool ResetLoadSwitch(uint8_t switchNumber);
 void InitApplication(void);
