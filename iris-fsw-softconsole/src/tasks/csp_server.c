@@ -27,7 +27,7 @@
 #include "csp/interfaces/csp_if_can.h"
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
-
+#include "taskhandles.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -118,6 +118,11 @@ void vCSP_Server(void * pvParameters){
 
 #endif
 
+    //Start up any tasks that depend on CSP.
+    vTaskResume(vTestCanServer_h);
+    vTaskResume(vFw_Update_Mgr_Task_h);
+    vTaskResume(vTTTScheduler_h);
+
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
 
@@ -196,6 +201,55 @@ void vCSP_Server(void * pvParameters){
                     case CDH_LIST_FW_CMD:{
 
                         listFwFiles();
+                        break;
+                    }
+                    case CDH_MV_FILE_CMD:{
+                        //old_len and new_len should include terminating null.
+                        uint8_t old_len = t.data[0];
+                        uint8_t new_len = t.data[1];
+
+                        if(old_len<64 && new_len < 64 && old_len+new_len+2 <= t.length){
+                            char oldPath[64]={0};
+                            char newPath[64]={0};
+
+                            strncpy(oldPath, &t.data[2],old_len);
+                            strncpy(newPath, &t.data[2+old_len],new_len);
+                            fs_rename(oldPath,newPath);
+                        }
+                        else{
+                            printf("File mv failed, file name(s) too long or discrepancy with telemetry packet length.\n");
+                        }
+                        break;
+                    }
+                    case CDH_RM_FILE_CMD:{
+
+                        if(fs_file_exist(t.data)) fs_remove(t.data);
+
+                        break;
+
+                        break;
+                    }
+                    case CDH_CP_FILE_CMD:{
+
+                        //old_len and new_len should include terminating null.
+                        uint8_t old_len = t.data[0];
+                        uint8_t new_len = t.data[1];
+
+                        if(old_len<64 && new_len < 64 && old_len+new_len+2 <= t.length){
+                            char oldPath[64]={0};
+                            char newPath[64]={0};
+
+                            strncpy(oldPath, &t.data[2],old_len);
+                            strncpy(newPath, &t.data[2+old_len],new_len);
+
+                            TickType_t start = xTaskGetTickCount();
+                            fs_copy_file(oldPath,newPath);
+                            TickType_t time = xTaskGetTickCount()-start;
+                            printf("copy took %d ms\n",time);
+                        }
+                        else{
+                            printf("File mv failed, file name(s) too long or discrepancy with telemetry packet length.\n");
+                        }
                         break;
                     }
                     case CDH_FW_IDLE_CMD:{

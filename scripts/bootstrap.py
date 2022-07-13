@@ -26,6 +26,7 @@ print("Changing current working directory to the repository root")
 repository_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(repository_dir)
 
+scripts_path = "./scripts"
 softconsole_path = "./iris-fsw-softconsole"
 libraries_path = "./iris-fsw-softconsole/Libraries"
 
@@ -152,6 +153,15 @@ finally:
 print("Downloading littlefs...")
 version_libcsp = "v2.5.0"
 utils.download_git_branch(version_libcsp, "https://github.com/littlefs-project/littlefs", libraries_path, "littlefs")
+
+print("Patching littlefs...")
+# Apply patch for littlefs 
+patch_path= glob.glob("c:/*/usr/bin/patch.exe") #Try and find the patch program which should be installed if user has mingw/msys.
+if(patch_path):
+    print(f"patch.exe found... {patch_path[0]}")
+    subprocess.run(f"{patch_path[0]} -d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch", shell=True, cwd=os.path.dirname(os.path.realpath(__file__)))
+else:
+    printf("Could not find patch program! Please apply the patch yourself in gitbash, wsl or other linux environment.\n Command run from the scripts dir should be:\n\tpatch-d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch")
 
 # libcrc
 print("Downloading libcrc...")

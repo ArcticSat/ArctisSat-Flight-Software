@@ -146,6 +146,69 @@ int fs_list_dir(char * path,int recursive){
 
 }
 
+int fs_file_exist(char * path){
+    lfs_file_t file = {0};
+    int exist = fs_file_open(&file, path, LFS_O_RDONLY);
+    if(exist <0){
+        return 0;
+    }else{
+        fs_file_close(&file);
+        return 1;
+    }
+}
+
+int fs_file_size_from_path(char * path){
+
+    lfs_file_t file = {0};
+    struct lfs_info info ={0};
+
+    fs_stat(path, &info);
+    return info.size;
+}
+
+int fs_copy_file(char * filePath, char * newPath){
+
+    lfs_file_t file = {0};
+    lfs_file_t newfile = {0};
+
+    int result_fs = fs_file_open( &file, filePath, LFS_O_RDONLY);
+    if(result_fs < 0){
+        printf("%s: Could not open file %s: %d\n",__FUNCTION__,filePath,result_fs);
+        return result_fs;
+    }
+
+
+    result_fs = fs_file_open( &newfile, newPath, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+    if(result_fs < 0){
+        printf("%s: Could not open file %s: %d\n",__FUNCTION__,newPath,result_fs);
+        return result_fs;
+    }
+
+    //I think littefs already uses 256b cache so anything bigger shouldn't affect speedup...
+    //But larger will need more task stack.
+    uint8_t buf[256]={0};
+    int read = 0;
+    //Now just transfer the data:
+    while((read=fs_file_read(&file, buf, 256))>0){
+
+        fs_file_write(&newfile, buf, read);
+    }
+
+    result_fs = fs_file_close(&file);
+    if(result_fs < 0){
+           printf("%s: Could not close file %s: %d\n",__FUNCTION__,filePath,result_fs);
+           return result_fs;
+    }
+
+    result_fs = fs_file_close(&newfile);
+    if(result_fs < 0){
+           printf("%s: Could not close file %s: %d\n",__FUNCTION__,newPath,result_fs);
+           return result_fs;
+    }
+
+    return 0;
+}
+
  FilesystemError_t fs_init(){
 
 	 FilesystemError_t result = FS_OK;

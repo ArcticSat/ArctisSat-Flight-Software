@@ -23,6 +23,11 @@ To build libcsp with debug configuration, pass `--debug`
 python ./scripts/bootstrap.py --debug
 ```
 
+Note: The bootstrap script will attempt to apply a patch for LittleFS. If you have msys or mingw already installed then this should work fine. If you see an error you may have to manually patch, from the scripts dir:
+```
+patch -d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch
+```
+
 ### Configure your workspace
 1. Select the root folder (i.e. IrisSat-Flight-Software) as your SoftConsole workspace.
 2. Go to **File -> Import**.

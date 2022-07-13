@@ -38,6 +38,7 @@ static char * fwFileNames[4]={
         "updateFW_bak.spi"
 };
 
+fwVerificationData_t verifiedStatus;
 
 QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -106,6 +107,54 @@ void checksum_file(uint32_t * out, char * filename){
 }
 
 
+void checksum_program_flash_area(uint32_t address, uint32_t size){
+
+    //Based on the libcrc example/test program.
+    uint32_t crc_32_val = 0xffffffffL;
+    char ch;
+    unsigned char prev_byte;
+    lfs_file_t file = {0};
+    int result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
+    if(result_fs < 0){
+        printf("Could not open file to checksum: %d\n",result_fs);
+        return;
+    }
+
+
+
+    uint8_t byte_buff[256];
+    //Use a buffer here to reduce filesystem overhead...
+    //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
+
+//    TickType_t start = xTaskGetTickCount();
+    int count = 0;
+    int bytes_left = size;
+    int bytes_to_process = bytes_left>256 ? 256:bytes_left;
+    int addr_curr = address;
+    FlashStatus_t stat = flash_read(flash_devices[PROGRAM_FLASH],addr_curr, byte_buff, bytes_to_process);
+
+    while( stat == FLASH_OK && bytes_to_process > 0) {
+
+        for(int i =0; i < bytes_to_process; i++){
+            crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+            count ++;
+        }
+        bytes_left = bytes_left-bytes_to_process;
+        bytes_to_process = bytes_left>256 ? 256:bytes_left;
+        stat = flash_read(flash_devices[PROGRAM_FLASH],addr_curr, byte_buff, bytes_to_process);
+
+    }
+
+    crc_32_val        ^= 0xffffffffL;
+
+    *out = crc_32_val;
+
+//    TickType_t time = xTaskGetTickCount()-start;
+//    printf("Checksum took %d ms\n",time);
+    printf("crc32'd %d bytes\n",count);
+}
+
+
 void vFw_Update_Mgr_Task(void * pvParams){
 
 
@@ -115,10 +164,14 @@ void vFw_Update_Mgr_Task(void * pvParams){
     char tempFileName[64];
     uint8_t fwTempFileOpen = 0;
 
+
     fwDataQueue = xQueueCreate(5,sizeof(uint8_t)*FW_CHUNK_SIZE);
     if(fwDataQueue == NULL){
        printf("Cannot create fw data queue! Fw updates will not work...\n");
     }
+
+    //Check the persistent memory to bring back any previous state
+    initializeFwMgr();
 
     //Run the state machine.
     while(1){
@@ -126,7 +179,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
         switch(fwMgrState){
 
             case FW_STATE_IDLE:{
-
+                //In idle mode, delay to allow other tasks to run.
+                vTaskDelay(500);
                 break;
             }
             case FW_STATE_RX_FW:{
@@ -183,9 +237,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                                 //now delete the actual fw, and rename the temp file.
                                 //Check file exists first...
-                                int exist = fs_file_open(&fwfile, fwFileNames[rx_slot_index], LFS_O_RDONLY);
-                                fs_file_close(&fwfile);
-                                if(exist >=0){
+
+                                if(fs_file_exist(fwFileNames[rx_slot_index])){
                                     int res = fs_remove(fwFileNames[rx_slot_index]);
                                     if(res<0){
                                         printf("FwMgr: Could not finish uploading fw, cant remove original: %d \n",res);
@@ -200,16 +253,15 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                     break;
                                 }
 
-                                exist = fs_file_open(&fwfile, fwFileNames[rx_slot_index], LFS_O_RDONLY);
-                                fs_file_close(&fwfile);
-                                if(exist >=0){
-                                    res = fs_remove(tempFileName);
-                                    if(res<0){
-                                        printf("FwMgr: Could not finish uploading fw, cant remove temp: %d\n",res);
-                                        updateState(FW_STATE_IDLE);
-                                        break;
-                                    }
-                                }
+
+//                                if(fs_file_exist(fwFileNames[rx_slot_index])){
+//                                    res = fs_remove(tempFileName);
+//                                    if(res<0){
+//                                        printf("FwMgr: Could not finish uploading fw, cant remove temp: %d\n",res);
+//                                        updateState(FW_STATE_IDLE);
+//                                        break;
+//                                    }
+//                                }
                                 //If we make it here we are done!
                                 rx_byte_index  =0;
                                 rx_in_progress =0;
@@ -228,9 +280,64 @@ void vFw_Update_Mgr_Task(void * pvParams){
             }
             case FW_STATE_PRE_VERIFY:{
 
-                //Start by checksuming the two files.
+
+                for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+
+                    verifiedStatus.verified[i] = 0;
+
+                    uint32_t check = 0;
+                    checksum_file(&check,fwFileNames[i]);
+                    if(check == fwFiles[i].checksum && fwFiles[i].filesize>0 ){
+                        verifiedStatus.verified[i]=1;
+                    }
+                    printf("Firmware %d (%s) verify: %s",i,fwFileNames[i],(verifiedStatus.verified[i]?"PASS":"FAIL"));
+
+                }
+
+                //Now based on the status we can attempt to fix our problem or alert ground.
+
+                //First we see if we can copy backup to replace original:
+                for(int i=0; i<NUM_FIRMWARES; i++){
+                    //Backup images are kept sequentially after originals(golden->0, upgrade->1, golden backup->2 etc.)
+                    if(verifiedStatus.verified[i] ==0 && verifiedStatus.verified[i+2]==1){
+                        //We have a corrupted original so just copy the backup to replace the orig.
+                        fs_copy_file(fwFileNames[i+2], fwFileNames[i]);
+                        fwFiles[i+2].checksum = fwFiles[i].checksum;
+                        fwFiles[i+2].filesize = fs_file_size_from_path(fwFileNames[i+2]);
+                    }
+                }
+
+                //Now check the opposite, if our backup is missing/bad, then replace with the orig:
+                for(int i=0; i<NUM_FIRMWARES; i++){
+                    //Backup images are kept sequentially after originals(golden->0, upgrade->1, golden backup->2 etc.)
+                    if(verifiedStatus.verified[i+2] ==0 && verifiedStatus.verified[i]==1){
+                        //We have a corrupted original so just copy the backup to replace the orig.
+                        fs_copy_file(fwFileNames[i], fwFileNames[i+2]);
+                        fwFiles[i].checksum = fwFiles[i+2].checksum;
+                        fwFiles[i].filesize = fs_file_size_from_path(fwFileNames[i]);
+                    }
+                }
+
+                //At this point we should have all images verified, if not then we cannot fix without ground uploading a new file(s).
+                for(int i=0; i< NUM_FIRMWARES;i++){
+
+                    if(verifiedStatus.verified[i] != 1){
+                        printf("Unrecoverable error: %s is missing or corrupt and cannot be recovered. Upload a new file...\n",fwFileNames[i]);
+                        updateState(FW_STATE_IDLE);
+                        break;
+                        //log error.
+                    }
+                }
 
 
+
+                //Lastly we must sync up the program flash files, so repeat similar steps here.
+
+
+                //Run checksum on program flash, we need a slightly different checksum function to do this since we have no fs on the program flash.
+
+                //Then if program firmware fails checksum and we have a good copy, then copy it over... again we need a modified copy_file function.
+                updateState(FW_STATE_IDLE);
                 break;
             }
             case FW_STATE_ARMED:{
@@ -254,6 +361,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 void listFwFiles(){
 
+    for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+
+        printf("Slot %d: %s (%d b) (%0x)\n",fwFiles[i].fileIndex,fwFileNames[i],fwFiles[i].filesize,fwFiles[i].checksum);
+    }
 
 }
 
@@ -265,6 +376,19 @@ int updateFwMetaData(Fw_metadata_t* data){
         res = 0;
         rx_in_progress = 1;
         rx_slot_index = data->fileIndex;
+
+        lfs_file_t checkFile = {0};
+        char checksumFileName[64]={0};
+
+        sprintf(checksumFileName,"%s.check",fwFileNames[rx_slot_index]);
+        int result_fs = fs_file_open(&checkFile,checksumFileName, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+        if(result_fs <0){
+            printf("Could not open file to store checksum\n ");
+            return -1;
+        }
+        fs_file_write(&checkFile, &data->checksum, sizeof(uint32_t));
+        fs_file_close(&checkFile);
+
     }
 
         return res;
@@ -349,5 +473,51 @@ void uploadFwChunk(uint8_t * data, uint16_t length){
         return;
     }
     xQueueSendToBack(fwDataQueue,data,100);
+}
+
+void initializeFwMgr(){
+
+    //Load/calculate our file metadata
+    for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+
+        lfs_file_t checkFile = {0};
+        char checksumFileName[64]={0};
+
+        sprintf(checksumFileName,"%s.check",fwFileNames[i%2]);
+        int result_fs = fs_file_open(&checkFile,checksumFileName, LFS_O_RDONLY);
+        if(result_fs < 0 && result_fs  == LFS_ERR_NOENT){
+            printf("Could not open checksum file %s to load: %d\n Creating File...",checksumFileName,result_fs);
+
+            fs_file_open(&checkFile, checksumFileName, LFS_O_CREAT);
+
+        }else if (result_fs<0){
+
+           printf("Could not open checksum file %s to load: %d\n",checksumFileName,result_fs);
+           continue;
+        }
+        uint32_t check =0;
+        if (fs_file_read(&checkFile,&check,sizeof(uint32_t)) != sizeof(uint32_t)){
+            printf("Checksum incorrect size\n");
+            check = 0;
+            //What to do here? I guess leave checksum as 0, which should be impossibly rare to be valid.
+        }
+
+        fwFiles[i].checksum = check;
+        fs_file_close(&checkFile);
+
+    }
+
+    for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+
+//        lfs_file_t file = {0};
+//        struct lfs_info info ={0};
+//
+//        fs_stat(fwFileNames[i], &info);
+
+        fwFiles[i].filesize = fs_file_size_from_path(fwFileNames[i]);
+        fwFiles[i].fileIndex = i;
+        printf("fs_stat: %s %d",fwFileNames[i],fwFiles[i].filesize);
+    }
+
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

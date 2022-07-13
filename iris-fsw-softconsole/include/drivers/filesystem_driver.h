@@ -92,6 +92,16 @@ int fs_unmount();
 //Lists all the files
 int fs_list_dir(char * path,int recursive);
 
+//Returns 1 if file exits, 0 otherwise.
+//File will be opened then  closed if it exists.
+//Must be used with LFS assert patch!
+int fs_file_exist(char * path);
+
+int fs_file_size_from_path(char * path);
+
+//Copy a file. This will overwrite/truncate the destination file!
+int fs_copy_file(char * filePath, char * newPath);
+
 // Removes a file or directory
 //
 // If removing a directory, the directory must be empty.
