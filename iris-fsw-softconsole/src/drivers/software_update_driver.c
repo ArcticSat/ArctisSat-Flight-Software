@@ -19,7 +19,7 @@
 static uint32_t programSize = 0;
 static uint8_t initialized = 0;
 
-void authenticate_firmware(uint8_t version){
+int authenticate_firmware(uint8_t version){
 	uint32_t addr = (version)?FIRMWARE_GOLDEN_ADDRESS:FIRMWARE_UPDATE_ADDRESS;
 	uint8_t stat = 255;
 	if(!initialized){
@@ -45,7 +45,7 @@ void authenticate_firmware(uint8_t version){
 		sprintf(resString,"Failed: %d\n",result);
 		prvUARTSend(&g_mss_uart0, resString, strlen(resString));
 	}
-
+	return result ;
 }
 
 void initiate_firmware_update(uint8_t version){

@@ -83,7 +83,6 @@
 #define CSP_SERVER
 
 
-
 /* External variables */
 
 

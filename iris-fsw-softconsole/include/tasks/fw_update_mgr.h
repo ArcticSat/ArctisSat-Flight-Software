@@ -17,9 +17,20 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//For testing only. Comment this out!
+//With this we don't keep backup of the firmware, to reduce flash needed.
+#define NO_FW_BACKUP
+
 #define FW_CHUNK_SIZE   150
 #define NUM_FIRMWARES       2 //We keep a golden image and an update image.
+#define FW_ARMED_TIMEOUT_MS  (10 * 60*1000) //10 minutes
+
+#ifdef NO_FW_BACKUP
+#define NUM_FIRMWARES_TOTAL (NUM_FIRMWARES)  //Each firmware does NOT have backup
+#else
 #define NUM_FIRMWARES_TOTAL (NUM_FIRMWARES*2)  //Each firmware has a backup
+#endif
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

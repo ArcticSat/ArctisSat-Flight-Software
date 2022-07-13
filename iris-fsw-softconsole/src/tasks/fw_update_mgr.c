@@ -17,7 +17,9 @@
 
 #include "tasks/fw_update_mgr.h"
 #include "drivers/filesystem_driver.h"
+#include "drivers/device/memory/flash_common.h"
 #include "Libraries/libcrc/include/checksum.h"
+#include "drivers/software_update_driver.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -25,6 +27,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 static uint8_t fwMgrState = FW_STATE_IDLE;
 static uint8_t fwMgrArmed = 0;
+static uint32_t fw_armed_timeout=0;
 static uint8_t fwMgrExeConfirmed = 0;
 static uint8_t rx_in_progress = 0;
 static uint8_t rx_slot_index = 0;
@@ -107,20 +110,13 @@ void checksum_file(uint32_t * out, char * filename){
 }
 
 
-void checksum_program_flash_area(uint32_t address, uint32_t size){
+void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
 
     //Based on the libcrc example/test program.
     uint32_t crc_32_val = 0xffffffffL;
     char ch;
     unsigned char prev_byte;
     lfs_file_t file = {0};
-    int result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
-    if(result_fs < 0){
-        printf("Could not open file to checksum: %d\n",result_fs);
-        return;
-    }
-
-
 
     uint8_t byte_buff[256];
     //Use a buffer here to reduce filesystem overhead...
@@ -152,6 +148,31 @@ void checksum_program_flash_area(uint32_t address, uint32_t size){
 //    TickType_t time = xTaskGetTickCount()-start;
 //    printf("Checksum took %d ms\n",time);
     printf("crc32'd %d bytes\n",count);
+}
+
+int copy_to_prog_flash(char * filename, uint32_t address){
+
+    uint32_t filesize = fs_file_size_from_path(filename);
+    uint32_t chunksize = 256;
+    uint8_t byte_buff[256];
+    int addr_curr = address;
+
+    lfs_file_t file = {0};
+    int result_fs = fs_file_open( &file, filename, LFS_O_RDONLY);
+    if(result_fs < 0){
+        printf("%s: Could not open fw file to read: %d\n",__FUNCTION__,result_fs);
+        return -1;
+    }
+
+
+    int bytes_to_process = 0;
+    while( (bytes_to_process = fs_file_read(&file, byte_buff, chunksize)) >0 ) {
+
+       flash_write(flash_devices[PROGRAM_FLASH],addr_curr,byte_buff,bytes_to_process);
+       addr_curr += bytes_to_process;
+    }
+    return 0;
+
 }
 
 
@@ -295,7 +316,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 }
 
                 //Now based on the status we can attempt to fix our problem or alert ground.
-
+#ifndef NO_FW_BACKUP
                 //First we see if we can copy backup to replace original:
                 for(int i=0; i<NUM_FIRMWARES; i++){
                     //Backup images are kept sequentially after originals(golden->0, upgrade->1, golden backup->2 etc.)
@@ -317,7 +338,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                         fwFiles[i].filesize = fs_file_size_from_path(fwFileNames[i]);
                     }
                 }
-
+#endif
                 //At this point we should have all images verified, if not then we cannot fix without ground uploading a new file(s).
                 for(int i=0; i< NUM_FIRMWARES;i++){
 
@@ -332,24 +353,118 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 
                 //Lastly we must sync up the program flash files, so repeat similar steps here.
+                uint32_t check=0;
+                checksum_program_flash_area(&check,FIRMWARE_GOLDEN_ADDRESS, fwFiles[0].filesize);
+                if(check != fwFiles[0].checksum){
+                    //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
+                    if(copy_to_prog_flash(fwFileNames[0],FIRMWARE_GOLDEN_ADDRESS)){
+                        printf("Unrecoverable error: problem copying fw to program flash\n");
+                        updateState(FW_STATE_IDLE);
+                    }
+
+                    check = 0;
+                    checksum_program_flash_area(&check,FIRMWARE_GOLDEN_ADDRESS, fwFiles[0].filesize);
+
+                    if(check != fwFiles[0].checksum){
+                        //Something is wrong here return to idle state :(
+                        printf("Unrecoverable error: bad checksum on program flash golden image, even after copying verified version\n");
+                        updateState(FW_STATE_IDLE);
+                        break;
+                    }
+                }
+
+                checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
+                if(check != fwFiles[1].checksum){
+                    //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
+                    if (copy_to_prog_flash(fwFileNames[1],FIRMWARE_UPDATE_ADDRESS)<0){
+                        printf("Unrecoverable error: problem copying fw to program flash\n");
+                        updateState(FW_STATE_IDLE);
+                    }
 
 
-                //Run checksum on program flash, we need a slightly different checksum function to do this since we have no fs on the program flash.
+                    check = 0;
+                    checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
 
-                //Then if program firmware fails checksum and we have a good copy, then copy it over... again we need a modified copy_file function.
-                updateState(FW_STATE_IDLE);
+                    if(check != fwFiles[1].checksum){
+                        //Something is wrong here return to idle state :(
+                        printf("Unrecoverable error: bad checksum on program flash update image, even after copying verified version\n");
+                        updateState(FW_STATE_IDLE);
+                        break;
+                    }
+                }
+
+               //If we make it here we should have verified all copies of the firmware, so we can say system is armed!
+               if(fwMgrArmed){
+                   updateState(FW_STATE_ARMED);
+                   fw_armed_timeout = FW_ARMED_TIMEOUT_MS;
+               }
+               else{
+                   updateState(FW_STATE_IDLE);
+               }
+
                 break;
             }
             case FW_STATE_ARMED:{
+
+                //Here we just check for timeout. The longer we stay armed, the more chance of corruption. But if we timeout to soon then it becomes very slow to do the upgrade.
+
+                if(fw_armed_timeout <0){
+                    for(int i=0; i<NUM_FIRMWARES_TOTAL;i++){
+                        verifiedStatus.verified[i]=0;
+                    }
+                    updateState(FW_STATE_IDLE);
+                }
+
+                TickType_t now = xTaskGetTickCount();
+                vTaskDelayUntil(&now, 500);
+                fw_armed_timeout -= 500;
 
                 break;
             }
             case FW_STATE_UPDATE:{
 
+                //First check our file is verified. We should n't be allowed here without the fw being verified, but just in case...
+                if(verifiedStatus[1].verified != 1){
+                    printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
+                    updateState(FW_STATE_IDLE);
+                    break;
+                }
+
+                //Do one last check of the fw before we upload
+                uint32_t check = 0;
+                checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
+                if(check != fwFiles[1].checksum){
+                    printf("Unrecoverable error: bad checksum on program flash update image. How did this happen?\n");
+                    updateState(FW_STATE_IDLE);
+                    break;
+                }
+
+
+                //Shutdown the system, whatever that means.
+                //We should save any time-tagged tasks, adcs state, anything else important that is in RAM.
+                //Update state so we know to post verify on reboot.
+
+                //ShutdownSystem();
+
+                initiate_firmware_update(1);
+
+                //We should not ever get here...
+                printf("FW upgrade failed!\n");
+                updateState(FW_STATE_IDLE);
+
                 break;
             }
             case FW_STATE_POST_VERIFY:{
 
+                //Check that our current firmware matches what we expect.
+                int res = authenticate_firmware(1);
+                if(res == 0){
+                    printf("FW update post verified! :)\n");
+                }
+                else{
+                    printf("FW update post verified failed: %d :(\n",res);
+                }
+                updateState(FW_STATE_IDLE);
                 break;
             }
 
@@ -435,11 +550,12 @@ int updateState(int state){
         }
         case FW_STATE_PRE_VERIFY:{
 
-            if(state != FW_STATE_IDLE && state != FW_STATE_ARMED) return -1;
+            if(state != FW_STATE_IDLE) return -1;
 
-            if(state == FW_STATE_ARMED){
-                fwMgrArmed = 1;
-            }
+ //Actually don't allow arming from pre verify, since being in this state, doesn't mean the verification is complete yet.
+//            if(state == FW_STATE_ARMED){
+//                fwMgrArmed = 1;
+//            }
 
             break;
         }
