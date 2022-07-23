@@ -27,7 +27,7 @@
 #define MRAM0_SPI_CORE   CORE_SPI_2
 #define MRAM0_SLAVE_CORE SPI_SLAVE_0 // MRAM0 uses MSS_GPIO for SS, so this is not relevant.
 
-#define FLASH_SPI_CORE   MSS_SPI_0
+#define FLASH_SPI_CORE   CORE_SPI_3
 #define FLASH_SLAVE_CORE SPI_SLAVE_0 // FLASH uses MSS_GPIO for SS, so this is not relevant.
 
 #define ADCS_SPI_CORE   CORE_SPI_1
@@ -36,7 +36,7 @@
 #define MRAM1_SPI_CORE   CORE_SPI_4
 #define MRAM1_SLAVE_CORE SPI_SLAVE_0 // MRAM1 uses MSS_GPIO for SS, so this is not relevant.
 
-#define FLASH2_SPI_CORE   CORE_SPI_5
+#define FLASH2_SPI_CORE   MSS_SPI_0
 #define FLASH2_SLAVE_CORE SPI_SLAVE_0 // MRAM1 uses MSS_GPIO for SS, so this is not relevant.
 
 

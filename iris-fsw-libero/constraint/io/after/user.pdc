@@ -2,11 +2,11 @@
 
 # User I/O Constraints file 
 
-# Version: v12.6 12.900.20.24
+# Version: 2021.3 2021.3.0.10
 
 # Family: SmartFusion2 , Die: M2S010 , Package: 144 TQ
 
-# Date generated: Wed May  5 13:27:17 2021 
+# Date generated: Sat Jul 23 15:39:17 2022 
 
 
 # 
@@ -49,36 +49,12 @@ set_io ADCS_SPI_MOSI   \
 set_io ADCS_SPI_SCK    \
     -pinname 143       \
     -fixed yes         \
-    -iostd LVCMOS25    \
-    -DIRECTION OUTPUT
-
-
-set_io ADC_CS          \
-    -pinname 102       \
-    -fixed yes         \
-    -DIRECTION OUTPUT
-
-
-set_io ADC_MISO       \
-    -pinname 100      \
-    -fixed yes        \
-    -DIRECTION INPUT
-
-
-set_io ADC_MOSI        \
-    -pinname 103       \
-    -fixed yes         \
-    -DIRECTION OUTPUT
-
-
-set_io ADC_SCK         \
-    -pinname 101       \
-    -fixed yes         \
+    -iostd SSTL2II     \
     -DIRECTION OUTPUT
 
 
 set_io CAN_RX_F2M     \
-    -pinname 111      \
+    -pinname 130      \
     -fixed yes        \
     -iostd LVCMOS25   \
     -DIRECTION INPUT
@@ -98,25 +74,25 @@ set_io FLASH1_HOLDn    \
 
 
 set_io FLASH1_SPI_CS   \
-    -pinname 13        \
+    -pinname 21        \
     -fixed yes         \
     -DIRECTION OUTPUT
 
 
 set_io FLASH1_SPI_MISO  \
-    -pinname 14         \
+    -pinname 92         \
     -fixed yes          \
     -DIRECTION INPUT
 
 
 set_io FLASH1_SPI_MOSI  \
-    -pinname 9          \
+    -pinname 22         \
     -fixed yes          \
     -DIRECTION OUTPUT
 
 
 set_io FLASH1_SPI_SCK  \
-    -pinname 10        \
+    -pinname 94        \
     -fixed yes         \
     -DIRECTION OUTPUT
 
@@ -128,7 +104,7 @@ set_io FLASH1_WP       \
 
 
 set_io FLASH2_CS       \
-    -pinname 64        \
+    -pinname 103       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
@@ -140,19 +116,19 @@ set_io FLASH2_HOLDn    \
 
 
 set_io FLASH2_MISO    \
-    -pinname 66       \
+    -pinname 101      \
     -fixed yes        \
     -DIRECTION INPUT
 
 
 set_io FLASH2_MOSI     \
-    -pinname 52        \
+    -pinname 102       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
 
 set_io FLASH2_SCK      \
-    -pinname 53        \
+    -pinname 100       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
@@ -178,13 +154,13 @@ set_io GPIO_1_M2F      \
 
 
 set_io MMUART_0_RXD_F2M  \
-    -pinname 2           \
+    -pinname 1           \
     -fixed yes           \
     -DIRECTION INPUT
 
 
 set_io MMUART_0_TXD_M2F  \
-    -pinname 1           \
+    -pinname 2           \
     -fixed yes           \
     -DIRECTION OUTPUT
 
@@ -201,12 +177,6 @@ set_io MRAM1_HOLDn     \
     -DIRECTION OUTPUT
 
 
-set_io MRAM1_MISO     \
-    -pinname 21       \
-    -fixed yes        \
-    -DIRECTION INPUT
-
-
 set_io MRAM1_MOSI      \
     -pinname 19        \
     -fixed yes         \
@@ -215,12 +185,6 @@ set_io MRAM1_MOSI      \
 
 set_io MRAM1_SCK       \
     -pinname 16        \
-    -fixed yes         \
-    -DIRECTION OUTPUT
-
-
-set_io MRAM1_WP        \
-    -pinname 22        \
     -fixed yes         \
     -DIRECTION OUTPUT
 
