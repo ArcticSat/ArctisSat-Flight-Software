@@ -31,6 +31,7 @@ static uint32_t fw_armed_timeout=0;
 static uint8_t fwMgrExeConfirmed = 0;
 static uint8_t rx_in_progress = 0;
 static uint8_t rx_slot_index = 0;
+static uint8_t targetFw = 1;//Which image will we upgrade to. 1 is default for update image. 0 for golden.
 
 static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
 
@@ -60,10 +61,30 @@ QueueHandle_t fwDataQueue;
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 static int updateState(int state);
+static int checksumAllFw(); //Runs checksum on the golden and update files, and their backups. The verifiedStatus global will be updated.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+int checksumAllFw(){
+    int result = 1;
+
+    for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+
+        verifiedStatus.verified[i] = 0;
+
+        uint32_t check = 0;
+        checksum_file(&check,fwFileNames[i]);
+        if(check == fwFiles[i].checksum && fwFiles[i].filesize>0 ){
+            verifiedStatus.verified[i]=1;
+        }
+        printf("Firmware %d (%s) verify: %s  (%x, %x)",i,fwFileNames[i],(verifiedStatus.verified[i]?"PASS":"FAIL"),fwFiles[i].checksum,check);
+
+        result &= verifiedStatus.verified[i];
+    }
+    return result;
+}
+
 void checksum_file(uint32_t * out, char * filename){
 
     //Based on the libcrc example/test program.
@@ -116,7 +137,6 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
     uint32_t crc_32_val = 0xffffffffL;
     char ch;
     unsigned char prev_byte;
-    lfs_file_t file = {0};
 
     uint8_t byte_buff[256];
     //Use a buffer here to reduce filesystem overhead...
@@ -135,8 +155,10 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
             crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
             count ++;
         }
+        addr_curr += bytes_to_process;
         bytes_left = bytes_left-bytes_to_process;
         bytes_to_process = bytes_left>256 ? 256:bytes_left;
+
         stat = flash_read(flash_devices[PROGRAM_FLASH],addr_curr, byte_buff, bytes_to_process);
 
     }
@@ -154,7 +176,7 @@ int copy_to_prog_flash(char * filename, uint32_t address){
 
     uint32_t filesize = fs_file_size_from_path(filename);
     uint32_t chunksize = 256;
-    uint8_t byte_buff[256];
+    uint8_t byte_buff[256] = {0};
     int addr_curr = address;
 
     lfs_file_t file = {0};
@@ -165,12 +187,20 @@ int copy_to_prog_flash(char * filename, uint32_t address){
     }
 
 
+    //Erase the area first.
+    for(int i=0; i< filesize/4096 + (filesize % 4096 > 0);i++){
+        flash_erase(flash_devices[PROGRAM_FLASH],address+(i*4096));
+    }
+
+    flash_read(flash_devices[PROGRAM_FLASH],4096,byte_buff,256);
+
     int bytes_to_process = 0;
     while( (bytes_to_process = fs_file_read(&file, byte_buff, chunksize)) >0 ) {
-
        flash_write(flash_devices[PROGRAM_FLASH],addr_curr,byte_buff,bytes_to_process);
        addr_curr += bytes_to_process;
     }
+
+    fs_file_close(&file);
     return 0;
 
 }
@@ -234,7 +264,12 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     if(res == pdTRUE){
 
-                        fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
+                        int write_res =fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
+                        if(write_res <0){
+                            printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
+                            updateState(FW_STATE_IDLE);
+                            break;
+                        }
                         rx_byte_index += FW_CHUNK_SIZE;
 
                         if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
@@ -301,19 +336,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
             }
             case FW_STATE_PRE_VERIFY:{
 
+                int exit = 0;
 
-                for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
-
-                    verifiedStatus.verified[i] = 0;
-
-                    uint32_t check = 0;
-                    checksum_file(&check,fwFileNames[i]);
-                    if(check == fwFiles[i].checksum && fwFiles[i].filesize>0 ){
-                        verifiedStatus.verified[i]=1;
-                    }
-                    printf("Firmware %d (%s) verify: %s",i,fwFileNames[i],(verifiedStatus.verified[i]?"PASS":"FAIL"));
-
-                }
+                //Run through the files and do the checksums.
+                checksumAllFw();
 
                 //Now based on the status we can attempt to fix our problem or alert ground.
 #ifndef NO_FW_BACKUP
@@ -339,27 +365,33 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     }
                 }
 #endif
+
+                checksumAllFw();
+
                 //At this point we should have all images verified, if not then we cannot fix without ground uploading a new file(s).
                 for(int i=0; i< NUM_FIRMWARES;i++){
 
                     if(verifiedStatus.verified[i] != 1){
                         printf("Unrecoverable error: %s is missing or corrupt and cannot be recovered. Upload a new file...\n",fwFileNames[i]);
                         updateState(FW_STATE_IDLE);
-                        break;
+                        exit = 1;
                         //log error.
                     }
                 }
 
+                if(exit) break;
 
 
                 //Lastly we must sync up the program flash files, so repeat similar steps here.
                 uint32_t check=0;
                 checksum_program_flash_area(&check,FIRMWARE_GOLDEN_ADDRESS, fwFiles[0].filesize);
+
                 if(check != fwFiles[0].checksum){
                     //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
                     if(copy_to_prog_flash(fwFileNames[0],FIRMWARE_GOLDEN_ADDRESS)){
                         printf("Unrecoverable error: problem copying fw to program flash\n");
                         updateState(FW_STATE_IDLE);
+                        break;
                     }
 
                     check = 0;
@@ -379,6 +411,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     if (copy_to_prog_flash(fwFileNames[1],FIRMWARE_UPDATE_ADDRESS)<0){
                         printf("Unrecoverable error: problem copying fw to program flash\n");
                         updateState(FW_STATE_IDLE);
+                        break;
                     }
 
 
@@ -400,6 +433,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                }
                else{
                    updateState(FW_STATE_IDLE);
+                   break;
                }
 
                 break;
@@ -423,41 +457,49 @@ void vFw_Update_Mgr_Task(void * pvParams){
             }
             case FW_STATE_UPDATE:{
 
-                //First check our file is verified. We should n't be allowed here without the fw being verified, but just in case...
-                if(verifiedStatus[1].verified != 1){
-                    printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
+                if(fwMgrExeConfirmed){
+
+                    //First check our file is verified. We should n't be allowed here without the fw being verified, but just in case...
+                    if(verifiedStatus.verified[1] != 1){
+                        printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
+                        updateState(FW_STATE_IDLE);
+                        break;
+                    }
+
+                    update_spi_dir(targetFw, targetFw);
+
+
+                    //Do one last check of the fw before we upload
+                    uint32_t check = 0;
+                    checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
+                    if(check != fwFiles[1].checksum){
+                        printf("Unrecoverable error: bad checksum on program flash update image. How did this happen?\n");
+                        updateState(FW_STATE_IDLE);
+                        break;
+                    }
+
+
+                    //Shutdown the system, whatever that means.
+                    //We should save any time-tagged tasks, adcs state, anything else important that is in RAM.
+
+
+                    //Update state so we know to post verify on reboot.
+                    //ShutdownSystem();
+
+
+                    initiate_firmware_update(targetFw);
+
+                    //We should not ever get here...
+                    printf("FW upgrade failed!\n");
                     updateState(FW_STATE_IDLE);
-                    break;
                 }
-
-                //Do one last check of the fw before we upload
-                uint32_t check = 0;
-                checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
-                if(check != fwFiles[1].checksum){
-                    printf("Unrecoverable error: bad checksum on program flash update image. How did this happen?\n");
-                    updateState(FW_STATE_IDLE);
-                    break;
-                }
-
-
-                //Shutdown the system, whatever that means.
-                //We should save any time-tagged tasks, adcs state, anything else important that is in RAM.
-                //Update state so we know to post verify on reboot.
-
-                //ShutdownSystem();
-
-                initiate_firmware_update(1);
-
-                //We should not ever get here...
-                printf("FW upgrade failed!\n");
-                updateState(FW_STATE_IDLE);
-
                 break;
             }
             case FW_STATE_POST_VERIFY:{
 
+                uint16_t design_ver;
                 //Check that our current firmware matches what we expect.
-                int res = authenticate_firmware(1);
+                int res = authenticate_firmware(1,&design_ver);
                 if(res == 0){
                     printf("FW update post verified! :)\n");
                 }
@@ -478,7 +520,7 @@ void listFwFiles(){
 
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
 
-        printf("Slot %d: %s (%d b) (%0x)\n",fwFiles[i].fileIndex,fwFileNames[i],fwFiles[i].filesize,fwFiles[i].checksum);
+        printf("Slot %d: %s (size=%d b) (check=%0x) (design ver=%d)\n",fwFiles[i].fileIndex,fwFileNames[i],fwFiles[i].filesize,fwFiles[i].checksum,fwFiles[i].designver);
     }
 
 }
@@ -504,6 +546,16 @@ int updateFwMetaData(Fw_metadata_t* data){
         fs_file_write(&checkFile, &data->checksum, sizeof(uint32_t));
         fs_file_close(&checkFile);
 
+        lfs_file_t designVerFile = {0};
+        char designVerFileName[64]={0};
+        sprintf(designVerFileName,"%s.designver",fwFileNames[rx_slot_index]);
+        result_fs = fs_file_open(&designVerFile,designVerFileName, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+        if(result_fs <0){
+            printf("Could not open file to store design version\n ");
+            return -1;
+        }
+        fs_file_write(&designVerFile, &data->designver, sizeof(uint32_t));
+        fs_file_close(&designVerFile);
     }
 
         return res;
@@ -517,9 +569,31 @@ int getFwManagerState(){
 int setFwManagerState(int state){
 
     int res = updateState(state);
-    if(getFwManagerState() != state || res<0){
+    if(res<0){
         printf("Unable to set state!");
     }
+}
+
+void setFwChecksum(uint8_t slot, uint32_t check){
+
+    Fw_metadata_t metadata;
+    memcpy(&metadata,&fwFiles[slot],sizeof(Fw_metadata_t));
+
+    metadata.checksum = check;
+
+    updateFwMetaData(&metadata);
+
+
+}
+void setFwDesignVer(uint8_t slot, uint8_t ver){
+
+    Fw_metadata_t metadata;
+    memcpy(&metadata,&fwFiles[slot],sizeof(Fw_metadata_t));
+
+    metadata.designver = ver;
+
+    updateFwMetaData(&metadata);
+
 }
 
 int updateState(int state){
@@ -552,21 +626,18 @@ int updateState(int state){
 
             if(state != FW_STATE_IDLE) return -1;
 
- //Actually don't allow arming from pre verify, since being in this state, doesn't mean the verification is complete yet.
-//            if(state == FW_STATE_ARMED){
-//                fwMgrArmed = 1;
-//            }
-
             break;
         }
         case FW_STATE_ARMED:{
 
             if(state != FW_STATE_IDLE && state != FW_STATE_UPDATE) return -1;
+
             break;
         }
         case FW_STATE_UPDATE:{
 
-            if(state != FW_STATE_IDLE) return -1;
+        	//ARMED
+            if(state != FW_STATE_IDLE && state != FW_STATE_UPDATE) return -1;
             break;
         }
         case FW_STATE_POST_VERIFY:{
@@ -577,7 +648,7 @@ int updateState(int state){
 
     }
 
-    fwMgrState = state;
+    fwMgrState = setState;
 
 
 }
@@ -593,33 +664,69 @@ void uploadFwChunk(uint8_t * data, uint16_t length){
 
 void initializeFwMgr(){
 
+    //Reset all our state variables:
+    fwMgrState = FW_STATE_IDLE;
+    fwMgrArmed = 0;
+    fw_armed_timeout=0;
+    fwMgrExeConfirmed = 0;
+    rx_in_progress = 0;
+    rx_slot_index = 0;
+
     //Load/calculate our file metadata
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
 
         lfs_file_t checkFile = {0};
         char checksumFileName[64]={0};
-
+        uint32_t check =0;
         sprintf(checksumFileName,"%s.check",fwFileNames[i%2]);
         int result_fs = fs_file_open(&checkFile,checksumFileName, LFS_O_RDONLY);
         if(result_fs < 0 && result_fs  == LFS_ERR_NOENT){
             printf("Could not open checksum file %s to load: %d\n Creating File...",checksumFileName,result_fs);
 
             fs_file_open(&checkFile, checksumFileName, LFS_O_CREAT);
+            fs_file_close(&checkFile);
 
-        }else if (result_fs<0){
+        }
+        else if (result_fs<0){
 
            printf("Could not open checksum file %s to load: %d\n",checksumFileName,result_fs);
            continue;
         }
-        uint32_t check =0;
-        if (fs_file_read(&checkFile,&check,sizeof(uint32_t)) != sizeof(uint32_t)){
-            printf("Checksum incorrect size\n");
-            check = 0;
-            //What to do here? I guess leave checksum as 0, which should be impossibly rare to be valid.
-        }
+        else{
 
+            if (fs_file_read(&checkFile,&check,sizeof(uint32_t)) != sizeof(uint32_t)){
+                printf("Checksum incorrect size\n");
+                check = 0;
+                //What to do here? I guess leave checksum as 0, which should be impossibly rare to be valid.
+            }
+        }
         fwFiles[i].checksum = check;
         fs_file_close(&checkFile);
+
+        uint8_t ver = 0xFF;
+        lfs_file_t designVerFile = {0};
+        char designVerFileName[64]={0};
+        sprintf(designVerFileName,"%s.designver",fwFileNames[i%2]);
+        result_fs = fs_file_open(&designVerFile,designVerFileName, LFS_O_RDONLY);
+        if(result_fs < 0 && result_fs  == LFS_ERR_NOENT){
+                    printf("Could not open design ver file %s to load: %d\n Creating File...",designVerFileName,result_fs);
+
+                    fs_file_open(&designVerFile, designVerFileName, LFS_O_CREAT);
+                    fs_file_close(&designVerFile);
+
+         }
+        else if(result_fs <0){
+            printf("Could not open file to read design version\n ");
+        }
+        else{
+
+            if(fs_file_read(&designVerFile, &ver, sizeof(uint8_t)) != sizeof(uint8_t)){
+                printf("Invalid design version read\n");
+                ver = 0xFF; //Again nothing really to do here...
+            }
+        }
+        fwFiles[i].designver = ver;
+        fs_file_close(&designVerFile);
 
     }
 
@@ -635,5 +742,21 @@ void initializeFwMgr(){
         printf("fs_stat: %s %d",fwFileNames[i],fwFiles[i].filesize);
     }
 
+}
+
+void execute_confirm(){
+
+    if(fwMgrState == FW_STATE_UPDATE){
+        fwMgrExeConfirmed = 1;
+    }
+    else{
+        fwMgrExeConfirmed =0;
+    }
+}
+
+void setFwTargetImage(uint8_t target){
+
+    if(target == 0 || target == 1)
+        targetFw = target;
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

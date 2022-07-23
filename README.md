@@ -75,13 +75,14 @@ This library is provides a communication protocol stack following the TCP/IP mod
 
 The IrisSat CDH allows for over-the-air updates of the software.  
 Below are the steps to prepare a software update file, see the IrisTerminal documentation for instructions on how to upload the file and initiate the update.
+It is possible to generate an update file with only the eNVM content(i.e. the software), which is about 5 times smaller than the full image with the fpga data.
+The golden image should be a full image, and the updates should be eNVM only (in most cases).
 
 1. Build the "Production" version of the software in Softconsole. Click the arrow next to the hammer and select "Production".
 2. In Libero, perform step 11 from above, making sure the latest Production binary is selected.
-3. In Libero, generate the bitstream.
+3. In Libero, generate the bitstream. Right click on the "Generate Bitstream" and configure here to check only eNVM or enVM and Fabric, depengin on what you want.
 4. In the "Design Flow" panel on the left, select "Export Bistream".
-5. In the "Export Bistream" options, give the file a name, and verify that the "SPI" format is enabled. Make sure that both "Fabric" and "eNVM" are enabled in the "File Types:" option. Make sure the "Export SPI Directory..." is enabled.
+5. In the "Export Bistream" options, give the file a name, and verify that the "SPI" format is enabled. Select "Fabric" and/or "eNVM" in the "File Types:" option. Make sure the "Export SPI Directory..." is enabled.
 6. Click on "Specify SPI Directory" and make sure the golden and update addresses are set.
-7. Also set the design version for each image. In general the golden image should be the same, and the update would be increased. You can't update to an older version, so make sure the update version is above the current FSW version number.
-
+7. Also set the design version for each image. In general the golden image should be the same, and the update would be increased. It seems backlevel protection should be disabled by default, so the exact number shouldn't really matter.
 

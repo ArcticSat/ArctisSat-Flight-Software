@@ -102,6 +102,9 @@ int fs_file_size_from_path(char * path);
 //Copy a file. This will overwrite/truncate the destination file!
 int fs_copy_file(char * filePath, char * newPath);
 
+//Get free space in file system. Given in bytes
+uint32_t fs_free_space();
+
 // Removes a file or directory
 //
 // If removing a directory, the directory must be empty.

@@ -150,13 +150,13 @@ int main( void )
                             "UART0 Receiver",            // Text name for debugging
                             1200,                        // Size of the stack allocated for this task
                             (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-                            2,                           // Task runs at priority 2
+                            3,                           // Task runs at priority 2
                             &xUART0RxTaskToNotify);      // Task handle for task notification
     status = xTaskCreate(vTTT_Scheduler,
                          "TTT",
                          1000,
                          NULL,
-                         1,
+                         2,
                          &vTTTScheduler_h);
 
 
@@ -218,7 +218,7 @@ int main( void )
 
 
 #ifdef CSP_SERVER
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 1, &vCSP_Server_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
 #endif
 
 #ifdef CAN_SERVER
@@ -226,7 +226,7 @@ int main( void )
                          "Test CAN Rx",
 						 1000,
                          NULL,
-                         1,
+                         2,
                          &vTestCanServer_h);
 //    status = xTaskCreate(vTestCANRx,
 //                         "Test CAN Rx",
@@ -304,7 +304,7 @@ int main( void )
 //                         1,
 //                         NULL);
 
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,1,&vFw_Update_Mgr_Task_h);
+    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 
     //Suspend these because csp server will start once csp is up.
     vTaskSuspend(vFw_Update_Mgr_Task_h);

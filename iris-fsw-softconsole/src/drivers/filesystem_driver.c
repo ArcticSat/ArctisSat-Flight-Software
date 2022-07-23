@@ -29,6 +29,9 @@
 
 #define FS_MAX_OPEN_FILES	3
 
+//For testing only. This will offset the location where filesystem is mounted.
+//Set to 0!
+#define FS_MOUNT_OFFSET     (0x0)
 
 #define FS_FLASH_DEVICE	DATA_FLASH
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -209,13 +212,20 @@ int fs_copy_file(char * filePath, char * newPath){
     return 0;
 }
 
+uint32_t fs_free_space(){
+
+	lfs_ssize_t blocks_used = fs_size();
+    uint32_t free_space = (config.block_count-blocks_used)*(config.block_size);
+    return free_space;
+}
+
  FilesystemError_t fs_init(){
 
 	 FilesystemError_t result = FS_OK;
 
 	 open_files = 0;
 	 //Get the total number of blocks by dividing the device byte count by the block byte count.
-	 config.block_count = flash_devices[DATA_FLASH]->device_size/FS_BLOCK_SIZE;
+	 config.block_count = (flash_devices[DATA_FLASH]->device_size-FS_MOUNT_OFFSET)/FS_BLOCK_SIZE;
 
 	 //Setup the mutex. See https://github.com/ARMmbed/littlefs/issues/156 and
 	 //						https://github.com/ARMmbed/littlefs/pull/317
@@ -563,7 +573,7 @@ int fs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *
 
 	int result = FS_OK;
 
-	uint32_t addr = (block*FS_BLOCK_SIZE)+off;
+	uint32_t addr = (block*FS_BLOCK_SIZE)+off + FS_MOUNT_OFFSET;
 
 	FlashStatus_t stat = flash_read(flash_devices[FS_FLASH_DEVICE], addr, buffer, size);
 
@@ -580,7 +590,7 @@ int fs_prog(const struct lfs_config *c, lfs_block_t block,lfs_off_t off, const v
 
 	int result = FS_OK;
 
-	uint32_t addr = (block*FS_BLOCK_SIZE)+off;
+	uint32_t addr = (block*FS_BLOCK_SIZE)+off+FS_MOUNT_OFFSET;
 
 	FlashStatus_t stat = flash_write(flash_devices[FS_FLASH_DEVICE], addr, buffer, size);
 
@@ -596,7 +606,7 @@ int fs_erase(const struct lfs_config *c, lfs_block_t block){
 
 	int result = FS_OK;
 
-	uint32_t addr = (block*FS_BLOCK_SIZE);
+	uint32_t addr = (block*FS_BLOCK_SIZE)+FS_MOUNT_OFFSET;
 
 	FlashStatus_t stat = flash_erase(flash_devices[FS_FLASH_DEVICE], addr);
 

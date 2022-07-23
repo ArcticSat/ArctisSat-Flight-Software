@@ -20,14 +20,17 @@
 #include "tasks/fw_update_mgr.h"
 
 #include "drivers/filesystem_driver.h"
+#include "drivers/software_update_driver.h"
 #include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/device/rtc/rtc_time.h"
+#include "drivers/device/memory/flash_common.h"
 
 #include "csp/csp.h"
 #include "csp/interfaces/csp_if_can.h"
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
 #include "taskhandles.h"
+#include "version.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -85,7 +88,7 @@ void vCSP_Server(void * pvParameters){
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
     if (err) {
-        fs_format();
+        fs_format(); //Is there anything else we should do or try first?
         fs_mount();
     }
    result_fs = fs_file_open( &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
@@ -252,6 +255,24 @@ void vCSP_Server(void * pvParameters){
                         }
                         break;
                     }
+                    case CDH_CHECKSUM_PGRM_FLASH_CMD:{
+
+                        uint32_t* start = (uint32_t*)(&t.data[0]);
+                        uint32_t* len = (uint32_t*)(&t.data[sizeof(uint32_t)]);
+                        printf("Running checksum of program flash %x for %d bytes\n",*start,*len);
+                        //TODO: Document limitation with checksum, cannot be 0. Should be very rare, but pre checksum all files before upload.
+                        uint32_t check = 0;
+                        checksum_program_flash_area(&check,*start, *len);
+                        printf("Checksum of program flash area %d bytes @ 0x%X = %X\n",*len,*start,check);
+                        break;
+                    }
+                    case CDH_CP_TO_PGRM_FLASH_CMD:{
+
+                        printf("Copy to addr %d from file %s to prog flash\n",*((uint32_t*)(&t.data[0])),&t.data[sizeof(uint32_t)]);
+                        copy_to_prog_flash(&t.data[sizeof(uint32_t)], *((uint32_t*)(&t.data[0])));
+
+                        break;
+                    }
                     case CDH_FW_IDLE_CMD:{
 
                         setFwManagerState(FW_STATE_IDLE);
@@ -269,6 +290,31 @@ void vCSP_Server(void * pvParameters){
                     case CDH_FW_PRE_VER_CMD:{
 
                         setFwManagerState(FW_STATE_PRE_VERIFY);
+
+                        break;
+                    }
+                    case CDH_FW_ARM_CMD:{
+
+                        setFwManagerState(FW_STATE_ARMED);
+
+                        break;
+                    }
+                    case CDH_FW_EXECUTE_CMD:{
+
+                        setFwManagerState(FW_STATE_UPDATE);
+                        setFwTargetImage(t.data[0]);
+
+                        break;
+                    }
+                    case CDH_FW_EXECUTE_CONFIRM_CMD:{
+
+                        execute_confirm();
+
+                        break;
+                    }
+                    case CDH_FW_POST_VER_CMD:{
+
+                        setFwManagerState(FW_STATE_POST_VERIFY);
 
                         break;
                     }
@@ -302,10 +348,109 @@ void vCSP_Server(void * pvParameters){
                         break;
                     }
 
+                    case CDH_GET_SW_VER_CMD:{
+
+                            printf("Iris CDH FSW Version: %s",CDH_SW_VERSION_STRING);
+
+                        break;
                     }
+                    case CDH_GET_DES_VER_CMD:{
+
+                        uint16_t dv = get_design_version();
+                        printf("Found design ver. %d\n",dv);
+                        break;
+                    }
+                    case CDH_GET_SPI_DIR_CMD:{
+                        uint8_t dir[13]={0};
+                        get_spi_dir(dir);
+                        for(int i=0;i<13;i++){
+
+                            printf("0x%02X ",dir[i]);
+                        }
+
+
+                        break;
+                    }
+                    case CDH_GET_FS_FREE_SPACE_CMD:{
+
+                    			uint32_t free = fs_free_space();
+                    			printf("FS free space = %d bytes\n",free);
+                    	break;
+                    }
+                    case CDH_FW_UPDATE_SPI_DIR_CMD:{
+
+                    	//data[0] is the design version of update fw.
+                    	update_spi_dir(t.data[0], t.data[1]);
+                    	break;
+                    }
+                    case CDH_FW_CREATE_SPI_DIR_CMD:{
+
+                    	uint8_t len = t.data[0];
+                    	create_spi_dir(&t.data[1],len);
+
+                    	break;
+                    }
+                    case CDH_WRITE_PROG_FLASH_CMD:{
+
+                    	uint32_t address=0;
+                    	memcpy(&address,&t.data[0],sizeof(uint32_t));
+
+                    	flash_write(flash_devices[PROGRAM_FLASH], address, &t.data[sizeof(uint32_t)], 128);
+//                    	uint8_t check[128]={0};
+//                    	flash_read(flash_devices[PROGRAM_FLASH], address, check, 150);
+                    	break;
+                    }
+                    case CDH_ERASE_PROG_FLASH_CMD:{
+                    	uint32_t address=0;
+                    	memcpy(&address,&t.data[0],sizeof(uint32_t));
+                    	uint32_t numblocks = 0;
+                    	memcpy(&numblocks,&t.data[sizeof(uint32_t)],sizeof(uint32_t));
+                    	for(int i=0; i< numblocks; i++){
+                    		flash_erase(flash_devices[PROGRAM_FLASH], address);
+                    		address += flash_devices[PROGRAM_FLASH]->erase_size;
+                    	}
+                    	break;
+                    }
+                    case CDH_RESET_FW_MNGR_CMD:{
+
+                        initializeFwMgr();
+                        break;
+                    }
+                    case CDH_FW_SET_CHECKSUM_CMD:{
+
+                        uint32_t check;
+                        memcpy(&check,&t.data[1], sizeof(uint32_t));
+
+                        setFwChecksum(t.data[0], check);
+
+                        break;
+                    }
+                    case CDH_FW_SET_DESVER_CMD: {
+
+                        setFwDesignVer(t.data[0], t.data[1]);
+
+
+                        break;
+                    }
+                    case CDH_FORMAT_FS_CMD:{
+
+                        fs_unmount();
+                        fs_format();
+                        fs_mount();
+
+                        break;
+                    }
+                    case CDH_RESET_SYSTEM_CMD:{
+
+                        SCB_Type* systemcontrol = SCB;
+                        systemcontrol->AIRCR = (0x05FA << 16)|SCB_AIRCR_SYSRESETREQ_Msk;
+                        break;
+                    }
+
                     break;
                 }
-
+                break;
+            }
             case CSP_TELEM_PORT:
 
                     break;
