@@ -171,23 +171,23 @@ MSS_RTC_set_calendar_count
         1u  /* Week    */
     };
     
-    /* Assert if the values cross the limit */ // commented 2-5-2022
-//    ASSERT(new_rtc_value->second >= g_rtc_min_count_lut[SECONDS]);
-//    ASSERT(new_rtc_value->second <= g_rtc_max_count_lut[SECONDS]);
-//    ASSERT(new_rtc_value->minute >= g_rtc_min_count_lut[MINUTES]);
-//    ASSERT(new_rtc_value->minute <= g_rtc_max_count_lut[MINUTES]);
-//    ASSERT(new_rtc_value->hour >= g_rtc_min_count_lut[HOURS]);
-//    ASSERT(new_rtc_value->hour <= g_rtc_max_count_lut[HOURS]);
-//    ASSERT(new_rtc_value->day >= g_rtc_min_count_lut[DAYS]);
-//    ASSERT(new_rtc_value->day <= g_rtc_max_count_lut[DAYS]);
-//    ASSERT(new_rtc_value->month >= g_rtc_min_count_lut[MONTHS]);
-//    ASSERT(new_rtc_value->month <= g_rtc_max_count_lut[MONTHS]);
-//    ASSERT(new_rtc_value->year >= g_rtc_min_count_lut[YEARS]);
-//    ASSERT(new_rtc_value->year <= g_rtc_max_count_lut[YEARS]);
-//    ASSERT(new_rtc_value->weekday >= g_rtc_min_count_lut[WEEKDAYS]);
-//    ASSERT(new_rtc_value->weekday <= g_rtc_max_count_lut[WEEKDAYS]);
-//    ASSERT(new_rtc_value->week >= g_rtc_min_count_lut[WEEKS]);
-//    ASSERT(new_rtc_value->week <= g_rtc_max_count_lut[WEEKS]);
+    /* Assert if the values cross the limit */
+    ASSERT(new_rtc_value->second >= g_rtc_min_count_lut[SECONDS]);
+    ASSERT(new_rtc_value->second <= g_rtc_max_count_lut[SECONDS]);
+    ASSERT(new_rtc_value->minute >= g_rtc_min_count_lut[MINUTES]);
+    ASSERT(new_rtc_value->minute <= g_rtc_max_count_lut[MINUTES]);
+    ASSERT(new_rtc_value->hour >= g_rtc_min_count_lut[HOURS]);
+    ASSERT(new_rtc_value->hour <= g_rtc_max_count_lut[HOURS]);
+    ASSERT(new_rtc_value->day >= g_rtc_min_count_lut[DAYS]);
+    ASSERT(new_rtc_value->day <= g_rtc_max_count_lut[DAYS]);
+    ASSERT(new_rtc_value->month >= g_rtc_min_count_lut[MONTHS]);
+    ASSERT(new_rtc_value->month <= g_rtc_max_count_lut[MONTHS]);
+    ASSERT(new_rtc_value->year >= g_rtc_min_count_lut[YEARS]);
+    ASSERT(new_rtc_value->year <= g_rtc_max_count_lut[YEARS]);
+    ASSERT(new_rtc_value->weekday >= g_rtc_min_count_lut[WEEKDAYS]);
+    ASSERT(new_rtc_value->weekday <= g_rtc_max_count_lut[WEEKDAYS]);
+    ASSERT(new_rtc_value->week >= g_rtc_min_count_lut[WEEKS]);
+    ASSERT(new_rtc_value->week <= g_rtc_max_count_lut[WEEKS]);
 
     if(new_rtc_value->second < g_rtc_min_count_lut[SECONDS]) {error = 1u;}
     if(new_rtc_value->second > g_rtc_max_count_lut[SECONDS]) {error = 1u;}

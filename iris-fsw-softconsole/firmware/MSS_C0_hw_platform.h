@@ -2,7 +2,7 @@
 #define MSS_C0_HW_PLATFORM_H_
 /*****************************************************************************
 *
-*Created by Microsemi SmartDesign  Fri Mar 26 12:21:22 2021
+*Created by Microsemi SmartDesign  Wed Mar 24 10:16:32 2021
 *
 *Memory map specification for peripherals in MSS_C0
 */
