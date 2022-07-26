@@ -17,6 +17,7 @@ iris-fsw-libero/designer/MSS_C0/export/
 iris-fsw-softconsole/Libraries/FreeRTOS-Kernel
 iris-fsw-softconsole/Libraries/libcsp
 iris-fsw-softconsole/Libraries/littlefs
+iris-fsw-softconsole/Libraries/libcrc
 
 # log files
 *.log
@@ -28,3 +29,6 @@ iris-fsw-softconsole/Libraries/littlefs
 
 # Python Scripts
 scripts/**/*.pyc
+
+# Libero
+iris-fsw-libero/libero_setup_info.txt
