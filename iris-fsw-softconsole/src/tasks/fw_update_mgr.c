@@ -349,8 +349,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     if(verifiedStatus.verified[i] ==0 && verifiedStatus.verified[i+2]==1){
                         //We have a corrupted original so just copy the backup to replace the orig.
                         fs_copy_file(fwFileNames[i+2], fwFileNames[i]);
-                        fwFiles[i+2].checksum = fwFiles[i].checksum;
-                        fwFiles[i+2].filesize = fs_file_size_from_path(fwFileNames[i+2]);
+                        fwFiles[i].checksum = fwFiles[i+2].checksum;
+                        fwFiles[i].filesize = fs_file_size_from_path(fwFileNames[i+2]);
                     }
                 }
 
@@ -360,8 +360,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     if(verifiedStatus.verified[i+2] ==0 && verifiedStatus.verified[i]==1){
                         //We have a corrupted original so just copy the backup to replace the orig.
                         fs_copy_file(fwFileNames[i], fwFileNames[i+2]);
-                        fwFiles[i].checksum = fwFiles[i+2].checksum;
-                        fwFiles[i].filesize = fs_file_size_from_path(fwFileNames[i]);
+                        fwFiles[i+2].checksum = fwFiles[i].checksum;
+                        fwFiles[i+2].filesize = fs_file_size_from_path(fwFileNames[i]);
                     }
                 }
 #endif
@@ -369,7 +369,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 checksumAllFw();
 
                 //At this point we should have all images verified, if not then we cannot fix without ground uploading a new file(s).
-                for(int i=0; i< NUM_FIRMWARES;i++){
+                for(int i=0; i< NUM_FIRMWARES_TOTAL;i++){
 
                     if(verifiedStatus.verified[i] != 1){
                         printf("Unrecoverable error: %s is missing or corrupt and cannot be recovered. Upload a new file...\n",fwFileNames[i]);
@@ -471,8 +471,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     //Do one last check of the fw before we upload
                     uint32_t check = 0;
-                    checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
-                    if(check != fwFiles[1].checksum){
+                    checksum_program_flash_area(&check,targetFw ? FIRMWARE_UPDATE_ADDRESS : FIRMWARE_GOLDEN_ADDRESS, fwFiles[targetFw].filesize);
+                    if(check != fwFiles[targetFw].checksum){
                         printf("Unrecoverable error: bad checksum on program flash update image. How did this happen?\n");
                         updateState(FW_STATE_IDLE);
                         break;
@@ -493,6 +493,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     printf("FW upgrade failed!\n");
                     updateState(FW_STATE_IDLE);
                 }
+                vTaskDelay(500);
                 break;
             }
             case FW_STATE_POST_VERIFY:{
@@ -624,7 +625,7 @@ int updateState(int state){
         }
         case FW_STATE_PRE_VERIFY:{
 
-            if(state != FW_STATE_IDLE) return -1;
+            if(state != FW_STATE_IDLE && state != FW_STATE_ARMED) return -1;
 
             break;
         }
