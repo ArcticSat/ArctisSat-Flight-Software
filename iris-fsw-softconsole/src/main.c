@@ -130,7 +130,7 @@ int main( void )
 
     /* Prepare the hardware to run this demo. */
 
-    prvSetupHardware();
+     prvSetupHardware();
 
     //Make sure FS is up before all tasks
     FilesystemError_t stat = fs_init();
@@ -329,7 +329,7 @@ static void prvSetupHardware( void )
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //
-//    init_WD();
+    init_WD();
     init_spi();
     init_rtc();
 //    init_mram();

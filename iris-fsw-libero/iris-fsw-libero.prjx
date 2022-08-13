@@ -528,7 +528,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\DESIGN_FIRMWARE\DESIGN_FIRMWARE.cxf,actgen_cxf"
 STATE="utd"
-TIME="1658602510"
+TIME="1660356924"
 SIZE="3871"
 ENDFILE
 VALUE "<project>\component\work\FCCC_C0\FCCC_C0.cxf,actgen_cxf"
@@ -558,12 +558,12 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\MSS_C0.cxf,actgen_cxf"
 STATE="utd"
-TIME="1649539266"
+TIME="1660423317"
 SIZE="11399"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\MSS_C0.v,hdl"
 STATE="utd"
-TIME="1649539266"
+TIME="1660423317"
 SIZE="41584"
 PARENT="<project>\component\work\MSS_C0\MSS_C0.cxf"
 IS_READONLY="TRUE"
@@ -651,8 +651,8 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\constraint\io\user.pdc,io_pdc"
 STATE="utd"
-TIME="1658602510"
-SIZE="5684"
+TIME="1660423317"
+SIZE="5098"
 IS_TARGET="TRUE"
 ENDFILE
 VALUE "<project>\simulation\bfmtovec_compile.tcl,sim"
@@ -705,22 +705,22 @@ PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.so,so"
 STATE="utd"
-TIME="1657997418"
+TIME="1660091251"
 SIZE="234"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.vm,syn_vm"
 STATE="utd"
-TIME="1657997418"
+TIME="1660091250"
 SIZE="1141112"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0_syn.prj,prj"
 STATE="utd"
-TIME="1657997419"
+TIME="1660091251"
 SIZE="5489"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0_vm.sdc,syn_sdc"
 STATE="utd"
-TIME="1657997418"
+TIME="1660091250"
 SIZE="1099"
 ENDFILE
 ENDLIST
@@ -919,8 +919,8 @@ NAME="Synplify Pro ME"
 FUNCTION="Synthesis"
 TOOL="Synplify Pro ME"
 LOCATION="C:\Microsemi\Libero_SoC_v2021.3\SynplifyPro\bin\synplify_pro.exe"
-PARAM="-licensetype synplifypro_actel -batch -log synplify.log"
-BATCH=1
+PARAM=""
+BATCH=0
 LICENSE=""
 IS32BIT="1"
 EndProfile
@@ -999,13 +999,8 @@ LIST UserCustomizedFileList
 ENDLIST
 LIST OpenedFileList
 ORIENTATION;HORIZONTAL
-Reports;Reports;0
-ReportsCurrentItem;Generate Bitstream:MSS_C0_generateBitstream.log
-SmartDesign;MSS_C0;0
-SmartDesign;MSS_C0_MSS;0
-Constraint Manager;Constraint Manager;0
 StartPage;StartPage;0
-ACTIVEVIEW;MSS_C0
+ACTIVEVIEW;StartPage
 ENDLIST
 LIST ModuleSubBlockList
 LIST "CoreAPB3_C0::work","component\work\CoreAPB3_C0\CoreAPB3_C0.v","TRUE","FALSE"
@@ -1024,8 +1019,6 @@ SUBBLOCK "CORESPI::CORESPI_LIB","component\Actel\DirectCore\CORESPI\5.2.104\rtl\
 ENDLIST
 LIST "CORESPI_C1::work","component\work\CORESPI_C1\CORESPI_C1.v","TRUE","FALSE"
 SUBBLOCK "CORESPI::CORESPI_LIB","component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\corespi.v","FALSE","FALSE"
-ENDLIST
-LIST "DESIGN_FIRMWARE::work","component\work\DESIGN_FIRMWARE\DESIGN_FIRMWARE.cxf","TRUE","FALSE"
 ENDLIST
 LIST "MSS_010::work","component\work\MSS_C0_MSS\MSS_C0_MSS_syn.v","FALSE","FALSE"
 ENDLIST
