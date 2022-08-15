@@ -29,3 +29,7 @@ iris-fsw-softconsole/Libraries/libcrc
 
 # Python Scripts
 scripts/**/*.pyc
+
+# Libero files
+iris-fsw-libero/libero_setup_info.txt
+iris-fsw-libero.zip
