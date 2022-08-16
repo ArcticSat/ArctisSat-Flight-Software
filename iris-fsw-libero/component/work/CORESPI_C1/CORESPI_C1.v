@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
-// Created by SmartDesign Wed May  5 13:40:48 2021
-// Version: v12.6 12.900.20.24
+// Created by SmartDesign Mon Aug 15 19:52:36 2022
+// Version: 2021.3 2021.3.0.10
 //////////////////////////////////////////////////////////////////////
 
 `timescale 1ns / 100ps
@@ -19,7 +19,7 @@ create_and_configure_core -core_vlnv {Actel:DirectCore:CORESPI:5.2.104} -compone
 "CFG_FIFO_DEPTH:8"  \
 "CFG_FRAME_SIZE:8"  \
 "CFG_MODE:0"  \
-"CFG_MOT_MODE:1"  \
+"CFG_MOT_MODE:0"  \
 "CFG_MOT_SSEL:true"  \
 "CFG_NSC_OPERATION:0"  \
 "CFG_TI_JMB_FRAMES:false"  \
@@ -113,10 +113,10 @@ wire         SPISCLKO_net_1;
 wire         SPIOEN_net_1;
 wire         SPISDO_net_1;
 wire         SPIMODE_net_1;
-wire         APB_bif_PREADY_net_0;
-wire         APB_bif_PSLVERR_net_0;
 wire   [7:0] SPISS_net_1;
 wire   [7:0] APB_bif_PRDATA_net_0;
+wire         APB_bif_PREADY_net_0;
+wire         APB_bif_PSLVERR_net_0;
 //--------------------------------------------------------------------
 // Top level output port assignments
 //--------------------------------------------------------------------
@@ -134,14 +134,14 @@ assign SPISDO_net_1          = SPISDO_net_0;
 assign SPISDO                = SPISDO_net_1;
 assign SPIMODE_net_1         = SPIMODE_net_0;
 assign SPIMODE               = SPIMODE_net_1;
-assign APB_bif_PREADY_net_0  = APB_bif_PREADY;
-assign PREADY                = APB_bif_PREADY_net_0;
-assign APB_bif_PSLVERR_net_0 = APB_bif_PSLVERR;
-assign PSLVERR               = APB_bif_PSLVERR_net_0;
 assign SPISS_net_1           = SPISS_net_0;
 assign SPISS[7:0]            = SPISS_net_1;
 assign APB_bif_PRDATA_net_0  = APB_bif_PRDATA;
 assign PRDATA[7:0]           = APB_bif_PRDATA_net_0;
+assign APB_bif_PREADY_net_0  = APB_bif_PREADY;
+assign PREADY                = APB_bif_PREADY_net_0;
+assign APB_bif_PSLVERR_net_0 = APB_bif_PSLVERR;
+assign PSLVERR               = APB_bif_PSLVERR_net_0;
 //--------------------------------------------------------------------
 // Component instances
 //--------------------------------------------------------------------
@@ -152,7 +152,7 @@ CORESPI #(
         .CFG_FIFO_DEPTH    ( 8 ),
         .CFG_FRAME_SIZE    ( 8 ),
         .CFG_MODE          ( 0 ),
-        .CFG_MOT_MODE      ( 1 ),
+        .CFG_MOT_MODE      ( 0 ),
         .CFG_MOT_SSEL      ( 1 ),
         .CFG_NSC_OPERATION ( 0 ),
         .CFG_TI_JMB_FRAMES ( 0 ),

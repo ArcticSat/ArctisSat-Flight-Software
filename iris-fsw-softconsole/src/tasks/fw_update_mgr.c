@@ -426,6 +426,9 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     }
                 }
 
+                update_spi_dir(0, fwFiles[0].designver);
+                update_spi_dir(1, fwFiles[1].designver);
+
                //If we make it here we should have verified all copies of the firmware, so we can say system is armed!
                if(fwMgrArmed){
                    updateState(FW_STATE_ARMED);
@@ -466,7 +469,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                         break;
                     }
 
-                    update_spi_dir(targetFw, targetFw);
+                    update_spi_dir(targetFw, fwFiles[targetFw].designver);
 
 
                     //Do one last check of the fw before we upload

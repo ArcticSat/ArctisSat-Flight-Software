@@ -48,7 +48,8 @@ int authenticate_firmware(uint8_t version, uint16_t *design_ver){
 	*design_ver = dv;
 
 	MSS_SPI_set_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
-	uint8_t result = MSS_SYS_initiate_iap(MSS_SYS_PROG_AUTHENTICATE,addr);
+
+	uint8_t result = MSS_SYS_initiate_iap(MSS_SYS_PROG_VERIFY,addr);
 	MSS_SPI_clear_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
 
 	if(result == MSS_SYS_SUCCESS){
@@ -72,7 +73,8 @@ void initiate_firmware_update(uint8_t version){
 	vTaskDelay(5000);
 
 	MSS_SPI_set_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
-	uint8_t result = MSS_SYS_initiate_iap(MSS_SYS_PROG_PROGRAM,addr);
+	uint8_t result = MSS_SYS_initiate_iap(MSS_SYS_PROG_AUTHENTICATE,addr);
+	result = MSS_SYS_initiate_iap(MSS_SYS_PROG_PROGRAM,addr);
 	MSS_SPI_clear_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
 
 	//If we get here the IAP failed...
@@ -126,11 +128,15 @@ void set_program_size(uint32_t size, uint8_t version){
 void update_spi_dir(uint8_t  version, uint16_t design_ver){
 
     //Little endian...
-    uint8_t spi_dir[13] = {0x00, 0x10,0x00,0x00, //Golden address (0x1000)
-                           0x00,0x00,            //Golden Design Ver (0)
-                           0x00,0x00,0x10,0x00,  //Update addrress (default 0x100000)
-                           0x01,0x00,            //Update design ver
-                           0x0a};                //File End (Linefeed)
+
+//    uint8_t spi_dir[13] = {0x00, 0x10,0x00,0x00, //Golden address (0x1000)
+//                           0x00,0x00,            //Golden Design Ver (0)
+//                           0x00,0x00,0x10,0x00,  //Update addrress (default 0x100000)
+//                           0x01,0x00,            //Update design ver
+//                           0x0a};                //File End (Linefeed)
+
+	uint8_t spi_dir[13]= {0};
+	flash_read(flash_devices[PROGRAM_FLASH],0,spi_dir,13);
     uint8_t location = (version ? 10:4); //Insert to byte 10 if update image(1), or byte 4 for godlen image(0).
     memcpy(&spi_dir[location],&design_ver,2);
     FlashStatus_t stat= flash_erase(flash_devices[PROGRAM_FLASH], 0);
