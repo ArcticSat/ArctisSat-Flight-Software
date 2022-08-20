@@ -287,8 +287,8 @@ static void prvSetupHardware( void )
 //    init_mram();
     //init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
-    flash_device_init(flash_devices[DATA_FLASH]);
-//    initADC();
+    flash_device_init(flash_devices[PROGRAM_FLASH]);
+    initADC();
 //    asMram_init();
 
 }

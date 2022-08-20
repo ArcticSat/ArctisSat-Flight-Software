@@ -2,11 +2,11 @@
 
 # User I/O Constraints file 
 
-# Version: v12.6 12.900.20.24
+# Version: 2021.3 2021.3.0.10
 
 # Family: SmartFusion2 , Die: M2S010 , Package: 144 TQ
 
-# Date generated: Wed May  5 13:27:17 2021 
+# Date generated: Sat Aug 20 13:29:11 2022 
 
 
 # 
@@ -54,25 +54,25 @@ set_io ADCS_SPI_SCK    \
 
 
 set_io ADC_CS          \
-    -pinname 102       \
+    -pinname 64        \
     -fixed yes         \
     -DIRECTION OUTPUT
 
 
 set_io ADC_MISO       \
-    -pinname 100      \
+    -pinname 66       \
     -fixed yes        \
     -DIRECTION INPUT
 
 
 set_io ADC_MOSI        \
-    -pinname 103       \
+    -pinname 52        \
     -fixed yes         \
     -DIRECTION OUTPUT
 
 
 set_io ADC_SCK         \
-    -pinname 101       \
+    -pinname 53        \
     -fixed yes         \
     -DIRECTION OUTPUT
 
@@ -128,7 +128,7 @@ set_io FLASH1_WP       \
 
 
 set_io FLASH2_CS       \
-    -pinname 64        \
+    -pinname 103       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
@@ -140,19 +140,19 @@ set_io FLASH2_HOLDn    \
 
 
 set_io FLASH2_MISO    \
-    -pinname 66       \
+    -pinname 101      \
     -fixed yes        \
     -DIRECTION INPUT
 
 
 set_io FLASH2_MOSI     \
-    -pinname 52        \
+    -pinname 102       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
 
 set_io FLASH2_SCK      \
-    -pinname 53        \
+    -pinname 100       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
