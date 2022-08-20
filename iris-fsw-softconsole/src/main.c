@@ -271,14 +271,14 @@ int main( void )
 //						 1,
 //						 NULL);
 
-//    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
+    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 
-    status = xTaskCreate(vTestAdcsDriver,
-                         "Test ADCS",
-                         configMINIMAL_STACK_SIZE,
-                         NULL,
-                         1,
-                         NULL);
+//    status = xTaskCreate(vTestAdcsDriver,
+//                         "Test ADCS",
+//                         configMINIMAL_STACK_SIZE,
+//                         NULL,
+//                         1,
+//                         NULL);
 
     vTaskStartScheduler();
 
@@ -298,14 +298,14 @@ static void prvSetupHardware( void )
 //
     init_WD();
     init_spi();
-    init_rtc();
-    init_mram();
-    init_CAN(CAN_BAUD_RATE_250K,NULL);
-    adcs_init_driver();
-    flash_device_init(flash_devices[DATA_FLASH]);
+//    init_rtc();
+//    init_mram();
+//    init_CAN(CAN_BAUD_RATE_250K,NULL);
+//    adcs_init_driver();
+//    flash_device_init(flash_devices[DATA_FLASH]);
     flash_device_init(flash_devices[PROGRAM_FLASH]);
     initADC();
-    asMram_init();
+//    asMram_init();
 
 }
 
