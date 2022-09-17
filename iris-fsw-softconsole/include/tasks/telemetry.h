@@ -18,6 +18,7 @@
 #define CDH_CSP_ADDRESS		4
 #define PAYLOAD_CSP_ADDRESS	5
 #define GROUND_CSP_ADDRESS	9
+#define GROUND_CSP_ADDRESS2	10
 
 
 //Define the ports we're using

@@ -79,7 +79,7 @@
 
 //#define SERVER
 //#define CLIENT
-#define CAN_SERVER
+//#define CAN_SERVER
 #define CSP_SERVER
 
 
@@ -132,11 +132,11 @@ int main( void )
 
      prvSetupHardware();
 
-    //Make sure FS is up before all tasks
-    FilesystemError_t stat = fs_init();
-        if(stat != FS_OK){
-            //What to do here? try again? can cdh work without fs?
-        }
+//    //Make sure FS is up before all tasks
+//    FilesystemError_t stat = fs_init();
+//        if(stat != FS_OK){
+//            //What to do here? try again? can cdh work without fs?
+//        }
     // Create LED spinning task
     status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
                             "LED Spinner",               // Text name for debugging
@@ -152,12 +152,12 @@ int main( void )
                             (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
                             3,                           // Task runs at priority 2
                             &xUART0RxTaskToNotify);      // Task handle for task notification
-    status = xTaskCreate(vTTT_Scheduler,
-                         "TTT",
-                         1000,
-                         NULL,
-                         2,
-                         &vTTTScheduler_h);
+//    status = xTaskCreate(vTTT_Scheduler,
+//                         "TTT",
+//                         1000,
+//                         NULL,
+//                         2,
+//                         &vTTTScheduler_h);
 
 
 //    status = xTaskCreate(vTestSPI,
@@ -236,12 +236,12 @@ int main( void )
 //                         NULL);
 #endif
 
-    status = xTaskCreate(vTestWD,
-                         "Test WD",
-                         configMINIMAL_STACK_SIZE,
-                         NULL,
-                         1,
-                         &vTestWD_h);
+//    status = xTaskCreate(vTestWD,
+//                         "Test WD",
+//                         configMINIMAL_STACK_SIZE,
+//                         NULL,
+//                         1,
+//                         &vTestWD_h);
 
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
@@ -304,12 +304,12 @@ int main( void )
 //                         1,
 //                         NULL);
 
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-
-    //Suspend these because csp server will start once csp is up.
-    vTaskSuspend(vFw_Update_Mgr_Task_h);
-    vTaskSuspend(vTTTScheduler_h);
-    vTaskSuspend(vTestCanServer_h);
+//    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+//
+//    //Suspend these because csp server will start once csp is up.
+//    vTaskSuspend(vFw_Update_Mgr_Task_h);
+//    vTaskSuspend(vTTTScheduler_h);
+//    vTaskSuspend(vTestCanServer_h);
 
 
 
@@ -329,9 +329,9 @@ static void prvSetupHardware( void )
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //
-    init_WD();
-    init_spi();
-    init_rtc();
+//    init_WD();
+//    init_spi();
+//    init_rtc();
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();

@@ -35,7 +35,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-#define USING_EM_OR_FM 1
+#define USING_EM_OR_FM 0
 
 
 //------------------------------------------------------------------------------
@@ -121,10 +121,10 @@ void vCSP_Server(void * pvParameters){
 
 #endif
 
-    //Start up any tasks that depend on CSP.
-    vTaskResume(vTestCanServer_h);
-    vTaskResume(vFw_Update_Mgr_Task_h);
-    vTaskResume(vTTTScheduler_h);
+//    //Start up any tasks that depend on CSP.
+//    vTaskResume(vTestCanServer_h);
+//    vTaskResume(vFw_Update_Mgr_Task_h);
+//    vTaskResume(vTTTScheduler_h);
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -484,7 +484,7 @@ uint8_t configure_csp(){
         return result;
     }
     /* Init CSP with address 0 */
-    status = csp_init(CDH_CSP_ADDRESS);
+    status = csp_init(GROUND_CSP_ADDRESS2);
     if(status != CSP_ERR_NONE){
         result = 0;
         return result;
