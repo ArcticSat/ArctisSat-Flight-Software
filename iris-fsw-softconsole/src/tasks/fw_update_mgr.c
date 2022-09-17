@@ -463,11 +463,11 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 if(fwMgrExeConfirmed){
 
                     //First check our file is verified. We should n't be allowed here without the fw being verified, but just in case...
-                    if(verifiedStatus.verified[1] != 1){
-                        printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
-                        updateState(FW_STATE_IDLE);
-                        break;
-                    }
+//                    if(verifiedStatus.verified[1] != 1){
+//                        printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
+//                        updateState(FW_STATE_IDLE);
+//                        break;
+//                    }
 
                     update_spi_dir(targetFw, fwFiles[targetFw].designver);
 
@@ -609,7 +609,7 @@ int updateState(int state){
         case FW_STATE_IDLE:{
 
             //From IDLE we are not allowed to go to UPDATE, otherwise any state is valid.
-            if(state == FW_STATE_UPDATE) return -1;
+//            if(state == FW_STATE_UPDATE) return -1;
 
             //Special case: If we go to ARMED, we should pre-verify first, and then set armed.
             if(state == FW_STATE_ARMED){

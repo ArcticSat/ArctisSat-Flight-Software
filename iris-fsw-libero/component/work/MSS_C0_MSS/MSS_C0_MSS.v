@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
-// Created by SmartDesign Wed May  5 13:21:50 2021
-// Version: v12.6 12.900.20.24
+// Created by SmartDesign Sat Sep 17 16:35:12 2022
+// Version: 2022.1 2022.1.0.10
 //////////////////////////////////////////////////////////////////////
 
 `timescale 1ns / 100ps
@@ -21,9 +21,7 @@ module MSS_C0_MSS(
     MMUART_0_RXD_F2M,
     MSS_INT_F2M,
     MSS_RESET_N_F2M,
-    SPI_0_CLK_F2M,
-    SPI_0_DI_F2M,
-    SPI_0_SS0_F2M,
+    SPI_0_DI,
     // Outputs
     CAN_TX_EN_N_M2F,
     CAN_TX_M2F,
@@ -57,10 +55,10 @@ module MSS_C0_MSS(
     GPIO_9_M2F,
     MMUART_0_TXD_M2F,
     MSS_RESET_N_M2F,
-    SPI_0_CLK_M2F,
-    SPI_0_DO_M2F,
-    SPI_0_SS0_M2F,
-    SPI_0_SS0_M2F_OE
+    SPI_0_DO,
+    // Inouts
+    SPI_0_CLK,
+    SPI_0_SS0
 );
 
 //--------------------------------------------------------------------
@@ -79,9 +77,7 @@ input         MCCC_CLK_BASE_PLL_LOCK;
 input         MMUART_0_RXD_F2M;
 input  [15:0] MSS_INT_F2M;
 input         MSS_RESET_N_F2M;
-input         SPI_0_CLK_F2M;
-input         SPI_0_DI_F2M;
-input         SPI_0_SS0_F2M;
+input         SPI_0_DI;
 //--------------------------------------------------------------------
 // Output
 //--------------------------------------------------------------------
@@ -117,10 +113,12 @@ output        GPIO_8_M2F;
 output        GPIO_9_M2F;
 output        MMUART_0_TXD_M2F;
 output        MSS_RESET_N_M2F;
-output        SPI_0_CLK_M2F;
-output        SPI_0_DO_M2F;
-output        SPI_0_SS0_M2F;
-output        SPI_0_SS0_M2F_OE;
+output        SPI_0_DO;
+//--------------------------------------------------------------------
+// Inout
+//--------------------------------------------------------------------
+inout         SPI_0_CLK;
+inout         SPI_0_SS0;
 //--------------------------------------------------------------------
 // Nets
 //--------------------------------------------------------------------
@@ -166,16 +164,22 @@ wire          MCCC_CLK_BASE;
 wire          MCCC_CLK_BASE_PLL_LOCK;
 wire          MMUART_0_RXD_F2M;
 wire          MMUART_0_TXD_M2F_net_0;
+wire          MSS_ADLIB_INST_SPI0_SCK_USBA_XCLK_OE;
+wire          MSS_ADLIB_INST_SPI0_SCK_USBA_XCLK_OUT;
+wire          MSS_ADLIB_INST_SPI0_SDO_USBA_STP_MGPIO6A_OE;
+wire          MSS_ADLIB_INST_SPI0_SDO_USBA_STP_MGPIO6A_OUT;
+wire          MSS_ADLIB_INST_SPI0_SS0_USBA_NXT_MGPIO7A_OE;
+wire          MSS_ADLIB_INST_SPI0_SS0_USBA_NXT_MGPIO7A_OUT;
 wire   [15:0] MSS_INT_F2M;
 wire          MSS_RESET_N_F2M;
 wire          MSS_RESET_N_M2F_net_0;
-wire          SPI_0_CLK_F2M;
-wire          SPI_0_CLK_M2F_net_0;
-wire          SPI_0_DI_F2M;
-wire          SPI_0_DO_M2F_net_0;
-wire          SPI_0_SS0_F2M;
-wire          SPI_0_SS0_M2F_net_0;
-wire          SPI_0_SS0_M2F_OE_net_0;
+wire          SPI_0_CLK;
+wire          SPI_0_CLK_PAD_Y;
+wire          SPI_0_DI;
+wire          SPI_0_DI_PAD_Y;
+wire          SPI_0_DO_0;
+wire          SPI_0_SS0;
+wire          SPI_0_SS0_PAD_Y;
 wire          MMUART_0_TXD_M2F_net_1;
 wire          GPIO_0_M2F_net_1;
 wire          GPIO_1_M2F_net_1;
@@ -204,10 +208,7 @@ wire          GPIO_16_M2F_net_1;
 wire          GPIO_17_M2F_net_1;
 wire          GPIO_18_M2F_net_1;
 wire          GPIO_19_M2F_net_1;
-wire          SPI_0_DO_M2F_net_1;
-wire          SPI_0_CLK_M2F_net_1;
-wire          SPI_0_SS0_M2F_net_1;
-wire          SPI_0_SS0_M2F_OE_net_1;
+wire          SPI_0_DO_0_net_0;
 wire   [31:0] FIC_0_APB_MASTER_PADDR_net_0;
 wire   [31:0] FIC_0_APB_MASTER_PWDATA_net_0;
 wire   [15:2] FIC_2_APB_MASTER_0_PADDR_net_0;
@@ -343,14 +344,8 @@ assign GPIO_18_M2F_net_1                = GPIO_18_M2F_net_0;
 assign GPIO_18_M2F                      = GPIO_18_M2F_net_1;
 assign GPIO_19_M2F_net_1                = GPIO_19_M2F_net_0;
 assign GPIO_19_M2F                      = GPIO_19_M2F_net_1;
-assign SPI_0_DO_M2F_net_1               = SPI_0_DO_M2F_net_0;
-assign SPI_0_DO_M2F                     = SPI_0_DO_M2F_net_1;
-assign SPI_0_CLK_M2F_net_1              = SPI_0_CLK_M2F_net_0;
-assign SPI_0_CLK_M2F                    = SPI_0_CLK_M2F_net_1;
-assign SPI_0_SS0_M2F_net_1              = SPI_0_SS0_M2F_net_0;
-assign SPI_0_SS0_M2F                    = SPI_0_SS0_M2F_net_1;
-assign SPI_0_SS0_M2F_OE_net_1           = SPI_0_SS0_M2F_OE_net_0;
-assign SPI_0_SS0_M2F_OE                 = SPI_0_SS0_M2F_OE_net_1;
+assign SPI_0_DO_0_net_0                 = SPI_0_DO_0;
+assign SPI_0_DO                         = SPI_0_DO_0_net_0;
 assign FIC_0_APB_MASTER_PADDR_net_0     = FIC_0_APB_MASTER_PADDR;
 assign FIC_0_APB_M_PADDR[31:0]          = FIC_0_APB_MASTER_PADDR_net_0;
 assign FIC_0_APB_MASTER_PWDATA_net_0    = FIC_0_APB_MASTER_PWDATA;
@@ -366,7 +361,7 @@ assign FIC_2_APB_M_PWDATA[31:0]         = FIC_2_APB_MASTER_0_PWDATA_net_0;
 MSS_010 #( 
         .ACT_UBITS         ( 56'hFFFFFFFFFFFFFF ),
         .DDR_CLK_FREQ      ( 128.0 ),
-        .INIT              ( 1438'h0000000000000030000000000000000000000000000000000000000000000000000000000000000000000000000000000C030000300003000000000000000000000000000000000F00000000F000000000000000000000000000000007FFFFFFFB000001007C35C00008800609080208003FFFFE4000000000024000000000F0F01C000001825744010842108421000001FE34001FF80000004000000000200D1007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF ),
+        .INIT              ( 1438'h00000000000000300000000000000000000000000000000000000000000000000000000000000000000000000000000001203610300003000000000000000000000000000000000F00000000F000000000000000000000000000000007FFFFFFFB000001007C35C00008800609080208003FFFFE4000000000020000000000F0F01C000001825744010842108421000001FE34001FF80000004000000000200D1007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF ),
         .MEMORYFILE        ( "ENVM_init.mem" ),
         .RTC_MAIN_XTL_FREQ ( 0.0 ),
         .RTC_MAIN_XTL_MODE ( "" ) )
@@ -479,10 +474,10 @@ MSS_ADLIB_INST(
         .SMBALERT_NI1                            ( VCC_net ), // tied to 1'b1 from definition
         .SMBSUS_NI0                              ( VCC_net ), // tied to 1'b1 from definition
         .SMBSUS_NI1                              ( VCC_net ), // tied to 1'b1 from definition
-        .SPI0_CLK_IN                             ( SPI_0_CLK_F2M ),
-        .SPI0_SDI_F2H_SCP                        ( SPI_0_DI_F2M ),
+        .SPI0_CLK_IN                             ( VCC_net ), // tied to 1'b1 from definition
+        .SPI0_SDI_F2H_SCP                        ( VCC_net ), // tied to 1'b1 from definition
         .SPI0_SDO_F2H_SCP                        ( VCC_net ), // tied to 1'b1 from definition
-        .SPI0_SS0_F2H_SCP                        ( SPI_0_SS0_F2M ),
+        .SPI0_SS0_F2H_SCP                        ( VCC_net ), // tied to 1'b1 from definition
         .SPI0_SS1_F2H_SCP                        ( VCC_net ), // tied to 1'b1 from definition
         .SPI0_SS2_F2H_SCP                        ( VCC_net ), // tied to 1'b1 from definition
         .SPI0_SS3_F2H_SCP                        ( VCC_net ), // tied to 1'b1 from definition
@@ -566,10 +561,10 @@ MSS_ADLIB_INST(
         .RGMII_TXD1_RMII_TXD1_USBB_STP_IN        ( GND_net ),
         .RGMII_TXD2_USBB_DATA5_IN                ( GND_net ),
         .RGMII_TXD3_USBB_DATA6_IN                ( GND_net ),
-        .SPI0_SCK_USBA_XCLK_IN                   ( GND_net ),
-        .SPI0_SDI_USBA_DIR_MGPIO5A_IN            ( GND_net ),
+        .SPI0_SCK_USBA_XCLK_IN                   ( SPI_0_CLK_PAD_Y ),
+        .SPI0_SDI_USBA_DIR_MGPIO5A_IN            ( SPI_0_DI_PAD_Y ),
         .SPI0_SDO_USBA_STP_MGPIO6A_IN            ( GND_net ),
-        .SPI0_SS0_USBA_NXT_MGPIO7A_IN            ( GND_net ),
+        .SPI0_SS0_USBA_NXT_MGPIO7A_IN            ( SPI_0_SS0_PAD_Y ),
         .SPI0_SS1_USBA_DATA5_MGPIO8A_IN          ( GND_net ),
         .SPI0_SS2_USBA_DATA6_MGPIO9A_IN          ( GND_net ),
         .SPI0_SS3_USBA_DATA7_MGPIO10A_IN         ( GND_net ),
@@ -680,13 +675,13 @@ MSS_ADLIB_INST(
         .SMBALERT_NO1                            (  ),
         .SMBSUS_NO0                              (  ),
         .SMBSUS_NO1                              (  ),
-        .SPI0_CLK_OUT                            ( SPI_0_CLK_M2F_net_0 ),
+        .SPI0_CLK_OUT                            (  ),
         .SPI0_SDI_MGPIO5A_H2F_A                  (  ),
         .SPI0_SDI_MGPIO5A_H2F_B                  ( GPIO_5_M2F_net_0 ),
-        .SPI0_SDO_MGPIO6A_H2F_A                  ( SPI_0_DO_M2F_net_0 ),
+        .SPI0_SDO_MGPIO6A_H2F_A                  (  ),
         .SPI0_SDO_MGPIO6A_H2F_B                  (  ),
-        .SPI0_SS0_MGPIO7A_H2F_A                  ( SPI_0_SS0_M2F_net_0 ),
-        .SPI0_SS0_MGPIO7A_H2F_B                  ( SPI_0_SS0_M2F_OE_net_0 ),
+        .SPI0_SS0_MGPIO7A_H2F_A                  (  ),
+        .SPI0_SS0_MGPIO7A_H2F_B                  (  ),
         .SPI0_SS1_MGPIO8A_H2F_A                  (  ),
         .SPI0_SS1_MGPIO8A_H2F_B                  ( GPIO_8_M2F_net_0 ),
         .SPI0_SS2_MGPIO9A_H2F_A                  (  ),
@@ -787,10 +782,10 @@ MSS_ADLIB_INST(
         .RGMII_TXD1_RMII_TXD1_USBB_STP_OUT       (  ),
         .RGMII_TXD2_USBB_DATA5_OUT               (  ),
         .RGMII_TXD3_USBB_DATA6_OUT               (  ),
-        .SPI0_SCK_USBA_XCLK_OUT                  (  ),
+        .SPI0_SCK_USBA_XCLK_OUT                  ( MSS_ADLIB_INST_SPI0_SCK_USBA_XCLK_OUT ),
         .SPI0_SDI_USBA_DIR_MGPIO5A_OUT           (  ),
-        .SPI0_SDO_USBA_STP_MGPIO6A_OUT           (  ),
-        .SPI0_SS0_USBA_NXT_MGPIO7A_OUT           (  ),
+        .SPI0_SDO_USBA_STP_MGPIO6A_OUT           ( MSS_ADLIB_INST_SPI0_SDO_USBA_STP_MGPIO6A_OUT ),
+        .SPI0_SS0_USBA_NXT_MGPIO7A_OUT           ( MSS_ADLIB_INST_SPI0_SS0_USBA_NXT_MGPIO7A_OUT ),
         .SPI0_SS1_USBA_DATA5_MGPIO8A_OUT         (  ),
         .SPI0_SS2_USBA_DATA6_MGPIO9A_OUT         (  ),
         .SPI0_SS3_USBA_DATA7_MGPIO10A_OUT        (  ),
@@ -843,10 +838,10 @@ MSS_ADLIB_INST(
         .RGMII_TXD1_RMII_TXD1_USBB_STP_OE        (  ),
         .RGMII_TXD2_USBB_DATA5_OE                (  ),
         .RGMII_TXD3_USBB_DATA6_OE                (  ),
-        .SPI0_SCK_USBA_XCLK_OE                   (  ),
+        .SPI0_SCK_USBA_XCLK_OE                   ( MSS_ADLIB_INST_SPI0_SCK_USBA_XCLK_OE ),
         .SPI0_SDI_USBA_DIR_MGPIO5A_OE            (  ),
-        .SPI0_SDO_USBA_STP_MGPIO6A_OE            (  ),
-        .SPI0_SS0_USBA_NXT_MGPIO7A_OE            (  ),
+        .SPI0_SDO_USBA_STP_MGPIO6A_OE            ( MSS_ADLIB_INST_SPI0_SDO_USBA_STP_MGPIO6A_OE ),
+        .SPI0_SS0_USBA_NXT_MGPIO7A_OE            ( MSS_ADLIB_INST_SPI0_SS0_USBA_NXT_MGPIO7A_OE ),
         .SPI0_SS1_USBA_DATA5_MGPIO8A_OE          (  ),
         .SPI0_SS2_USBA_DATA6_MGPIO9A_OE          (  ),
         .SPI0_SS3_USBA_DATA7_MGPIO10A_OE         (  ),
@@ -862,6 +857,45 @@ MSS_ADLIB_INST(
         .SPI1_SS6_MGPIO23A_OE                    (  ),
         .SPI1_SS7_MGPIO24A_OE                    (  ),
         .USBC_XCLK_OE                            (  ) 
+        );
+
+//--------BIBUF
+BIBUF SPI_0_CLK_PAD(
+        // Inputs
+        .D   ( MSS_ADLIB_INST_SPI0_SCK_USBA_XCLK_OUT ),
+        .E   ( MSS_ADLIB_INST_SPI0_SCK_USBA_XCLK_OE ),
+        // Outputs
+        .Y   ( SPI_0_CLK_PAD_Y ),
+        // Inouts
+        .PAD ( SPI_0_CLK ) 
+        );
+
+//--------INBUF
+INBUF SPI_0_DI_PAD(
+        // Inputs
+        .PAD ( SPI_0_DI ),
+        // Outputs
+        .Y   ( SPI_0_DI_PAD_Y ) 
+        );
+
+//--------TRIBUFF
+TRIBUFF SPI_0_DO_PAD(
+        // Inputs
+        .D   ( MSS_ADLIB_INST_SPI0_SDO_USBA_STP_MGPIO6A_OUT ),
+        .E   ( MSS_ADLIB_INST_SPI0_SDO_USBA_STP_MGPIO6A_OE ),
+        // Outputs
+        .PAD ( SPI_0_DO_0 ) 
+        );
+
+//--------BIBUF
+BIBUF SPI_0_SS0_PAD(
+        // Inputs
+        .D   ( MSS_ADLIB_INST_SPI0_SS0_USBA_NXT_MGPIO7A_OUT ),
+        .E   ( MSS_ADLIB_INST_SPI0_SS0_USBA_NXT_MGPIO7A_OE ),
+        // Outputs
+        .Y   ( SPI_0_SS0_PAD_Y ),
+        // Inouts
+        .PAD ( SPI_0_SS0 ) 
         );
 
 
