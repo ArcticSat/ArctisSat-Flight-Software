@@ -73,6 +73,9 @@ This library is provides a communication protocol stack following the TCP/IP mod
 
 ## Software Update Instructions:
 
+Remember to set the program flash spi pins to be enabled in flash freeze mode!
+This can be done in the i/o editor. Make sure the mss_spi spi_0 module has the pins set as I/O not FPGA to ensue the option to change the flash freeze functionality is enabled.
+
 The IrisSat CDH allows for over-the-air updates of the software.  
 Below are the steps to prepare a software update file, see the IrisTerminal documentation for instructions on how to upload the file and initiate the update.
 It is possible to generate an update file with only the eNVM content(i.e. the software), which is about 5 times smaller than the full image with the fpga data.
