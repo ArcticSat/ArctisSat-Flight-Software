@@ -56,6 +56,7 @@
 #include "drivers/mss_uart/mss_uart.h"    // For baud rate defines and instances
 
 /* Application includes. */
+#include "taskhandles.h"
 #include "drivers/protocol/can.h"
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/device/leds.h"
@@ -71,19 +72,32 @@
 #include "tests.h"
 #include "tasks/telemetry.h"
 #include "tasks/csp_server.h"
+#include "tasks/fw_update_mgr.h"
 #include "drivers/device/adc/AD7928.h"
 
 
 
 //#define SERVER
 //#define CLIENT
-//#define CAN_SERVER
-//#define CSP_SERVER
-
+#define CAN_SERVER
+#define CSP_SERVER
 
 
 /* External variables */
+
+
+//TaskHandles
+//This is how we are able to disable/enable tasks, either for operations managment or proper startup order.
+TaskHandle_t vTTTScheduler_h;
+TaskHandle_t vFw_Update_Mgr_Task_h;
+TaskHandle_t vTestCanServer_h;
+TaskHandle_t vCSP_Server_h;
+TaskHandle_t vTestWD_h;
+//Debug Only:
+TaskHandle_t vTaskSpinLEDs_h;
+
 extern TaskHandle_t xUART0RxTaskToNotify;
+
 
 /*
  * Set up the hardware ready to run this demo.
@@ -111,55 +125,39 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 
-
+    //TODO: Are time tagged tasks persistent over restart?
     BaseType_t status;
 
     /* Prepare the hardware to run this demo. */
 
-    prvSetupHardware();
+     prvSetupHardware();
 
+    //Make sure FS is up before all tasks
+    FilesystemError_t stat = fs_init();
+        if(stat != FS_OK){
+            //What to do here? try again? can cdh work without fs?
+        }
+    // Create LED spinning task
+    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
+                            "LED Spinner",               // Text name for debugging
+                            150,                        // Size of the stack allocated for this task
+                            NULL,                        // Task parameter is not used
+                            1,                           // Task runs at priority 1
+                            NULL);                       // Task handle is not used
 
-//    // Create LED spinning task
-//    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
-//                            "LED Spinner",               // Text name for debugging
-//                            100,                        // Size of the stack allocated for this task
-//                            NULL,                        // Task parameter is not used
-//                            1,                           // Task runs at priority 1
-//                            NULL);                       // Task handle is not used
-//
-//    // Create UART0 RX Task
-//    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
-//                            "UART0 Receiver",            // Text name for debugging
-//                            1000,                        // Size of the stack allocated for this task
-//                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-//                            2,                           // Task runs at priority 2
-//                            &xUART0RxTaskToNotify);      // Task handle for task notification
-//    status = xTaskCreate(vTTT_Scheduler,
-//                         "TTT",
-//                         1000,
-//                         NULL,
-//                         1,
-//                         NULL);
-
-#ifdef CSP_SERVER
-    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, NULL);
-#endif
-
-#ifdef CAN_SERVER
-    status = xTaskCreate(vTestCanServer,
-                         "Test CAN Rx",
-						 1000,
+    // Create UART0 RX Task
+    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
+                            "UART0 Receiver",            // Text name for debugging
+                            1200,                        // Size of the stack allocated for this task
+                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
+                            3,                           // Task runs at priority 2
+                            &xUART0RxTaskToNotify);      // Task handle for task notification
+    status = xTaskCreate(vTTT_Scheduler,
+                         "TTT",
+                         1000,
                          NULL,
-                         1,
-                         NULL);
-#endif
-
-//    status = xTaskCreate(vTestWD,
-//                         "Test WD",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         NULL);
+                         2,
+                         &vTTTScheduler_h);
 
 
 //    status = xTaskCreate(vTestSPI,
@@ -219,6 +217,32 @@ int main( void )
 
 
 
+#ifdef CSP_SERVER
+    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
+#endif
+
+#ifdef CAN_SERVER
+    status = xTaskCreate(vTestCanServer,
+                         "Test CAN Rx",
+						 1000,
+                         NULL,
+                         2,
+                         &vTestCanServer_h);
+//    status = xTaskCreate(vTestCANRx,
+//                         "Test CAN Rx",
+//                         500,
+//                         NULL,
+//                         1,
+//                         NULL);
+#endif
+
+    status = xTaskCreate(vTestWD,
+                         "Test WD",
+                         configMINIMAL_STACK_SIZE,
+                         NULL,
+                         1,
+                         &vTestWD_h);
+
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
 //                         1000,
@@ -253,7 +277,7 @@ int main( void )
 //                         (void *)flash_devices[DATA_FLASH],
 //                         1,
 //                         NULL);
-//
+
 
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,
@@ -264,14 +288,14 @@ int main( void )
 //						 NULL);
 //
 //    // Task for testing time tagged task queue.
-//    status = xTaskCreate(vTestTaskScheduler,
+//status = xTaskCreate(vTestTaskScheduler,
 //    					 "Test time tagged task queue",
 //						 256,
 //						 NULL,
 //						 1,
 //						 NULL);
 
-    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
+//    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 
 //    status = xTaskCreate(vTestAdcsDriver,
 //                         "Test ADCS",
@@ -279,6 +303,15 @@ int main( void )
 //                         NULL,
 //                         1,
 //                         NULL);
+
+    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+
+    //Suspend these because csp server will start once csp is up.
+    vTaskSuspend(vFw_Update_Mgr_Task_h);
+    vTaskSuspend(vTTTScheduler_h);
+    vTaskSuspend(vTestCanServer_h);
+
+
 
     vTaskStartScheduler();
 
@@ -290,20 +323,21 @@ int main( void )
 static void prvSetupHardware( void )
 {
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
-//    vInitializeLEDs();
+    vInitializeLEDs();
 //
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-//    vInitializeUARTs(MSS_UART_115200_BAUD);
+    vInitializeUARTs(MSS_UART_115200_BAUD);
 //
     init_WD();
     init_spi();
-//    init_rtc();
+    init_rtc();
 //    init_mram();
-//    init_CAN(CAN_BAUD_RATE_250K,NULL);
+    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
+    flash_device_init(flash_devices[DATA_FLASH]);
     flash_device_init(flash_devices[PROGRAM_FLASH]);
-    initADC();
+//    initADC();
 //    asMram_init();
 
 }
@@ -390,33 +424,6 @@ static void vTestCanServer(void * pvParameters)
 						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
 						break;
 					}
-					case POWER_GET_BATTERY_SOC_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_GET_BATTERY_SOC_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_GET_ECLIPSE_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_GET_ECLIPSE_ID;
-						telemetry.length = 1;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-//					case POWER_GET_BOOT_COUNT_ID:{
-//						telemetryPacket_t telemetry;
-//						// Send telemetry value
-//						telemetry.telem_id = POWER_GET_BOOT_COUNT_ID;
-//						telemetry.length = 2;
-//						telemetry.data = can_q[numCanMsgs].data;
-//						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-//						break;
-//					}
 				}
 			}
 
@@ -453,7 +460,7 @@ static void vTestCspServer(void * pvParameters){
 
 	size_t freSpace = xPortGetFreeHeapSize();
 	/* Start router task with 100 word stack, OS task priority 1 */
-	csp_route_start_task(100, 1);
+	csp_route_start_task(200, 1);
 
 
 	 conn = NULL;

@@ -41,7 +41,7 @@ void vTestFS(void * pvParams){
 
 	    result = fs_file_read( &file, &boot_count, sizeof(boot_count));
 	    if(result < 0) while(1){}
-
+	    printf("CDH has started for the %dth time\n",boot_count);
 	    // update boot count
 	    boot_count += 1;
 	    result = fs_file_rewind( &file);

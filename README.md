@@ -23,6 +23,11 @@ To build libcsp with debug configuration, pass `--debug`
 python ./scripts/bootstrap.py --debug
 ```
 
+Note: The bootstrap script will attempt to apply a patch for LittleFS. If you have msys or mingw already installed then this should work fine. If you see an error you may have to manually patch, from the scripts dir:
+```
+patch -d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch
+```
+
 ### Configure your workspace
 1. Select the root folder (i.e. IrisSat-Flight-Software) as your SoftConsole workspace.
 2. Go to **File -> Import**.
@@ -64,3 +69,23 @@ This library is provides a communication protocol stack following the TCP/IP mod
 ## Useful links:
 1. Maker Board IoT Demo project: https://www.digikey.com/eewiki/display/microcontroller/Getting+Started+with+the+Microsemi+SmartFusion+2+Maker-Board
 2. Maker Board "First Project" Demo: https://github.com/tstana/M2S010-MKR-KIT_FirstProj/wiki
+
+
+## Software Update Instructions:
+
+Remember to set the program flash spi pins to be enabled in flash freeze mode!
+This can be done in the i/o editor. Make sure the mss_spi spi_0 module has the pins set as I/O not FPGA to ensue the option to change the flash freeze functionality is enabled.
+
+The IrisSat CDH allows for over-the-air updates of the software.  
+Below are the steps to prepare a software update file, see the IrisTerminal documentation for instructions on how to upload the file and initiate the update.
+It is possible to generate an update file with only the eNVM content(i.e. the software), which is about 5 times smaller than the full image with the fpga data.
+The golden image should be a full image, and the updates should be eNVM only (in most cases).
+
+1. Build the "Production" version of the software in Softconsole. Click the arrow next to the hammer and select "Production".
+2. In Libero, perform step 11 from above, making sure the latest Production binary is selected.
+3. In Libero, generate the bitstream. Right click on the "Generate Bitstream" and configure here to check only eNVM or enVM and Fabric, depengin on what you want.
+4. In the "Design Flow" panel on the left, select "Export Bistream".
+5. In the "Export Bistream" options, give the file a name, and verify that the "SPI" format is enabled. Select "Fabric" and/or "eNVM" in the "File Types:" option. Make sure the "Export SPI Directory..." is enabled.
+6. Click on "Specify SPI Directory" and make sure the golden and update addresses are set.
+7. Also set the design version for each image. In general the golden image should be the same, and the update would be increased. It seems backlevel protection should be disabled by default, so the exact number shouldn't really matter.
+

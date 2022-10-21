@@ -16,9 +16,9 @@
 // - Incremented minor revision to 4.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#define CDH_SW_MAJOR_VERSION 0
-#define CDH_SW_MINOR_VERSION 4
+#define CDH_SW_MAJOR_VERSION "0"
+#define CDH_SW_MINOR_VERSION "6"
 
-#define CDH_SW_VERSION_STRING "\r\nCDH IRIS v0.04\r\n"
+#define CDH_SW_VERSION_STRING ("\r\nCDH IRIS v" CDH_SW_MAJOR_VERSION "." CDH_SW_MINOR_VERSION "\r\n")
 
 #endif /* INCLUDE_VERSION_H_ */

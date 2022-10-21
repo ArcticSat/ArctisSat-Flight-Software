@@ -29,6 +29,9 @@
 
 #define FS_MAX_OPEN_FILES	3
 
+//For testing only. This will offset the location where filesystem is mounted.
+//Set to 0!
+#define FS_MOUNT_OFFSET     (0x0)
 
 #define FS_FLASH_DEVICE	DATA_FLASH
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -115,13 +118,114 @@ static SemaphoreHandle_t fs_lock_handle;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+int fs_list_dir(char * path,int recursive){
+//From here: https://github.com/littlefs-project/littlefs/issues/542
+
+    lfs_dir_t dir;
+    struct lfs_info info;
+    int err = lfs_dir_open(&lfs, &dir, "/");
+    if (err) {
+        return err;
+    }
+
+    while (true) {
+        int res = lfs_dir_read(&lfs, &dir, &info);
+        if (res < 0) {
+            lfs_dir_close(&lfs, &dir);
+            return err;
+        }
+
+        if (!res) {
+            break;
+        }
+
+        printf("%s %d %d", info.name, info.type, info.size);
+    }
+
+    err = lfs_dir_close(&lfs, &dir);
+    if (err) {
+        return err;
+    }
+
+}
+
+int fs_file_exist(char * path){
+    lfs_file_t file = {0};
+    int exist = fs_file_open(&file, path, LFS_O_RDONLY);
+    if(exist <0){
+        return 0;
+    }else{
+        fs_file_close(&file);
+        return 1;
+    }
+}
+
+int fs_file_size_from_path(char * path){
+
+    lfs_file_t file = {0};
+    struct lfs_info info ={0};
+
+    fs_stat(path, &info);
+    return info.size;
+}
+
+int fs_copy_file(char * filePath, char * newPath){
+
+    lfs_file_t file = {0};
+    lfs_file_t newfile = {0};
+
+    int result_fs = fs_file_open( &file, filePath, LFS_O_RDONLY);
+    if(result_fs < 0){
+        printf("%s: Could not open file %s: %d\n",__FUNCTION__,filePath,result_fs);
+        return result_fs;
+    }
+
+
+    result_fs = fs_file_open( &newfile, newPath, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+    if(result_fs < 0){
+        printf("%s: Could not open file %s: %d\n",__FUNCTION__,newPath,result_fs);
+        return result_fs;
+    }
+
+    //I think littefs already uses 256b cache so anything bigger shouldn't affect speedup...
+    //But larger will need more task stack.
+    uint8_t buf[256]={0};
+    int read = 0;
+    //Now just transfer the data:
+    while((read=fs_file_read(&file, buf, 256))>0){
+
+        fs_file_write(&newfile, buf, read);
+    }
+
+    result_fs = fs_file_close(&file);
+    if(result_fs < 0){
+           printf("%s: Could not close file %s: %d\n",__FUNCTION__,filePath,result_fs);
+           return result_fs;
+    }
+
+    result_fs = fs_file_close(&newfile);
+    if(result_fs < 0){
+           printf("%s: Could not close file %s: %d\n",__FUNCTION__,newPath,result_fs);
+           return result_fs;
+    }
+
+    return 0;
+}
+
+uint32_t fs_free_space(){
+
+	lfs_ssize_t blocks_used = fs_size();
+    uint32_t free_space = (config.block_count-blocks_used)*(config.block_size);
+    return free_space;
+}
+
  FilesystemError_t fs_init(){
 
 	 FilesystemError_t result = FS_OK;
 
 	 open_files = 0;
 	 //Get the total number of blocks by dividing the device byte count by the block byte count.
-	 config.block_count = flash_devices[DATA_FLASH]->device_size/FS_BLOCK_SIZE;
+	 config.block_count = (flash_devices[DATA_FLASH]->device_size-FS_MOUNT_OFFSET)/FS_BLOCK_SIZE;
 
 	 //Setup the mutex. See https://github.com/ARMmbed/littlefs/issues/156 and
 	 //						https://github.com/ARMmbed/littlefs/pull/317
@@ -469,7 +573,7 @@ int fs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *
 
 	int result = FS_OK;
 
-	uint32_t addr = (block*FS_BLOCK_SIZE)+off;
+	uint32_t addr = (block*FS_BLOCK_SIZE)+off + FS_MOUNT_OFFSET;
 
 	FlashStatus_t stat = flash_read(flash_devices[FS_FLASH_DEVICE], addr, buffer, size);
 
@@ -486,7 +590,7 @@ int fs_prog(const struct lfs_config *c, lfs_block_t block,lfs_off_t off, const v
 
 	int result = FS_OK;
 
-	uint32_t addr = (block*FS_BLOCK_SIZE)+off;
+	uint32_t addr = (block*FS_BLOCK_SIZE)+off+FS_MOUNT_OFFSET;
 
 	FlashStatus_t stat = flash_write(flash_devices[FS_FLASH_DEVICE], addr, buffer, size);
 
@@ -502,7 +606,7 @@ int fs_erase(const struct lfs_config *c, lfs_block_t block){
 
 	int result = FS_OK;
 
-	uint32_t addr = (block*FS_BLOCK_SIZE);
+	uint32_t addr = (block*FS_BLOCK_SIZE)+FS_MOUNT_OFFSET;
 
 	FlashStatus_t stat = flash_erase(flash_devices[FS_FLASH_DEVICE], addr);
 

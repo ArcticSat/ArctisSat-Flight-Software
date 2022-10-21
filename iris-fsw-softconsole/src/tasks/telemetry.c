@@ -144,4 +144,28 @@ void printMsg(char * msg){
 	telemetry.data = (uint8_t*) msg;
 	sendTelemetryAddr(&telemetry,GROUND_CSP_ADDRESS);
 
+
+int printf(const char *fmt, ...){
+    //Based on stuff in this thread:https://electronics.stackexchange.com/questions/206113/how-do-i-use-the-printf-function-on-stm32
+    char str[256];
+
+    va_list argp;
+    va_start(argp, fmt);
+
+    if(0 < vsnprintf(str,255,fmt,argp)) // build string
+    {
+        telemetryPacket_t t;
+        Calendar_t now = {0}; //Set to zero, since payload does not keep track of time. CDH will timestamp on receipt.
+
+//      t.telem_id = PAYLOAD_ERROR_ID;
+        t.telem_id = CDH_MSG_ID;
+        t.timestamp = now;
+        t.length = strlen(str) + 1;
+        t.data = (uint8_t*)str;
+
+        sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
+    }
+
+    va_end(argp);
+    return (strlen(str)>255?255:strlen(str));
 }

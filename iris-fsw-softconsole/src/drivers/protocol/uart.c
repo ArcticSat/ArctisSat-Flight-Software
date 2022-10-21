@@ -106,7 +106,7 @@ void vTaskUARTBridge(void *pvParameters)
 
 
 		/* Echo back all data to the terminal */
-		prvUARTSend(&g_mss_uart0, (const uint8_t *) copied_buffer, uxBytesRead);
+//		prvUARTSend(&g_mss_uart0, (const uint8_t *) copied_buffer, uxBytesRead);
 
 		/* Do any special processing based on the origin on the data */
 		if(my_uart == &g_mss_uart0)
@@ -149,121 +149,121 @@ static void prvProcessUART0(uint8_t *pcBuffer, uint32_t ulNumBytes)
 	 * Keep track of the characters added through the terminal */
 
 	/* String to contain the entire command to be sent to the ESP8266 module */
-	static uint8_t ucCommandString[UART_BUFFER_SIZE];
-	static uint16_t pos = 0;
-	uint8_t i;
-	static uint8_t mode = 0;
-	static uint32_t numBytes = 0;
-	static uint8_t image_select = 0;
-	if(mode == 0){
-
-		/* Add characters onto the command string */
-		memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
-		pos += ulNumBytes;
-
-		if(ucCommandString[pos-1] == 10)
-		{
-			/* End of line has been received. Send to module */
-			if (xSemaphoreTake(xUARTMutex, portMAX_DELAY) == pdTRUE)
-			{
-				if(ucCommandString[0] == 'u'){
-					if(ucCommandString[1] == '1') image_select = 1;
-					else if(ucCommandString[1] == '0') image_select = 0;
-					mode = 1;
-				}
-				else if(ucCommandString[0] == 'd'){
-
-					if(ucCommandString[1] == '1') image_select = 1;
-					else if(ucCommandString[1] == '0') image_select = 0;
-					repeat_program(image_select);
-				}
-				else if(ucCommandString[0] == 'v'){
-
-					if(ucCommandString[1] == '1') image_select = 1;
-					else if(ucCommandString[1] == '0') image_select = 0;
-					//Verify
-					authenticate_firmware(image_select);
-				}
-				else if(ucCommandString[0] == 'p'){
-					if(ucCommandString[1] == '1') image_select = 1;
-					else if(ucCommandString[1] == '0') image_select = 0;
-					initiate_firmware_update(image_select);
-				}
-				else if(ucCommandString[0] == 'a'){
-					prvUARTSend(&g_mss_uart0, "MBSAT FSW V0.8.0", strlen("MBSAT FSW V0.8.0"));
-				}
-				else if(ucCommandString[0] == 'b'){
-					 char str[25];
-					 size_t freemem = xPortGetFreeHeapSize();
-					 sprintf(str,"free mem: %d\n",freemem);
-					 prvUARTSend(&g_mss_uart0, str, strlen(str));
-				}
-				pos = 0;
-				memset(ucCommandString,0,UART_BUFFER_SIZE);
-				xSemaphoreGive(xUARTMutex);
-			}
-
-		}
-	}
-	else if(mode == 1){
-		/* Add characters onto the command string */
-		memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
-		pos += ulNumBytes;
-		if(ucCommandString[pos-1] == 10)
-		{
-			numBytes = (uint32_t) strtol(ucCommandString,&ucCommandString[pos-1],10); //Should check cast.
-			set_program_size(numBytes,image_select);
-			mode = 2;
-			memset(ucCommandString,0,UART_BUFFER_SIZE);
-			pos = 0;
-		}
-	}
-	else if (mode == 2){
-
-		if(pos + ulNumBytes > UART_BUFFER_SIZE){
-
-			uint32_t remaining =  UART_BUFFER_SIZE-pos;
-			//Fill up current buffer.
-			memcpy(&ucCommandString[pos], pcBuffer,remaining);
-			pos += remaining;
-
-			//Save the current buffer.
-			save_program(ucCommandString, pos,image_select);
-			numBytes -= pos;
-			//Reset buffer and copy overflow data.
-			pos = 0;
-			memcpy(&ucCommandString[pos], &pcBuffer[remaining], ulNumBytes-(remaining));
-			pos += ulNumBytes-(remaining) ;
-
-		}
-		else if(pos + ulNumBytes == UART_BUFFER_SIZE){
-			//Copy the data and then write to flash.
-			memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
-			pos += ulNumBytes;
-
-			save_program(ucCommandString, pos,image_select);
-			numBytes -= pos;
-			//Reset index in buffer to refill from the beginning.
-			pos = 0;
-		}
-		else{
-			//Just copy the data and wait for a full buffer.
-			memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
-			pos += ulNumBytes;
-
-			//Handle the last bytes transfered when there is less than 256 left.
-			if(numBytes<UART_BUFFER_SIZE){
-				save_program(ucCommandString, pos,image_select);
-				numBytes -= pos;
-				//Reset index in buffer to refill from the beginning.
-				pos = 0;
-			}
-		}
-		if(numBytes <= 0){
-			mode = 0;
-			prvUARTSend(&g_mss_uart0, "Done uploading program!\n", strlen("Done uploading program!\n"));
-		}
-	}
+//	static uint8_t ucCommandString[UART_BUFFER_SIZE];
+//	static uint16_t pos = 0;
+//	uint8_t i;
+//	static uint8_t mode = 0;
+//	static uint32_t numBytes = 0;
+//	static uint8_t image_select = 0;
+//	if(mode == 0){
+//
+//		/* Add characters onto the command string */
+//		memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
+//		pos += ulNumBytes;
+//
+//		if(ucCommandString[pos-1] == 10)
+//		{
+//			/* End of line has been received. Send to module */
+//			if (xSemaphoreTake(xUARTMutex, portMAX_DELAY) == pdTRUE)
+//			{
+//				if(ucCommandString[0] == 'u'){
+//					if(ucCommandString[1] == '1') image_select = 1;
+//					else if(ucCommandString[1] == '0') image_select = 0;
+//					mode = 1;
+//				}
+//				else if(ucCommandString[0] == 'd'){
+//
+//					if(ucCommandString[1] == '1') image_select = 1;
+//					else if(ucCommandString[1] == '0') image_select = 0;
+//					repeat_program(image_select);
+//				}
+//				else if(ucCommandString[0] == 'v'){
+//
+//					if(ucCommandString[1] == '1') image_select = 1;
+//					else if(ucCommandString[1] == '0') image_select = 0;
+//					//Verify
+//					authenticate_firmware(image_select);
+//				}
+//				else if(ucCommandString[0] == 'p'){
+//					if(ucCommandString[1] == '1') image_select = 1;
+//					else if(ucCommandString[1] == '0') image_select = 0;
+//					initiate_firmware_update(image_select);
+//				}
+//				else if(ucCommandString[0] == 'a'){
+//					prvUARTSend(&g_mss_uart0, "MBSAT FSW V0.8.0", strlen("MBSAT FSW V0.8.0"));
+//				}
+//				else if(ucCommandString[0] == 'b'){
+//					 char str[25];
+//					 size_t freemem = xPortGetFreeHeapSize();
+//					 sprintf(str,"free mem: %d\n",freemem);
+//					 prvUARTSend(&g_mss_uart0, str, strlen(str));
+//				}
+//				pos = 0;
+//				memset(ucCommandString,0,UART_BUFFER_SIZE);
+//				xSemaphoreGive(xUARTMutex);
+//			}
+//
+//		}
+//	}
+//	else if(mode == 1){
+//		/* Add characters onto the command string */
+//		memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
+//		pos += ulNumBytes;
+//		if(ucCommandString[pos-1] == 10)
+//		{
+//			numBytes = (uint32_t) strtol(ucCommandString,&ucCommandString[pos-1],10); //Should check cast.
+//			set_program_size(numBytes,image_select);
+//			mode = 2;
+//			memset(ucCommandString,0,UART_BUFFER_SIZE);
+//			pos = 0;
+//		}
+//	}
+//	else if (mode == 2){
+//
+//		if(pos + ulNumBytes > UART_BUFFER_SIZE){
+//
+//			uint32_t remaining =  UART_BUFFER_SIZE-pos;
+//			//Fill up current buffer.
+//			memcpy(&ucCommandString[pos], pcBuffer,remaining);
+//			pos += remaining;
+//
+//			//Save the current buffer.
+//			save_program(ucCommandString, pos,image_select);
+//			numBytes -= pos;
+//			//Reset buffer and copy overflow data.
+//			pos = 0;
+//			memcpy(&ucCommandString[pos], &pcBuffer[remaining], ulNumBytes-(remaining));
+//			pos += ulNumBytes-(remaining) ;
+//
+//		}
+//		else if(pos + ulNumBytes == UART_BUFFER_SIZE){
+//			//Copy the data and then write to flash.
+//			memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
+//			pos += ulNumBytes;
+//
+//			save_program(ucCommandString, pos,image_select);
+//			numBytes -= pos;
+//			//Reset index in buffer to refill from the beginning.
+//			pos = 0;
+//		}
+//		else{
+//			//Just copy the data and wait for a full buffer.
+//			memcpy(&ucCommandString[pos], pcBuffer, ulNumBytes);
+//			pos += ulNumBytes;
+//
+//			//Handle the last bytes transfered when there is less than 256 left.
+//			if(numBytes<UART_BUFFER_SIZE){
+//				save_program(ucCommandString, pos,image_select);
+//				numBytes -= pos;
+//				//Reset index in buffer to refill from the beginning.
+//				pos = 0;
+//			}
+//		}
+//		if(numBytes <= 0){
+//			mode = 0;
+//			prvUARTSend(&g_mss_uart0, "Done uploading program!\n", strlen("Done uploading program!\n"));
+//		}
+//	}
 }
 
 

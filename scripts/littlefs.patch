@@ -1,0 +1,17 @@
+Common subdirectories: ../../littlefs/.git and ../iris-fsw-softconsole/Libraries/littlefs/.git
+Common subdirectories: ../../littlefs/.github and ../iris-fsw-softconsole/Libraries/littlefs/.github
+Common subdirectories: ../../littlefs/bd and ../iris-fsw-softconsole/Libraries/littlefs/bd
+diff -x ../../littlefs/.git -Nau ../../littlefs/lfs_util.h ../iris-fsw-softconsole/Libraries/littlefs/lfs_util.h
+--- ../../littlefs/lfs_util.h	2022-05-27 19:33:44.052997500 -0400
++++ ../iris-fsw-softconsole/Libraries/littlefs/lfs_util.h	2022-05-27 20:38:07.083516900 -0400
+@@ -90,6 +90,8 @@
+ #endif
+ #endif
+ 
++
++#define LFS_ASSERT(test) do {if(!(test)) {printf("lfs ASSERT %s:%d ", __FILE__, __LINE__); return -1;}} while(0)
+ // Runtime assertions
+ #ifndef LFS_ASSERT
+ #ifndef LFS_NO_ASSERT
+Common subdirectories: ../../littlefs/scripts and ../iris-fsw-softconsole/Libraries/littlefs/scripts
+Common subdirectories: ../../littlefs/tests and ../iris-fsw-softconsole/Libraries/littlefs/tests

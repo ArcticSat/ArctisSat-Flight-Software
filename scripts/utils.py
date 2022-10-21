@@ -40,6 +40,7 @@ def download_git_branch(rev, url, download_dir, folder_name=""):
     tmp_git = tempfile.mkdtemp()
     shutil.move(git_folder, tmp_git)
     shutil.rmtree(tmp_git, ignore_errors=True)
-
+	
     # move to the destination
+    print(f"{download_path} path | dir{download_dir}")
     shutil.move(download_path, download_dir)
