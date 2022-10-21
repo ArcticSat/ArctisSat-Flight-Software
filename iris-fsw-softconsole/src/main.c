@@ -330,7 +330,7 @@ static void prvSetupHardware( void )
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //
 //    init_WD();
-//    init_spi();
+    init_spi();
 //    init_rtc();
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
