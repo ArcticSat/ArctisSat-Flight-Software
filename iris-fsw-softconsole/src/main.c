@@ -114,27 +114,27 @@ int main( void )
     prvSetupHardware();
 
 
-    // Create LED spinning task
-    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
-                            "LED Spinner",               // Text name for debugging
-                            1000,                        // Size of the stack allocated for this task
-                            NULL,                        // Task parameter is not used
-                            1,                           // Task runs at priority 1
-                            NULL);                       // Task handle is not used
-
-    // Create UART0 RX Task
-    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
-                            "UART0 Receiver",            // Text name for debugging
-                            1000,                        // Size of the stack allocated for this task
-                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-                            2,                           // Task runs at priority 2
-                            &xUART0RxTaskToNotify);      // Task handle for task notification
-    status = xTaskCreate(vTTT_Scheduler,
-                         "TTT",
-                         1000,
-                         NULL,
-                         1,
-                         NULL);
+//    // Create LED spinning task
+//    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
+//                            "LED Spinner",               // Text name for debugging
+//                            1000,                        // Size of the stack allocated for this task
+//                            NULL,                        // Task parameter is not used
+//                            1,                           // Task runs at priority 1
+//                            NULL);                       // Task handle is not used
+//
+//    // Create UART0 RX Task
+//    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
+//                            "UART0 Receiver",            // Text name for debugging
+//                            1000,                        // Size of the stack allocated for this task
+//                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
+//                            2,                           // Task runs at priority 2
+//                            &xUART0RxTaskToNotify);      // Task handle for task notification
+//    status = xTaskCreate(vTTT_Scheduler,
+//                         "TTT",
+//                         1000,
+//                         NULL,
+//                         1,
+//                         NULL);
 
 
 //    status = xTaskCreate(vTestSPI,
@@ -197,12 +197,12 @@ int main( void )
 
     status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, NULL);
 
-    status = xTaskCreate(vTestWD,
-                         "Test WD",
-                         configMINIMAL_STACK_SIZE,
-                         NULL,
-                         1,
-                         NULL);
+//    status = xTaskCreate(vTestWD,
+//                         "Test WD",
+//                         configMINIMAL_STACK_SIZE,
+//                         NULL,
+//                         1,
+//                         NULL);
 
 //    status = xTaskCreate(vTestFS,
 //                         "Test FS",
@@ -282,12 +282,12 @@ static void prvSetupHardware( void )
 //    vInitializeUARTs(MSS_UART_115200_BAUD);
 //
 //    init_WD();
-    init_spi();
+//    init_spi();
 //    init_rtc();
 //    init_mram();
-    //init_CAN(CAN_BAUD_RATE_250K,NULL);
+    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
-    flash_device_init(flash_devices[DATA_FLASH]);
+//    flash_device_init(flash_devices[DATA_FLASH]);
 //    initADC();
 //    asMram_init();
 

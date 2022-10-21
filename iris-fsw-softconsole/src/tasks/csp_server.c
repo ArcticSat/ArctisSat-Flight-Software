@@ -65,41 +65,41 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
-    int result_fs = 1;
-    uint32_t boot_count = 0;
-
-    lfs_file_t file = {0}; //Set to 0 because debugger tries to read fields of struct one of which is a pointer, but since this is on free rtos heap, initial value is a5a5a5a5.
-
-    FilesystemError_t stat = fs_init();
-    if(stat != FS_OK){
-        while(1){}
-    }
-    //Mount the file system.
-    int err = fs_mount();
-
-    // reformat if we can't mount the filesystem
-    // this should only happen on the first boot
-    if (err) {
-        fs_format();
-        fs_mount();
-    }
-   result_fs = fs_file_open( &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
-   if(result_fs < 0) while(1){}
-
-   result_fs = fs_file_read( &file, &boot_count, sizeof(boot_count));
-   if(result_fs < 0) while(1){}
-
-   // update boot count
-   boot_count += 1;
-   result_fs = fs_file_rewind( &file);
-   if(result_fs < 0) while(1){}
-
-   result_fs = fs_file_write( &file, &boot_count, sizeof(boot_count));
-   if(result_fs < 0) while(1){}
-
-   // remember the storage is not updated until the file is closed successfully
-   result_fs = fs_file_close( &file);
-   if(result_fs < 0) while(1){}
+//    int result_fs = 1;
+//    uint32_t boot_count = 0;
+//
+//    lfs_file_t file = {0}; //Set to 0 because debugger tries to read fields of struct one of which is a pointer, but since this is on free rtos heap, initial value is a5a5a5a5.
+//
+//    FilesystemError_t stat = fs_init();
+//    if(stat != FS_OK){
+//        while(1){}
+//    }
+//    //Mount the file system.
+//    int err = fs_mount();
+//
+//    // reformat if we can't mount the filesystem
+//    // this should only happen on the first boot
+//    if (err) {
+//        fs_format();
+//        fs_mount();
+//    }
+//   result_fs = fs_file_open( &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
+//   if(result_fs < 0) while(1){}
+//
+//   result_fs = fs_file_read( &file, &boot_count, sizeof(boot_count));
+//   if(result_fs < 0) while(1){}
+//
+//   // update boot count
+//   boot_count += 1;
+//   result_fs = fs_file_rewind( &file);
+//   if(result_fs < 0) while(1){}
+//
+//   result_fs = fs_file_write( &file, &boot_count, sizeof(boot_count));
+//   if(result_fs < 0) while(1){}
+//
+//   // remember the storage is not updated until the file is closed successfully
+//   result_fs = fs_file_close( &file);
+//   if(result_fs < 0) while(1){}
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
