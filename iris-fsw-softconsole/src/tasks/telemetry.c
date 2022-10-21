@@ -143,7 +143,7 @@ void printMsg(char * msg){
 	telemetry.length =  strlen(msg)+1;
 	telemetry.data = (uint8_t*) msg;
 	sendTelemetryAddr(&telemetry,GROUND_CSP_ADDRESS);
-
+}
 
 int printf(const char *fmt, ...){
     //Based on stuff in this thread:https://electronics.stackexchange.com/questions/206113/how-do-i-use-the-printf-function-on-stm32
