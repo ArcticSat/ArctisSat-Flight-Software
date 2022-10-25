@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
-// Created by SmartDesign Sat Aug 20 13:19:44 2022
-// Version: 2021.3 2021.3.0.10
+// Created by SmartDesign Tue Oct 25 00:20:19 2022
+// Version: 2022.1 2022.1.0.10
 //////////////////////////////////////////////////////////////////////
 
 `timescale 1ns / 100ps
@@ -31,10 +31,8 @@ module MSS_C0(
     FLASH1_SPI_MOSI,
     FLASH1_SPI_SCK,
     FLASH1_WP,
-    FLASH2_CS,
     FLASH2_HOLDn,
     FLASH2_MOSI,
-    FLASH2_SCK,
     FLASH2_WP,
     GPIO_0_M2F,
     GPIO_1_M2F,
@@ -57,7 +55,10 @@ module MSS_C0(
     RTC_SPI_MOSI,
     RTC_SPI_SCK,
     WDI,
-    WDSEL
+    WDSEL,
+    // Inouts
+    FLASH2_CS,
+    FLASH2_SCK
 );
 
 //--------------------------------------------------------------------
@@ -88,10 +89,8 @@ output FLASH1_SPI_CS;
 output FLASH1_SPI_MOSI;
 output FLASH1_SPI_SCK;
 output FLASH1_WP;
-output FLASH2_CS;
 output FLASH2_HOLDn;
 output FLASH2_MOSI;
-output FLASH2_SCK;
 output FLASH2_WP;
 output GPIO_0_M2F;
 output GPIO_1_M2F;
@@ -115,6 +114,11 @@ output RTC_SPI_MOSI;
 output RTC_SPI_SCK;
 output WDI;
 output WDSEL;
+//--------------------------------------------------------------------
+// Inout
+//--------------------------------------------------------------------
+inout  FLASH2_CS;
+inout  FLASH2_SCK;
 //--------------------------------------------------------------------
 // Nets
 //--------------------------------------------------------------------
@@ -184,11 +188,11 @@ wire          FLASH1_SPI_MISO;
 wire          FLASH1_SPI_MOSI_net_0;
 wire          FLASH1_SPI_SCK_net_0;
 wire          FLASH1_WP_net_0;
-wire          FLASH2_CS_net_0;
+wire          FLASH2_CS;
 wire          FLASH2_HOLDn_net_0;
 wire          FLASH2_MISO;
 wire          FLASH2_MOSI_net_0;
-wire          FLASH2_SCK_net_0;
+wire          FLASH2_SCK;
 wire          FLASH2_WP_net_0;
 wire          GPIO_0_M2F_net_0;
 wire          GPIO_1_M2F_net_0;
@@ -265,9 +269,6 @@ wire          MRAM2_SPI_MOSI_net_1;
 wire          MRAM2_SPI_SCK_net_1;
 wire          MRAM2_WP_net_1;
 wire          MRAM2_HOLDn_net_1;
-wire          FLASH2_CS_net_1;
-wire          FLASH2_MOSI_net_1;
-wire          FLASH2_SCK_net_1;
 wire          FLASH2_WP_net_1;
 wire          FLASH2_HOLDn_net_1;
 wire          WDI_net_1;
@@ -275,6 +276,7 @@ wire          WDSEL_net_1;
 wire          ADC_SCK_net_1;
 wire          ADC_MOSI_net_1;
 wire          ADC_CS_net_1;
+wire          FLASH2_MOSI_net_1;
 wire   [1:1]  SPISS_slice_0;
 wire   [2:2]  SPISS_slice_1;
 wire   [3:3]  SPISS_slice_2;
@@ -467,12 +469,6 @@ assign MRAM2_WP_net_1         = MRAM2_WP_net_0;
 assign MRAM2_WP               = MRAM2_WP_net_1;
 assign MRAM2_HOLDn_net_1      = MRAM2_HOLDn_net_0;
 assign MRAM2_HOLDn            = MRAM2_HOLDn_net_1;
-assign FLASH2_CS_net_1        = FLASH2_CS_net_0;
-assign FLASH2_CS              = FLASH2_CS_net_1;
-assign FLASH2_MOSI_net_1      = FLASH2_MOSI_net_0;
-assign FLASH2_MOSI            = FLASH2_MOSI_net_1;
-assign FLASH2_SCK_net_1       = FLASH2_SCK_net_0;
-assign FLASH2_SCK             = FLASH2_SCK_net_1;
 assign FLASH2_WP_net_1        = FLASH2_WP_net_0;
 assign FLASH2_WP              = FLASH2_WP_net_1;
 assign FLASH2_HOLDn_net_1     = FLASH2_HOLDn_net_0;
@@ -487,6 +483,8 @@ assign ADC_MOSI_net_1         = ADC_MOSI_net_0;
 assign ADC_MOSI               = ADC_MOSI_net_1;
 assign ADC_CS_net_1           = ADC_CS_net_0[0];
 assign ADC_CS                 = ADC_CS_net_1;
+assign FLASH2_MOSI_net_1      = FLASH2_MOSI_net_0;
+assign FLASH2_MOSI            = FLASH2_MOSI_net_1;
 //--------------------------------------------------------------------
 // Slices assignments
 //--------------------------------------------------------------------
@@ -892,9 +890,7 @@ MSS_C0_MSS MSS_C0_MSS_0(
         .FIC_2_APB_M_PREADY     ( VCC_net ), // tied to 1'b1 from definition
         .FIC_2_APB_M_PSLVERR    ( GND_net ), // tied to 1'b0 from definition
         .M3_RESET_N             ( CoreResetP_C0_0_M3_RESET_N ),
-        .SPI_0_DI_F2M           ( FLASH2_MISO ),
-        .SPI_0_CLK_F2M          ( GND_net ),
-        .SPI_0_SS0_F2M          ( GND_net ),
+        .SPI_0_DI               ( FLASH2_MISO ),
         .MSS_INT_F2M            ( MSS_INT_F2M_net_0 ),
         .FIC_0_APB_M_PRDATA     ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PRDATA ),
         .FIC_2_APB_M_PRDATA     ( FIC_2_APB_M_PRDATA_const_net_0 ), // tied to 32'h00000000 from definition
@@ -927,14 +923,14 @@ MSS_C0_MSS MSS_C0_MSS_0(
         .GPIO_17_M2F            ( FLASH2_HOLDn_net_0 ),
         .GPIO_18_M2F            ( WDI_net_0 ),
         .GPIO_19_M2F            ( WDSEL_net_0 ),
-        .SPI_0_DO_M2F           ( FLASH2_MOSI_net_0 ),
-        .SPI_0_CLK_M2F          ( FLASH2_SCK_net_0 ),
-        .SPI_0_SS0_M2F          ( FLASH2_CS_net_0 ),
-        .SPI_0_SS0_M2F_OE       (  ),
+        .SPI_0_DO               ( FLASH2_MOSI_net_0 ),
         .FIC_0_APB_M_PADDR      ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PADDR ),
         .FIC_0_APB_M_PWDATA     ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PWDATA ),
         .FIC_2_APB_M_PADDR      (  ),
-        .FIC_2_APB_M_PWDATA     (  ) 
+        .FIC_2_APB_M_PWDATA     (  ),
+        // Inouts
+        .SPI_0_CLK              ( FLASH2_SCK ),
+        .SPI_0_SS0              ( FLASH2_CS ) 
         );
 
 //--------OR3

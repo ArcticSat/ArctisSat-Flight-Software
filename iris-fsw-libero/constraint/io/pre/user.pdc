@@ -2,11 +2,11 @@
 
 # User I/O Constraints file 
 
-# Version: 2021.3 2021.3.0.10
+# Version: 2022.1 2022.1.0.10
 
 # Family: SmartFusion2 , Die: M2S010 , Package: 144 TQ
 
-# Date generated: Sat Aug 20 13:29:33 2022 
+# Date generated: Tue Oct 25 00:21:47 2022 
 
 
 # 
@@ -127,32 +127,8 @@ set_io FLASH1_WP       \
     -DIRECTION OUTPUT
 
 
-set_io FLASH2_CS       \
-    -pinname 103       \
-    -fixed yes         \
-    -DIRECTION OUTPUT
-
-
 set_io FLASH2_HOLDn    \
     -pinname 57        \
-    -fixed yes         \
-    -DIRECTION OUTPUT
-
-
-set_io FLASH2_MISO    \
-    -pinname 101      \
-    -fixed yes        \
-    -DIRECTION INPUT
-
-
-set_io FLASH2_MOSI     \
-    -pinname 102       \
-    -fixed yes         \
-    -DIRECTION OUTPUT
-
-
-set_io FLASH2_SCK      \
-    -pinname 100       \
     -fixed yes         \
     -DIRECTION OUTPUT
 
@@ -311,6 +287,26 @@ set_io WDSEL           \
 # 
 # Dedicated Peripheral I/O Settings
 # 
+
+set_io FLASH2_CS      \
+    -FF_IO_AVAIL Yes  \
+    -DIRECTION INOUT
+
+
+set_io FLASH2_MISO    \
+    -FF_IO_AVAIL Yes  \
+    -DIRECTION INPUT
+
+
+set_io FLASH2_MOSI     \
+    -FF_IO_AVAIL Yes   \
+    -DIRECTION OUTPUT
+
+
+set_io FLASH2_SCK     \
+    -FF_IO_AVAIL Yes  \
+    -DIRECTION INOUT
+
 
 
 # 
