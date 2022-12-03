@@ -145,33 +145,32 @@ int main( void )
     // Start FreeRTOS Tasks
     vTaskStartScheduler();
 
-/*
-    // TODO - Starting to run out of heap space for these tasks... should start thinking about
-    // increasing heap space or managing memory in a smarter manner. First step would be looking
-    // at the FreeRTOS configurations and the linker file *.ld.
-    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,1,NULL);
-    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestCspClient,"Test CSP Client",160,NULL,1,NULL);
-    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
-    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
-    //      finishes transmission (for the first time). In core_spi.c, the software gets stuck in the
-    //      while loop "while ( transfer_idx < transfer_size )" on line 134 in "SPI_block_read". The
-    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
-    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
-    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+
+//    // TODO - Starting to run out of heap space for these tasks... should start thinking about
+//    // increasing heap space or managing memory in a smarter manner. First step would be looking
+//    // at the FreeRTOS configurations and the linker file *.ld.
+//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+//    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,1,NULL);
+//    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestCspClient,"Test CSP Client",160,NULL,1,NULL);
+//    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+//    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
+//    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
+//    //      finishes transmission (for the first time). In core_spi.c, the software gets stuck in the
+//    //      while loop "while ( transfer_idx < transfer_size )" on line 134 in "SPI_block_read". The
+//    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
+//    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
+//    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
 	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
-    // Task for testing priority queue data structure.
-    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
-    // Task for testing time tagged task queue.
-    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
-    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
-    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-*/
+//    // Task for testing priority queue data structure.
+//    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
+//    // Task for testing time tagged task queue.
+//    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
+//    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
+//    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 
 
     return 0;
@@ -419,7 +418,7 @@ void vTestingTask(void * pvParams){
         conn = csp_connect(2,PAYLOAD_CSP_ADDRESS,CSP_CMD_PORT,1000,0);    //Create a connection. This tells CSP where to send the data (address and destination port).
         outPacket = csp_buffer_get(sizeof(Calendar_t)+2);
 //        uint8_t testbuff[20];
-        payloadTelemetry_t cmd = PAYLOAD_BOARD_TEMP_ID;
+        TelemetryId_t cmd = PAYLOAD_BOARD_TEMP_ID;
         uint8_t length = 0;///cmd so no data.
 
 
