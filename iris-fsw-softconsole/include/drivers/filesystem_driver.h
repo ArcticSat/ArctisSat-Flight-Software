@@ -57,6 +57,9 @@ typedef enum{
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+int get_fs_status(void);
+void filesystem_initialization(void);
+
 FilesystemError_t fs_init();
 
 /// Filesystem functions ///

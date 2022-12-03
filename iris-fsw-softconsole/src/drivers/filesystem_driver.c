@@ -83,6 +83,8 @@ int fs_erase(const struct lfs_config *c, lfs_block_t block);
 // GLOBALS AND FILE_SCOPE VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+int g_fs_status;
+
 //Buffers
 static uint8_t fs_lookahead_buffer[FS_LOOKAHEAD_SIZE];
 static uint8_t fs_read_buffer[FS_CACHE_SIZE];
@@ -116,6 +118,39 @@ static SemaphoreHandle_t fs_lock_handle;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+int get_fs_status(void)
+{
+	return g_fs_status;
+}
+
+void filesystem_initialization(void)
+{
+	// Initialize littlefs
+	g_fs_status = fs_init();
+    //Mount the file system.
+	g_fs_status = fs_mount();
+    // reformat if we can't mount the filesystem
+    // this should only happen on the first boot
+    if (g_fs_status != FS_OK) {
+    	g_fs_status = fs_format(); //Is there anything else we should do or try first?
+    	g_fs_status = fs_mount();
+    }
+    // Update boot count, if initialization okay
+    if(g_fs_status == FS_OK){
+		// update boot count
+        int result_fs = 1;
+		lfs_file_t file = {0}; //Set to 0 because debugger tries to read fields of struct one of which is a pointer, but since this is on free rtos heap, initial value is a5a5a5a5.
+	    uint32_t boot_count = 0;
+		result_fs = fs_file_open( &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
+		result_fs = fs_file_read( &file, &boot_count, sizeof(boot_count));
+		boot_count += 1;
+		result_fs = fs_file_rewind( &file);
+		result_fs = fs_file_write( &file, &boot_count, sizeof(boot_count));
+		// remember the storage is not updated until the file is closed successfully
+		result_fs = fs_file_close( &file);
+    }
+}
 
 
 int fs_list_dir(char * path,int recursive){

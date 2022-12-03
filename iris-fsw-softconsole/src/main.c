@@ -56,6 +56,7 @@
 #include "drivers/mss_uart/mss_uart.h"    // For baud rate defines and instances
 
 /* Application includes. */
+#include "main.h"
 #include "taskhandles.h"
 #include "drivers/protocol/can.h"
 #include "drivers/device/memory/flash_common.h"
@@ -124,181 +125,54 @@ full information - including hardware setup requirements. */
 
 int main( void )
 {
+	// Initialization
+	 prvSetupHardware();
+	//Make sure FS is up before all tasks
+	 filesystem_initialization();
 
-    //TODO: Are time tagged tasks persistent over restart?
-    BaseType_t status;
+	// Task Creation
+	//TODO: Are time tagged tasks persistent over restart?
+	BaseType_t status;
+    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
+    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+    //Suspend these because csp server will start once csp is up.
+    vTaskSuspend(vFw_Update_Mgr_Task_h);
+    vTaskSuspend(vTTTScheduler_h);
+    vTaskSuspend(vTestCanServer_h);
+    // Start FreeRTOS Tasks
+    vTaskStartScheduler();
 
-    /* Prepare the hardware to run this demo. */
-
-     prvSetupHardware();
-
-    //Make sure FS is up before all tasks
-    FilesystemError_t stat = fs_init();
-        if(stat != FS_OK){
-            //What to do here? try again? can cdh work without fs?
-        }
-    status = xTaskCreate(vTTT_Scheduler,
-                         "TTT",
-                         1000,
-                         NULL,
-                         2,
-                         &vTTTScheduler_h);
-
-
-//    status = xTaskCreate(vTestSPI,
-//                         "Test SPI",
-//                         1000,
-//                         NULL,
-//                         1,
-//                         NULL);
-//
-//    status = xTaskCreate(vTestSPI,
-//                         "Test SPI2",
-//                         1000,
-//                         NULL,
-//                         1,
-//                         NULL);
-
+/*
     // TODO - Starting to run out of heap space for these tasks... should start thinking about
     // increasing heap space or managing memory in a smarter manner. First step would be looking
     // at the FreeRTOS configurations and the linker file *.ld.
-//    status = xTaskCreate(vTestCANTx,
-//                         "Test CAN Tx",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         NULL);
-
-//    status = xTaskCreate(vTestCANRx,
-//                         "Test CAN Rx",
-//                         500,
-//                         NULL,
-//                         1,
-//                         NULL);
-
-#ifdef SERVER
-    status = xTaskCreate(vTestCspServer,
-                         "Test CSP Server",
-                         1000,
-                         NULL,
-                         1,
-                         NULL);
-
-#endif
-
-#ifdef CLIENT
-    status = xTaskCreate(vTestCspClient,
-                         "Test CSP Client",
-                         160,
-                         NULL,
-                         1,
-                         NULL);
-
-
-#endif
-//
-//    init_rtc();
-
-
-
-
-#ifdef CSP_SERVER
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-#endif
-
-#ifdef CAN_SERVER
-    status = xTaskCreate(vTestCanServer,
-                         "Test CAN Rx",
-						 1000,
-                         NULL,
-                         2,
-                         &vTestCanServer_h);
-//    status = xTaskCreate(vTestCANRx,
-//                         "Test CAN Rx",
-//                         500,
-//                         NULL,
-//                         1,
-//                         NULL);
-#endif
-
-//    status = xTaskCreate(vTestWD,
-//                         "Test WD",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         &vTestWD_h);
-
-//    status = xTaskCreate(vTestFS,
-//                         "Test FS",
-//                         1000,
-//                         NULL,
-//                         1,
-//                         NULL);
-
-//    status = xTaskCreate(vTestRTC,
-//                         "Test RTC",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         NULL);
-
+    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,1,NULL);
+    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestCspClient,"Test CSP Client",160,NULL,1,NULL);
+    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
     // TR - Not quite sure of the reason, but it appears that when we have a task created for both
     //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
     //      finishes transmission (for the first time). In core_spi.c, the software gets stuck in the
     //      while loop "while ( transfer_idx < transfer_size )" on line 134 in "SPI_block_read". The
     //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
     //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
-//
-//    status = xTaskCreate(vTestMRAM,
-//                         "Test MRAM",
-//                         512,
-//                         NULL,
-//                         1,
-//                         NULL);
-//
-//	status = xTaskCreate(vTestFlash,
-//                         "Test Flash",
-//                         2000,
-//                         (void *)flash_devices[DATA_FLASH],
-//                         1,
-//                         NULL);
+    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+    // Task for testing priority queue data structure.
+    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
+    // Task for testing time tagged task queue.
+    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
+    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
+    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+*/
 
-
-//    // Task for testing priority queue data structure.
-//    status = xTaskCreate(vTaskTest_Priority_Queue,
-//    					 "Test Priority_Queue",
-//						 256,
-//						 NULL,
-//						 1,
-//						 NULL);
-//
-//    // Task for testing time tagged task queue.
-//status = xTaskCreate(vTestTaskScheduler,
-//    					 "Test time tagged task queue",
-//						 256,
-//						 NULL,
-//						 1,
-//						 NULL);
-
-//    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
-
-//    status = xTaskCreate(vTestAdcsDriver,
-//                         "Test ADCS",
-//                         configMINIMAL_STACK_SIZE,
-//                         NULL,
-//                         1,
-//                         NULL);
-
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-
-    //Suspend these because csp server will start once csp is up.
-    vTaskSuspend(vFw_Update_Mgr_Task_h);
-    vTaskSuspend(vTTTScheduler_h);
-    vTaskSuspend(vTestCanServer_h);
-
-
-
-    vTaskStartScheduler();
 
     return 0;
 }

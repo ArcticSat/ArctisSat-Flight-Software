@@ -72,59 +72,12 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
-#if USING_EM_OR_FM
-    int result_fs = 1;
-    uint32_t boot_count = 0;
-
-    lfs_file_t file = {0}; //Set to 0 because debugger tries to read fields of struct one of which is a pointer, but since this is on free rtos heap, initial value is a5a5a5a5.
-
-    FilesystemError_t stat = fs_init();
-//    if(stat != FS_OK){
-//        while(1){}
-//    }
-    //Mount the file system.
-    int err = fs_mount();
-
-    // reformat if we can't mount the filesystem
-    // this should only happen on the first boot
-    if (err) {
-        fs_format(); //Is there anything else we should do or try first?
-        fs_mount();
-    }
-   result_fs = fs_file_open( &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
-//   if(result_fs < 0) while(1){}
-
-   result_fs = fs_file_read( &file, &boot_count, sizeof(boot_count));
-//   if(result_fs < 0) while(1){}
-
-   // update boot count
-   boot_count += 1;
-   result_fs = fs_file_rewind( &file);
-//   if(result_fs < 0) while(1){}
-
-   result_fs = fs_file_write( &file, &boot_count, sizeof(boot_count));
-//   if(result_fs < 0) while(1){}
-
-   // remember the storage is not updated until the file is closed successfully
-   result_fs = fs_file_close( &file);
-//   if(result_fs < 0) while(1){}
-
-   printf("CDH has started for the %dth time\n",boot_count);//Log this instead or send as telem.
-
-   result_fs = fs_file_open( &file, "test_file.txt", LFS_O_RDWR | LFS_O_CREAT | LFS_O_TRUNC);
-//  if(result_fs < 0) while(1){}
-
-  result_fs = fs_file_write( &file, "hello world", strlen("hello world"));
-//  if(result_fs < 0) while(1){}
-  result_fs = fs_file_close( &file);
-//  if(result_fs < 0) while(1){}
-
-#endif
-
-    //Start up any tasks that depend on CSP.
+    //Start up any tasks that depend on CSP, FS.
     vTaskResume(vTestCanServer_h);
-    vTaskResume(vFw_Update_Mgr_Task_h);
     vTaskResume(vTTTScheduler_h);
+    if(get_fs_status() == FS_OK){
+    	vTaskResume(vFw_Update_Mgr_Task_h);
+    }
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
