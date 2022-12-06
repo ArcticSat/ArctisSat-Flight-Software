@@ -21,19 +21,17 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+#define ADCS_GYRO_DATA_SIZE  6
 #define ADCS_MAGNETORQUER_DATA_SIZE  6
-#define ADCS_GYRO_DATA_SIZE  48
-#define ADCS_SUN_SENSOR_DATA_SIZE   156
+#define ADCS_SUN_SENSOR_DATA_SIZE   164
 #define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETORQUER_DATA_SIZE + ADCS_GYRO_DATA_SIZE + ADCS_SUN_SENSOR_DATA_SIZE)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMERATIONS AND ENUMERATION TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 typedef enum {
-
-        ADCS_DRIVER_NO_ERROR,
-        ADCS_ERROR_BAD_ACK,
-        ADCS_ERROR_BAD_ID
-
+	ADCS_DRIVER_NO_ERROR,
+	ADCS_ERROR_BAD_ACK,
+	ADCS_ERROR_BAD_ID
 } AdcsDriverError_t;
 
 typedef enum{
@@ -43,89 +41,57 @@ typedef enum{
 
 }MagnetorquerID_t;
 
+// Torque Rod state
+typedef enum
+{
+	TR_POLARITY_NEG,
+	TR__POLARITY_POS
+} TortqueRodState_t;
+// Torque Rod polarity
+typedef enum
+{
+	TR_STATE_OFF,
+	TR_STATE_ON
+} TortqueRodPolarity_t;
+// Torque Rod IDs
+typedef enum
+{
+	TORQUE_ROD_1 = 1,
+	TORQUE_ROD_2,
+	TORQUE_ROD_3
+} TortqueRodId_t;
+// Gyro IDs
+typedef enum
+{
+	GYRO_1 = 1,
+	GYRO_2
+} GyroId_t;
+// Magnetometer IDs
+typedef enum
+{
+	MAGNETOMETER_1 = 1,
+	MAGNETOMETER_2
+} MagnetometerId_t;
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Configures the SPI and GPIO configurations for the ADCS driver. Should be called once, prior to calling other functions.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_init_driver();
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to turn on to the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_power_on();
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to turn off to the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_power_off();
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to initiate telemetry to the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_initiate_telemetry();
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to get full telemetry data from the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_read_telemetry(
-    uint8_t * databuffer    //The buffer where the telemetry data will be stored. The buffer must be at least ADCS_TELEMETRY_TOTAL_SIZE bytes.
-);
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to turn on one of the magnetorquers to the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_turn_on_magnetorquer(
-    MagnetorquerID_t id,     //Specifies which magnetorquer will be turned on.
-	uint8_t pwm_duty_cycle	//Specifies pwm duty cycle, where 255 = 100%.
-);
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to turn off one of the magnetorquers to the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_turn_off_magnetorquer(
-    MagnetorquerID_t id     //Specifies which magnetorquer will be turned on.
-);
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to reset the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_reset();
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to get magnetorquer data from the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_read_magnetorquer_data(
-    uint8_t * databuffer    //The buffer where the data will be stored. The buffer must be at least ADCS_MAGNETORQUER_DATA_SIZE bytes.
-);
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to get gyroscope data from the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_read_gyro_data(
-    uint8_t * databuffer    //The buffer where the data will be stored. The buffer must be at least ADCS_GYRO_DATA_SIZE bytes.
-);
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Description:
-//  Sends the command to get sun sensor data from the ADCS controller.
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-AdcsDriverError_t adcs_read_sunsensor_data(
-    uint8_t* databuffer    //The buffer where the data will be stored. The buffer must be at least ADCS_SUN_SENSOR_DATA_SIZE bytes.
-);
-
+// Utilities
+AdcsDriverError_t adcs_init_driver(void);
+AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size);
+// Utility commands
+AdcsDriverError_t pingAdcs(void);
+AdcsDriverError_t adcsSyncSpi(void);
+// Torque Rod commands
+AdcsDriverError_t setTorqueRodState(TortqueRodId_t rod_number, TortqueRodState_t rod_state);
+AdcsDriverError_t setTorqueRodPolarity(TortqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
+AdcsDriverError_t setTorqueRodPwm(TortqueRodId_t cmd_id, uint8_t pwm);
+// Sensor Polling commands
+AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
+AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
+AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements);
 
 
 

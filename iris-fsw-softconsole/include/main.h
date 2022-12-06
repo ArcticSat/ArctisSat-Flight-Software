@@ -8,6 +8,8 @@
 #ifndef INCLUDE_MAIN_H_
 #define INCLUDE_MAIN_H_
 
+#include "stdint.h"
+
 typedef enum {
 	CDH_SUBSYS_ID,
 	POWER_SUBSYS_ID,

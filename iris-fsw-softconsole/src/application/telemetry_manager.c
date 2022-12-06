@@ -7,24 +7,16 @@
 
 
 #include "application/telemetry_manager.h"
-#include "main.h"
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/device/memory/MT25Q_flash.h"
 
 #define PAGE_SIZE MT25Q_PAGE_SIZE
 #define BLOCK_SIZE MT25Q_SUBSECTOR_SMALL_SIZE
 
-typedef enum {
-	SC_STATUS_TLM_BLK,
-	CDH_TLM_BLK,
-	POWER_TLM_BLK,
-	PAYLOAD_TLM_BLK,
-	ADCS_TLM_BLK,
-	NUM_TLM_BLKS,
-} TelemetryBlocks;
-
-uint32_t tlm_blk_sizes[NUM_TLM_BLKS] = {
+// Telemetry channel sizes
+uint32_t channel_sizes[NUM_TLM_CHANNELS] = {
 	1, // Spacecraft status
+	1, // Event log
 	1, // CDH
 	1, // Power
 	1, // Payload
@@ -34,10 +26,10 @@ uint32_t tlm_blk_sizes[NUM_TLM_BLKS] = {
 const uint32_t SC_STATUS_TYPEDEF_SIZE_BYTES = 4 * sizeof(uint32_t);
 struct ScStatus_TypeDef {
 	// Telemetry status
-	uint32_t tlm_blk_base[NUM_TLM_BLKS];
-	uint32_t tlm_blk_size[NUM_TLM_BLKS];
-	uint32_t tlm_blk_size_max[NUM_TLM_BLKS];
-	uint32_t num_packets[NUM_TLM_BLKS];
+	uint32_t channel_base[NUM_TLM_CHANNELS];
+	uint32_t channel_size[NUM_TLM_CHANNELS];
+	uint32_t channel_size_max[NUM_TLM_CHANNELS];
+	uint32_t num_packets[NUM_TLM_CHANNELS];
 } sc_status;
 
 
@@ -45,18 +37,18 @@ void init_telemetry_manager(void)
 {
 	int i;
 	// Initialize spacecraft status struct
-	for(i=0; i < NUM_TLM_BLKS; i++){
-		sc_status.tlm_blk_base[i] = 0;
-		sc_status.tlm_blk_size[i] = 0;
+	for(i=0; i < NUM_TLM_CHANNELS; i++){
+		sc_status.channel_base[i] = 0;
+		sc_status.channel_size[i] = 0;
 		sc_status.num_packets[i] = 0;
 	}
 	// Block sizes
-	for(i=0; i < NUM_TLM_BLKS; i++){
-		sc_status.tlm_blk_size_max[i] = tlm_blk_sizes[i] * BLOCK_SIZE;
+	for(i=0; i < NUM_TLM_CHANNELS; i++){
+		sc_status.channel_size_max[i] = channel_sizes[i] * BLOCK_SIZE;
 	}
 	// Block bases
-	for(i=1; i < NUM_TLM_BLKS; i++){
-		sc_status.tlm_blk_base[i] = sc_status.tlm_blk_base[i-1] + tlm_blk_sizes[i];
+	for(i=1; i < NUM_TLM_CHANNELS; i++){
+		sc_status.channel_base[i] = sc_status.channel_base[i-1] + channel_sizes[i];
 	}
 }
 void log_telemetry(telemetryPacket_t * pkt)
@@ -67,28 +59,28 @@ void log_telemetry(telemetryPacket_t * pkt)
 	// Get telemetry block from Telemtry ID
 	uint8_t tlm_blk_id = 1;
 	if(pkt->telem_id < CDH_TELEMETRY_END)
-		tlm_blk_id = CDH_TLM_BLK;
+		tlm_blk_id = CDH_CHANNEL;
 	else if(pkt->telem_id < POWER_TELEMETRY_END)
-		tlm_blk_id = POWER_TLM_BLK;
+		tlm_blk_id = POWER_TLM_CHANNEL;
 	else if(pkt->telem_id < PAYLOAD_TELEMETRY_END)
-		tlm_blk_id = PAYLOAD_TLM_BLK;
+		tlm_blk_id = PAYLOAD_TLM_CHANNEL;
 	else if(pkt->telem_id < ADCS_TELEMETRY_END)
-		tlm_blk_id = ADCS_TLM_BLK;
+		tlm_blk_id = ADCS_TLM_CHANNEL;
 	else
 		return;
 	// Get write address
-	uint32_t address = sc_status.tlm_blk_base[tlm_blk_id] + sc_status.tlm_blk_size[tlm_blk_id];
+	uint32_t address = sc_status.channel_base[tlm_blk_id] + sc_status.channel_size[tlm_blk_id];
 	// Get write size
 //	uint32_t wr_size = sizeof(telemetryPacket_t) + pkt->dlc;
 	uint32_t wr_size = 8 + 3 + (uint32_t) pkt->length; // sizeof(telemetryPacket_t) = 11 bytes
 	// Update block offset
-	sc_status.tlm_blk_size[tlm_blk_id] += wr_size;
+	sc_status.channel_size[tlm_blk_id] += wr_size;
 	// Wrap block, if full
-	if(sc_status.tlm_blk_size[tlm_blk_id] > sc_status.tlm_blk_size_max[tlm_blk_id]){
+	if(sc_status.channel_size[tlm_blk_id] > sc_status.channel_size_max[tlm_blk_id]){
 		// Reset address to top of block
-		address = sc_status.tlm_blk_base[tlm_blk_id];
+		address = sc_status.channel_base[tlm_blk_id];
 		// Reset block size
-		sc_status.tlm_blk_size[tlm_blk_id] = wr_size;
+		sc_status.channel_size[tlm_blk_id] = wr_size;
 		// Reset number of blocks
 		sc_status.num_packets[tlm_blk_id] = 0;
 	}
@@ -97,17 +89,17 @@ void log_telemetry(telemetryPacket_t * pkt)
 	// Update num packets
 	sc_status.num_packets[tlm_blk_id]++;
 	// Update spacecraft status
-	address = sc_status.tlm_blk_base[SC_STATUS_TLM_BLK];
+	address = sc_status.channel_base[SC_STATUS];
 //	wr_size = sizeof(ScStatus_TypeDef);
 	wr_size = SC_STATUS_TYPEDEF_SIZE_BYTES;
 	flash_write(DATA_FLASH, address, (uint8_t *) &sc_status, wr_size);
 }
 
-void get_telemetry(uint8_t tlm_blk_id)
+void get_telemetry(TelemetryChannel_t channel_id)
 {
 	// Get telemetry block parameters
-	uint32_t base_address = sc_status.tlm_blk_base[tlm_blk_id];
-	uint32_t rd_size_total = sc_status.tlm_blk_base[tlm_blk_id];
+	uint32_t base_address = sc_status.channel_base[channel_id];
+	uint32_t rd_size_total = sc_status.channel_base[channel_id];
 	// Set packet parameters (other than data)
 	telemetryPacket_t pkt = {0};
 	pkt.telem_id = GND_FRAME_ID;
@@ -145,7 +137,6 @@ void get_telemetry(uint8_t tlm_blk_id)
 		rd_offset += (uint32_t) rd_size;
 	}
 }
-
 
 
 
