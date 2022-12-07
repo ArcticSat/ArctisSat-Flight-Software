@@ -24,6 +24,13 @@
 void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 {
 	switch(cmd_pkt->telem_id){
+    	case CDH_SCHEDULE_TTT_CMD:{
+            uint8_t taskCode = t.data[0];
+            uint8_t parameter = t.data[1];
+            Calendar_t timeTag = *((Calendar_t*)&t.data[2]);
+            schedule_task_with_param(taskCode, parameter, timeTag);
+            break;
+        }
 		case CDH_LIST_FILES_CMD:{
 			fs_list_dir("/",0);
 			break;
