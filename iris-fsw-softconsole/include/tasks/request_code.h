@@ -16,7 +16,7 @@
 #include "tasks/telemetry.h"    //Request Codes are here.
 // FOR FLATSAT POWER INTERFACING
 #include "drivers/protocol/can.h"
-#include "drivers/device/power_driver.h"
+//#include "application/eps.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

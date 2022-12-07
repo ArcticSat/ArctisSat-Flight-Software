@@ -1,6 +1,8 @@
 #ifndef TASKHANDLES_H_
 #define TASKHANDLES_H_
 
+#include "task.h"
+
 extern TaskHandle_t vTTTScheduler_h;
 extern TaskHandle_t vFw_Update_Mgr_Task_h;
 extern TaskHandle_t vTestCanServer_h;

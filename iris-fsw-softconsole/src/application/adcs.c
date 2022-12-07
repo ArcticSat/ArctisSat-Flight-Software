@@ -10,72 +10,82 @@
 #include "tasks/telemetry.h"
 #include "drivers/device/adcs_driver.h"
 
-void HandleAdcsTask(TaskId_t req, uint8_t * params, Calendar_t * time)
+void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 {
 	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
-	uint8_t buf[164];
-	telemetryPacket_t pkt = {0};
+	uint8_t tx_buf[10];
+	uint8_t rx_buf[164];
+	telemetryPacket_t tm_pkt = {0};
 	// Perform Task
-	switch(req)
+	switch(cmd_pkt->telem_id)
 	{
-	case TASK_ADCS_INIT:
+	case ADCS_INIT_CMD:
 		error_code = adcs_init_driver();
 		break;
-	case TASK_ADCS_ADCS_TX_RX:
+	case ADCS_ADCS_TX_RX_CMD:
+		tx_buf[0] = 0x11;
+		tx_buf[1] = 0x22;
+		tx_buf[2] = 0x33;
 		error_code = adcsTxRx(
-				(uint8_t *) {0x11,0x22,0x33},
+				tx_buf,
 				3,
-				buf,
+				rx_buf,
 				2);
 		break;
-	case TASK_ADCS_PING:
+	case ADCS_PING_CMD:
 		error_code = pingAdcs();
 		break;
-	case TASK_ADCS_SPI_SYNC:
+	case ADCS_SPI_SYNC_CMD:
 		error_code = adcsSyncSpi();
 		break;
-	case TASK_ADCS_SET_TR_STATE:
+	case ADCS_SET_TR_STATE_CMD:
 		error_code = setTorqueRodState(
-				(TortqueRodId_t) params[0],
-				(TortqueRodState_t) params[1]);
+				(TortqueRodId_t) cmd_pkt->data[0],
+				(TortqueRodState_t) cmd_pkt->data[1]);
 		break;
-	case TASK_ADCS_SET_TR_POLARITY:
+	case ADCS_SET_TR_POLARITY_CMD:
 		error_code = setTorqueRodPolarity(
-				(TortqueRodId_t) params[0],
-				(TortqueRodPolarity_t) params[1]);
-//		break;
-	case TASK_ADCS_SET_TR_PWM:
-		error_code = setTorqueRodPwm(
-				(TortqueRodId_t) params[0],
-				params[1]);
+				(TortqueRodId_t) cmd_pkt->data[0],
+				(TortqueRodPolarity_t) cmd_pkt->data[1]);
 		break;
-	case TASK_ADCS_GET_MEASUREMENT_GYRO:
+	case ADCS_SET_TR_PWM_CMD:
+		error_code = setTorqueRodPwm(
+				(TortqueRodId_t) cmd_pkt->data[0],
+				cmd_pkt->data[1]);
+		break;
+	case ADCS_GET_MEASUREMENT_GYRO_CMD:
 		// Get reading
 		error_code = getGyroMeasurements(
-				(GyroId_t) params[0],
-				buf);
+				(GyroId_t) cmd_pkt->data[0],
+				rx_buf);
 		// Send telemetry
-		pkt.telem_id = ADCS_MESAUREMENT_GYRO_ID;
-		pkt.length = ADCS_GYRO_DATA_SIZE;
-		pkt.data = buf;
+		tm_pkt.telem_id = ADCS_MESAUREMENT_GYRO_ID;
+		tm_pkt.length = ADCS_GYRO_DATA_SIZE;
+		tm_pkt.data = rx_buf;
+		// Debugging
+		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
 		break;
-	case TASK_ADCS_GET_MEASUREMENT_MAGNETOMETER:
+	case ADCS_GET_MEASUREMENT_MAGNETOMETER_CMD:
 		// Get reading
 		error_code = getMagnetometerMeasurements(
-				(MagnetometerId_t) params[0],
-				buf);
+				(MagnetometerId_t) cmd_pkt->data[0],
+				rx_buf);
 		// Send telemetry
-		pkt.telem_id = ADCS_MESAUREMENT_MAGNETOMETER_ID;
-		pkt.length = ADCS_MAGNETORQUER_DATA_SIZE;
-		pkt.data = buf;
+		tm_pkt.telem_id = ADCS_MESAUREMENT_MAGNETOMETER_ID;
+		tm_pkt.length = ADCS_MAGNETORQUER_DATA_SIZE;
+		tm_pkt.data = rx_buf;
+		// Debugging
+		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
 		break;
-	case TASK_ADCS_GET_MEASUREMENT_SUN:
+	case ADCS_GET_MEASUREMENT_SUN_CMD:
 		// Get reading
-		error_code = getSunSensorMeasurements(buf);
+		error_code = getSunSensorMeasurements(rx_buf);
 		// Send telemetry
-		pkt.telem_id = ADCS_MESAUREMENT_SUN_ID;
-		pkt.length = ADCS_SUN_SENSOR_DATA_SIZE;
-		pkt.data = buf;
+		tm_pkt.telem_id = ADCS_MESAUREMENT_SUN_ID;
+		tm_pkt.length = ADCS_SUN_SENSOR_DATA_SIZE;
+		tm_pkt.data = rx_buf;
+		// Debugging
+		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
 		break;
 	default:
 		return;
@@ -83,17 +93,16 @@ void HandleAdcsTask(TaskId_t req, uint8_t * params, Calendar_t * time)
 	// Logging
 	telemetryPacket_t event = {0};
 	event.telem_id = EVENT_ID;
-	event.timestamp = *time;
+	event.timestamp = cmd_pkt->timestamp;
 	event.length = 2;
 	if(error_code == ADCS_DRIVER_NO_ERROR)
 	{
 		event.data[0] = TASK_SUCCESS;
-		event.data[1] = req;
+		event.data[1] = cmd_pkt->telem_id;
 	}
 	else
 	{
 		event.data[0] = TASK_ERROR;
-		event.data[1] = req;
+		event.data[1] = cmd_pkt->telem_id;
 	}
-
 }

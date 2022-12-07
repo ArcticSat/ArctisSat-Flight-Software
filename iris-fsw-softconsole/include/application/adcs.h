@@ -11,6 +11,6 @@
 #include "main.h"
 #include "application/telemetry_manager.h"
 
-void HandleAdcsTask(TaskId_t req, uint8_t * params, Calendar_t * time);
+void HandleAdcsCommand(telemetryPacket_t * cmd_pkt);
 
 #endif /* INCLUDE_APPLICATION_ADCS_H_ */

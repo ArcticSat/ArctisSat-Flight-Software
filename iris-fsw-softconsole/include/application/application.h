@@ -10,6 +10,12 @@
 #include "tasks/telemetry.h"
 #include "csp/csp.h"
 
+
+#include "application/cdh.h"
+#include "application/eps.h"
+#include "application/payload.h"
+#include "application/adcs.h"
+
 // Enums
 typedef enum
 {

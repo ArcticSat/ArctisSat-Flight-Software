@@ -15,7 +15,8 @@
 #include <string.h>
 #include <firmware/drivers/mss_spi/mss_spi.h>
 #include "FreeRTOS.h"
-
+#include "task.h"
+#include "tasks/telemetry.h"
 
 static uint32_t programSize = 0;
 static uint8_t initialized = 0;

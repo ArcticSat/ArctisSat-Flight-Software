@@ -206,6 +206,29 @@ void vTTT_Scheduler(void *pvParameters){
     }
 }
 
+int schedule_command(telemetryPacket_t * cmd_pkt)
+{
+	// construct time_tagged_task_t w/ given values
+	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.
+	if(pvTask == NULL){
+		return -1; // memory allocation error
+	}
+
+	pvTask->request_code = cmd_pkt->telem_id;
+	pvTask->parameters = cmd_pkt->data;
+	pvTask->time_tag = cmd_pkt->timestamp;
+	unsigned long priority = CALENDAR_TO_LONG(&cmd_pkt->timestamp);
+
+	if(isEmpty(&priority_queue_handler)){ // Check if priority queue is empty
+		priority_queue_handler = newNode((void*) pvTask, priority); //	set priority queue = new Node(data)
+	}
+	else{
+		push(&priority_queue_handler, (void*) pvTask, priority); // just put task into priority queue
+	}
+
+	return 0; // success
+}
+
 int schedule_task_with_param(request_code_t req, uint8_t * params, mss_rtc_calendar_t time){
 	// construct time_tagged_task_t w/ given values
 	time_tagged_task_t* pvTask = malloc(sizeof(time_tagged_task_t)); // private task to be initialized with parameters and copied into Queue.

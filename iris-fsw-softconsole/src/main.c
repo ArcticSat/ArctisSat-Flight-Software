@@ -39,8 +39,6 @@
  */
 
 /* Standard includes. */
-#include <stdio.h>
-#include <string.h>
 
 /* Library includes */
 #include <csp/csp.h>

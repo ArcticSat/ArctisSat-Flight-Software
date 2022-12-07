@@ -51,6 +51,7 @@ typedef enum{
 AdcsDriverError_t adcs_init_driver(void)
 {
 	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
+	return status;
 }
 
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
@@ -71,25 +72,25 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
  */
 AdcsDriverError_t pingAdcs(void)
 {
-	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
+	AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
 	uint8_t cmd_id = ADCS_CMD_PING;
 	uint8_t cmd_ack = 0;
-	error_code = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
 
-	return error_code;
+	return status;
 }
 
 AdcsDriverError_t adcsSyncSpi(void)
 {
-	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
+	AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
 	uint8_t cmd_id = ADCS_CMD_PING;
 	uint8_t cmd_ack = 0;
 	do
 	{
-		AdcsDriverError_t error_code = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+		AdcsDriverError_t status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
 	} while(cmd_ack != ADCS_SYNC_SPI);
 
-	return error_code;
+	return status;
 }
 /*
  * ADCS Torque Rod Commands
@@ -98,14 +99,14 @@ AdcsDriverError_t adcsSyncSpi(void)
 
 AdcsDriverError_t setTorqueRodState(TortqueRodId_t rod_number, uint8_t rod_state)
 {
-	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ID;
+	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
 	// Get Command ID
 	switch(rod_state)
 	{
 	case 0:
 	default:
-		return error_code;
+		return status;
 	}
 	switch(rod_number)
 	{
@@ -119,18 +120,18 @@ AdcsDriverError_t setTorqueRodState(TortqueRodId_t rod_number, uint8_t rod_state
 		cmd_id = ADCS_CMD_SET_ON_TORQUE_ROD_3;
 		break;
 	default:
-		return error_code;
+		return status;
 	}
 	// SPI transactions
 	uint8_t cmd_ack = 0;
-	error_code = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
 
-	return error_code;
+	return status;
 }
 
 AdcsDriverError_t setTorqueRodPolarity(TortqueRodId_t rod_number, uint8_t polarity)
 {
-	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ID;
+	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
 	// Get Command ID
 	switch(rod_number)
@@ -145,19 +146,19 @@ AdcsDriverError_t setTorqueRodPolarity(TortqueRodId_t rod_number, uint8_t polari
 		cmd_id = ADCS_CMD_SET_POLARITY_TORQUE_ROD_3;
 		break;
 	default:
-		return error_code;
+		return status;
 	}
 	// SPI transactions
 	uint8_t tx_data[2] = {cmd_id,polarity};
 	uint8_t cmd_ack = 0;
-	error_code = adcsTxRx(&tx_data,2,&cmd_ack,1);
+	status = adcsTxRx(tx_data,2,&cmd_ack,1);
 
-	return error_code;
+	return status;
 }
 
 AdcsDriverError_t setTorqueRodPwm(TortqueRodId_t rod_number, uint8_t pwm)
 {
-	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ID;
+	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
 	// Get Command ID
 	switch(rod_number)
@@ -172,14 +173,14 @@ AdcsDriverError_t setTorqueRodPwm(TortqueRodId_t rod_number, uint8_t pwm)
 		cmd_id = ADCS_CMD_SET_PWM_TORQUE_ROD_3;
 		break;
 	default:
-		return error_code;
+		return status;
 	}
 	// SPI transactions
 	uint8_t tx_data[2] = {cmd_id,pwm};
 	uint8_t cmd_ack = 0;
-	error_code = adcsTxRx(&tx_data,2,&cmd_ack,1);
+	status = adcsTxRx(tx_data,2,&cmd_ack,1);
 
-	return error_code;
+	return status;
 }
 
 /*
@@ -203,15 +204,15 @@ AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasure
         return ADCS_ERROR_BAD_ID;
     }
     // SPI transactions
-    AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
+    AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
 	uint8_t cmd_ack = 0;
-	error_code = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
     // Get measurements
 	uint8_t tx_data[6] = {0};
-	error_code = adcsTxRx(&tx_data,ADCS_GYRO_DATA_SIZE,&gyroMeasurements,ADCS_GYRO_DATA_SIZE);
+	status = adcsTxRx(tx_data,ADCS_GYRO_DATA_SIZE,gyroMeasurements,ADCS_GYRO_DATA_SIZE);
 
-	return error_code;
+	return status;
 }
 
 AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements)
@@ -230,21 +231,22 @@ AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumbe
         return ADCS_ERROR_BAD_ID;
     }
     // SPI transactions
-    AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
+    AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
 	uint8_t cmd_ack = 0;
-	error_code = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
     // Get measurements
 	uint8_t tx_data[6] = {0};
-	error_code = adcsTxRx(&tx_data,ADCS_MAGNETORQUER_DATA_SIZE,&magnetometerMeasurements,ADCS_MAGNETORQUER_DATA_SIZE);
+	status = adcsTxRx(tx_data,ADCS_MAGNETORQUER_DATA_SIZE,magnetometerMeasurements,ADCS_MAGNETORQUER_DATA_SIZE);
 
-	return error_code;
+	return status;
 }
 
 AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements)
 {
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
-	AdcsDriverError_t error_code = adcsTxRx(&cmd_id,1,&measurements,ADCS_SUN_SENSOR_DATA_SIZE);
+	AdcsDriverError_t status = adcsTxRx(&cmd_id,1,measurements,ADCS_SUN_SENSOR_DATA_SIZE);
+	return status;
 }
 
 

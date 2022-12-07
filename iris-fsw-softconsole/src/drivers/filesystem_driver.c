@@ -15,6 +15,7 @@
 #include <FreeRTOS-Kernel/include/semphr.h>
 #include "drivers/filesystem_driver.h"
 #include "drivers/device/memory/flash_common.h"
+#include <stdint.h>
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -181,7 +182,7 @@ int fs_list_dir(char * path,int recursive){
     if (err) {
         return err;
     }
-
+    return err;
 }
 
 int fs_file_exist(char * path){

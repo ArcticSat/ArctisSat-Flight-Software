@@ -15,7 +15,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
 // FOR FLATSAT POWER INTERFACING
-#include "drivers/device/power_driver.h"
+#include "application/eps.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include <FreeRTOS-Kernel/include/queue.h>

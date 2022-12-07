@@ -7,7 +7,6 @@
 
 
 #include "application/application.h"
-#include "application/payload.h"
 
 bool ls_rst_status[NUM_LOAD_SWITCHES];
 

@@ -20,6 +20,8 @@
 #include "drivers/device/memory/flash_common.h"
 #include "Libraries/libcrc/include/checksum.h"
 #include "drivers/software_update_driver.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -576,6 +578,7 @@ int setFwManagerState(int state){
     if(res<0){
         printf("Unable to set state!");
     }
+    return res;
 }
 
 void setFwChecksum(uint8_t slot, uint32_t check){
@@ -654,7 +657,7 @@ int updateState(int state){
 
     fwMgrState = setState;
 
-
+    return 0; // TBC: error code?
 }
 
 void uploadFwChunk(uint8_t * data, uint16_t length){

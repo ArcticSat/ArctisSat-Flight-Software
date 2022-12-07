@@ -21,6 +21,7 @@
 #include <task.h>
 #include "drivers/device/rtc/rtc_common.h"
 #include "tasks/request_code.h"
+#include "application/application.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -49,144 +50,32 @@
 
 void handle_request_with_param(TaskId_t req, uint8_t * params, Calendar_t time)
 {
-	int temp = 0;
-	switch(req){
-		case(TASK_TAKE_IMAGE):{
-			uint8_t imgNum = params[0];
-			telemetryPacket_t telemetry={0};
-			telemetry.telem_id= PAYLOAD_FULL_IMAGE_CMD;
-			telemetry.timestamp = time;
-			telemetry.length = 1;
-			telemetry.data = &imgNum;
-			sendCommand(&telemetry, PAYLOAD_CSP_ADDRESS);
-			break;
-		}
-		/* POWER FLATSAT TEST TTTs */
-		case TASK_POWER_READ_TEMP:{ // Read temperature value command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_READ_TEMP_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_READ_SOLAR_CURRENT:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_READ_SOLAR_CURRENT_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_READ_LOAD_CURRENT:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_READ_LOAD_CURRENT_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_READ_MSB_VOLTAGE:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 1;
-			cmd.data[0] = POWER_READ_MSB_VOLTAGE_CMD;
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_GET_BATTERY_SOC:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 1;
-			cmd.data[0] = POWER_GET_BATTERY_SOC_CMD;
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_GET_ECLIPSE:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 1;
-			cmd.data[0] = POWER_GET_ECLIPSE_CMD;
-			CAN_transmit_message(&cmd);
-			break;
-		}
-//		case TASK_POWER_GET_BOOT_COUNT:{ // Read solar current command
-//			CANMessage_t cmd = {0};
-//			cmd.id = POW_TXID;
-//			cmd.dlc = 1;
-//			cmd.data[0] = POWER_GET_BOOT_COUNT_CMD;
-//			CAN_transmit_message(&cmd);
-//			break;
-//		}
-		case TASK_POWER_SET_LOAD_OFF:{
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_SET_LOAD_ON:{
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_LOAD_ON_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_SET_SOLAR_OFF:{
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_SOLAR_OFF_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_SET_SOLAR_ON:{
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_SOLAR_ON_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_POWER_SET_MODE:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_POW_MODE_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_AIT_POWER_SET_BATTERY_SOC:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 5;
-			cmd.data[0] = AIT_POWER_SET_BATTERY_SOC_CMD;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		case TASK_AIT_POWER_SET_ECLIPSE:{ // Read solar current command
-			CANMessage_t cmd = {0};
-			cmd.id = POW_TXID;
-			cmd.dlc = 2;
-			cmd.data[0] = AIT_POWER_SET_ECLIPSE;
-			cmd.data[1] = params[0];
-			CAN_transmit_message(&cmd);
-			break;
-		}
-		default:
-			break;
+	telemetryPacket_t cmd_pkt = {0};
+	cmd_pkt.telem_id = req;
+	cmd_pkt.timestamp = time;
+	cmd_pkt.data = params;
+	// Dispatch command
+	if(cmd_pkt.telem_id < CDH_COMMANDS_END)
+	{
+		HandleCdhCommand(&cmd_pkt);
 	}
+	else if(cmd_pkt.telem_id < POWER_COMMANDS_END)
+	{
+		HandlePowerCommand(&cmd_pkt);
+	}
+	else if(cmd_pkt.telem_id < PAYLOAD_COMMANDS_END)
+	{
+
+	}
+	else if(cmd_pkt.telem_id < ADCS_COMMANDS_END)
+	{
+		HandleAdcsCommand(&cmd_pkt);
+	}
+	else
+	{
+		// TBC: error handling
+	}
+	// TBC: event logging
 }
 
 void handle_request(TaskId_t req,Calendar_t time){

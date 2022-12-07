@@ -60,6 +60,7 @@ typedef struct {
 // Returns:
 //  Integer - 0 if successfully scheduled task, error occurred otherwise.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+int schedule_command(telemetryPacket_t * cmd_pkt);
 int schedule_task_with_param(
 		request_code_t req,
 		uint8_t * params,
