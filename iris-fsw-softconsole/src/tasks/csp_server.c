@@ -18,6 +18,7 @@
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
 //#include "tasks/fw_update_mgr.h"
+#include "application/telemetry_manager.h"
 //
 #include "drivers/filesystem_driver.h"
 //#include "drivers/software_update_driver.h"
@@ -121,7 +122,7 @@ void vCSP_Server(void * pvParameters){
 				//			sendTelemetry_direct(&telem, conn); // TBC: send direct?
 							break;
 						}
-						case GND_GET_TM_CMD:{
+						case GND_TELEMETRY_REQUEST_CMD:{
 							TelemetryChannel_t channel_id;
 							channel_id = (TelemetryChannel_t) cmd_pkt.data[0];
 							get_telemetry(channel_id);
