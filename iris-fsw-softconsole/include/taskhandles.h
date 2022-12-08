@@ -5,7 +5,7 @@
 
 extern TaskHandle_t vTTTScheduler_h;
 extern TaskHandle_t vFw_Update_Mgr_Task_h;
-extern TaskHandle_t vTestCanServer_h;
+extern TaskHandle_t vCanServer_h;
 extern TaskHandle_t vCSP_Server_h;
 extern TaskHandle_t vTestWD_h;
 //Debug Only:

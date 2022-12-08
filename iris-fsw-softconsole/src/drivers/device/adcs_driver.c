@@ -97,7 +97,7 @@ AdcsDriverError_t adcsSyncSpi(void)
  * @return
  */
 
-AdcsDriverError_t setTorqueRodState(TortqueRodId_t rod_number, uint8_t rod_state)
+AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, uint8_t rod_state)
 {
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
@@ -129,7 +129,7 @@ AdcsDriverError_t setTorqueRodState(TortqueRodId_t rod_number, uint8_t rod_state
 	return status;
 }
 
-AdcsDriverError_t setTorqueRodPolarity(TortqueRodId_t rod_number, uint8_t polarity)
+AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t rod_number, uint8_t polarity)
 {
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
@@ -156,7 +156,7 @@ AdcsDriverError_t setTorqueRodPolarity(TortqueRodId_t rod_number, uint8_t polari
 	return status;
 }
 
-AdcsDriverError_t setTorqueRodPwm(TortqueRodId_t rod_number, uint8_t pwm)
+AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t rod_number, uint8_t pwm)
 {
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;

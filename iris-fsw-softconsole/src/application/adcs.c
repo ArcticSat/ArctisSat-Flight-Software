@@ -40,17 +40,17 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		break;
 	case ADCS_SET_TR_STATE_CMD:
 		error_code = setTorqueRodState(
-				(TortqueRodId_t) cmd_pkt->data[0],
+				(TorqueRodId_t) cmd_pkt->data[0],
 				(TortqueRodState_t) cmd_pkt->data[1]);
 		break;
 	case ADCS_SET_TR_POLARITY_CMD:
 		error_code = setTorqueRodPolarity(
-				(TortqueRodId_t) cmd_pkt->data[0],
+				(TorqueRodId_t) cmd_pkt->data[0],
 				(TortqueRodPolarity_t) cmd_pkt->data[1]);
 		break;
 	case ADCS_SET_TR_PWM_CMD:
 		error_code = setTorqueRodPwm(
-				(TortqueRodId_t) cmd_pkt->data[0],
+				(TorqueRodId_t) cmd_pkt->data[0],
 				cmd_pkt->data[1]);
 		break;
 	case ADCS_GET_MEASUREMENT_GYRO_CMD:
@@ -62,8 +62,8 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		tm_pkt.telem_id = ADCS_MESAUREMENT_GYRO_ID;
 		tm_pkt.length = ADCS_GYRO_DATA_SIZE;
 		tm_pkt.data = rx_buf;
-		// Debugging
-		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+		// Log telemetry
+		log_telemetry(&tm_pkt);
 		break;
 	case ADCS_GET_MEASUREMENT_MAGNETOMETER_CMD:
 		// Get reading
@@ -74,8 +74,8 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		tm_pkt.telem_id = ADCS_MESAUREMENT_MAGNETOMETER_ID;
 		tm_pkt.length = ADCS_MAGNETORQUER_DATA_SIZE;
 		tm_pkt.data = rx_buf;
-		// Debugging
-		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+		// Log telemetry
+		log_telemetry(&tm_pkt);
 		break;
 	case ADCS_GET_MEASUREMENT_SUN_CMD:
 		// Get reading
@@ -84,8 +84,8 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		tm_pkt.telem_id = ADCS_MESAUREMENT_SUN_ID;
 		tm_pkt.length = ADCS_SUN_SENSOR_DATA_SIZE;
 		tm_pkt.data = rx_buf;
-		// Debugging
-		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+		// Log telemetry
+		log_telemetry(&tm_pkt);
 		break;
 	default:
 		return;

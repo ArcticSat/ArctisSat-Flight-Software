@@ -56,7 +56,7 @@
 /* Application includes. */
 #include "main.h"
 #include "taskhandles.h"
-#include "drivers/protocol/can.h"
+//#include "drivers/protocol/can.h"
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/device/leds.h"
 #include "drivers/device/memory/mram.h"
@@ -73,6 +73,7 @@
 #include "tasks/csp_server.h"
 #include "tasks/fw_update_mgr.h"
 #include "drivers/device/adc/AD7928.h"
+#include "application/cdh.h"
 
 
 
@@ -89,7 +90,7 @@
 //This is how we are able to disable/enable tasks, either for operations managment or proper startup order.
 TaskHandle_t vTTTScheduler_h;
 TaskHandle_t vFw_Update_Mgr_Task_h;
-TaskHandle_t vTestCanServer_h;
+TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
 //Debug Only:
@@ -103,7 +104,7 @@ extern TaskHandle_t xUART0RxTaskToNotify;
  */
 static void prvSetupHardware( void );
 
-static void vTestCanServer(void * pvParameters);
+//static void vTestCanServer(void * pvParameters);
 
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
@@ -133,13 +134,13 @@ int main( void )
 	BaseType_t status;
     status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
+    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
     status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
     //Suspend these because csp server will start once csp is up.
     vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vTTTScheduler_h);
-    vTaskSuspend(vTestCanServer_h);
+    vTaskSuspend(vCanServer_h);
     // Start FreeRTOS Tasks
     vTaskStartScheduler();
 
@@ -162,7 +163,8 @@ int main( void )
 //    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
 //    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
 //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+//	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+//    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
 //    // Task for testing time tagged task queue.
@@ -201,94 +203,6 @@ static void prvSetupHardware( void )
 
 
 /*-----------------------------------------------------------*/
-extern QueueHandle_t can_rx_queue;
-uint8_t numCanMsgs = 0;
-CANMessage_t can_q[10] = {0};
-uint8_t telem_id = 0;
-static void vTestCanServer(void * pvParameters)
-{
-	int messages_processed = 0;
-	CANMessage_t rx_msg;
-	while(1)
-	{
-//		BaseType_t q_rec = xQueueReceive(can_rx_queue, &rx_msg, portMAX_DELAY);
-//		UBaseType_t numMsgs = uxQueueMessagesWaitingFromISR(can_rx_queue);
-//		if (q_rec == pdTRUE)
-//		{
-//			messages_processed++;
-//			// Ground output to terminal
-//			telemetryPacket_t telemetry={0};
-//			Calendar_t ts = {0};
-//			// Send telemetry value
-//			telemetry.telem_id = POWER_READ_TEMP_ID;
-//			telemetry.timestamp = ts;
-//			telemetry.length = 4;
-//			telemetry.data = rx_msg.data;
-//			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-//
-//		}
-
-		if(numCanMsgs > 0)
-		{
-			numCanMsgs--;
-			if(numCanMsgs < 0) continue;
-			// Check if msg is telem_id
-			uint8_t telem_mask = 0;
-			int i;
-			for(i=0; i < 3; i++) telem_mask |= can_q[numCanMsgs].data[i];
-			if(telem_mask == 0)
-			{
-				telem_id = can_q[numCanMsgs].data[3];
-			}
-			else
-			{
-				switch(telem_id)
-				{
-					case POWER_READ_TEMP_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_TEMP_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_READ_SOLAR_CURRENT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_READ_LOAD_CURRENT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_READ_MSB_VOLTAGE_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-				}
-			}
-
-		}
-
-		vTaskDelay(1000);
-
-	}
-}
 static void vTestCspServer(void * pvParameters){
 
 	struct csp_can_config can_conf = {0};

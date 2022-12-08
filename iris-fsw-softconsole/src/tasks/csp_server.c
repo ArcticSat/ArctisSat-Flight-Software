@@ -73,7 +73,7 @@ void vCSP_Server(void * pvParameters){
     csp_listen(socket,4);
 
     //Start up any tasks that depend on CSP, FS.
-    vTaskResume(vTestCanServer_h);
+    vTaskResume(vCanServer_h);
     vTaskResume(vTTTScheduler_h);
     if(get_fs_status() == FS_OK){
     	vTaskResume(vFw_Update_Mgr_Task_h);

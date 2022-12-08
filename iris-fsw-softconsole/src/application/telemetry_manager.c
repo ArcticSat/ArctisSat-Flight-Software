@@ -53,6 +53,8 @@ void init_telemetry_manager(void)
 }
 void log_telemetry(telemetryPacket_t * pkt)
 {
+	// Debugging
+	sendTelemetryAddr(&pkt, GROUND_CSP_ADDRESS);
 	// TBC: Set packet time?!?!
 	Calendar_t rx_time = {0};
 	pkt->timestamp = rx_time;

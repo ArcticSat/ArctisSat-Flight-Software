@@ -12,6 +12,7 @@
 
 #define EVENT_DATA_SIZE 4
 
+// Telemetry channels
 typedef enum {
 	SC_STATUS,
 	EVENT_LOG,
@@ -22,6 +23,7 @@ typedef enum {
 	NUM_TLM_CHANNELS,
 } TelemetryChannel_t;
 
+// Event IDs
 typedef enum
 {
 	TASK_ERROR,

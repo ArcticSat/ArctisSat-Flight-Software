@@ -15,6 +15,7 @@
 
 
 void HandleCdhCommand(telemetryPacket_t * cmd_pkt);
+void vCanServer(void * pvParameters);
 
 
 #endif /* INCLUDE_APPLICATION_CDH_H_ */

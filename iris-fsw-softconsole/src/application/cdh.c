@@ -14,6 +14,7 @@
 #include "drivers/software_update_driver.h"
 #include "drivers/device/rtc/rtc_time.h"
 #include "drivers/device/memory/flash_common.h"
+#include "drivers/protocol/can.h"
 
 #include "task.h"
 #include "version.h"
@@ -21,14 +22,16 @@
 // TBC: change printfs to log_telemetry, with a CDH command option for printing
 //		vs
 
+
+
 void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 {
 	switch(cmd_pkt->telem_id){
     	case CDH_SCHEDULE_TTT_CMD:{
-            uint8_t taskCode = t.data[0];
-            uint8_t parameter = t.data[1];
-            Calendar_t timeTag = *((Calendar_t*)&t.data[2]);
-            schedule_task_with_param(taskCode, parameter, timeTag);
+            uint8_t taskCode = cmd_pkt->data[0];
+            uint8_t parameter = cmd_pkt->data[1];
+            Calendar_t * timeTag = (Calendar_t*) (cmd_pkt->data[2]);
+            schedule_task_with_param(taskCode, parameter, *timeTag);
             break;
         }
 		case CDH_LIST_FILES_CMD:{
@@ -230,3 +233,77 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 		}
 	} // End of switch(cmd_pkt->telem_id)
 } // End of HandleCdhCommand
+
+
+// CAN server variables
+extern QueueHandle_t can_rx_queue;
+uint8_t numCanMsgs = 0;
+CANMessage_t can_q[10] = {0};
+uint8_t telem_id = 0;
+void vCanServer(void * pvParameters)
+{
+	int messages_processed = 0;
+	CANMessage_t rx_msg;
+	while(1)
+	{
+		if(numCanMsgs > 0)
+		{
+			numCanMsgs--;
+			if(numCanMsgs < 0) continue;
+			// Check if msg is telem_id
+			uint8_t telem_mask = 0;
+			int i;
+			for(i=0; i < 3; i++) telem_mask |= can_q[numCanMsgs].data[i];
+			if(telem_mask == 0)
+			{
+				telem_id = can_q[numCanMsgs].data[3];
+			}
+			else
+			{
+				switch(telem_id)
+				{
+					case POWER_READ_TEMP_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_TEMP_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						log_telemetry(&telemetry);
+						break;
+					}
+					case POWER_READ_SOLAR_CURRENT_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						log_telemetry(&telemetry);
+						break;
+					}
+					case POWER_READ_LOAD_CURRENT_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						log_telemetry(&telemetry);
+						break;
+					}
+					case POWER_READ_MSB_VOLTAGE_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						log_telemetry(&telemetry);
+						break;
+					}
+					default:{
+						break;
+					}
+				}
+			}
+		}
+		vTaskDelay(500);
+	}
+}

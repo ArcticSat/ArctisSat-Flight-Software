@@ -38,20 +38,19 @@ typedef enum{
     MAGNETORQUER_X,
     MAGNETORQUER_Y,
     MAGNETORQUER_Z
-
 }MagnetorquerID_t;
 
 // Torque Rod state
 typedef enum
 {
-	TR_POLARITY_NEG,
-	TR__POLARITY_POS
+	TR_STATE_OFF,
+	TR_STATE_ON
 } TortqueRodState_t;
 // Torque Rod polarity
 typedef enum
 {
-	TR_STATE_OFF,
-	TR_STATE_ON
+	TR_POLARITY_NEG,
+	TR_POLARITY_POS
 } TortqueRodPolarity_t;
 // Torque Rod IDs
 typedef enum
@@ -59,7 +58,7 @@ typedef enum
 	TORQUE_ROD_1 = 1,
 	TORQUE_ROD_2,
 	TORQUE_ROD_3
-} TortqueRodId_t;
+} TorqueRodId_t;
 // Gyro IDs
 typedef enum
 {
@@ -85,9 +84,9 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 AdcsDriverError_t pingAdcs(void);
 AdcsDriverError_t adcsSyncSpi(void);
 // Torque Rod commands
-AdcsDriverError_t setTorqueRodState(TortqueRodId_t rod_number, TortqueRodState_t rod_state);
-AdcsDriverError_t setTorqueRodPolarity(TortqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
-AdcsDriverError_t setTorqueRodPwm(TortqueRodId_t cmd_id, uint8_t pwm);
+AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t rod_state);
+AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
+AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t cmd_id, uint8_t pwm);
 // Sensor Polling commands
 AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
 AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
