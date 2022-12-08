@@ -91,13 +91,13 @@ void vCSP_Server(void * pvParameters){
             int dest_port = csp_conn_dport(conn);
             switch(dest_port){
 				case CSP_CMD_PORT:{
-					telemetryPacket_t t ;
-					unpackTelemetry(packet->data, &t);
-					switch(t.telem_id)
+					telemetryPacket_t cmd_pkt;
+					unpackTelemetry(packet->data, &cmd_pkt);
+					switch(cmd_pkt.telem_id)
 					{
 						case CDH_SET_TIME_CMD:{
 							//They send us a Calendar_t
-							Calendar_t *newTime = (Calendar_t *) t.data;
+							Calendar_t *newTime = (Calendar_t *) cmd_pkt.data;
 							int err = time_valid(newTime);
 							if(err == TIME_SUCCESS){
 								  //Uncomment for cdh with rtc installed.
@@ -121,12 +121,17 @@ void vCSP_Server(void * pvParameters){
 				//			sendTelemetry_direct(&telem, conn); // TBC: send direct?
 							break;
 						}
-						default:{
-							schedule_command(&t);
+						case GND_GET_TM_CMD:{
+							TelemetryChannel_t channel_id;
+							channel_id = (TelemetryChannel_t) cmd_pkt.data[0];
+							get_telemetry(channel_id);
 							break;
-
 						}
-					} // switch(t.telem_id)
+						default:{
+							schedule_command(&cmd_pkt);
+							break;
+						}
+					} // switch(cmd_pkt.telem_id)
 					break;
 				} // case CSP_CMD_PORT
 				case CSP_TELEM_PORT:

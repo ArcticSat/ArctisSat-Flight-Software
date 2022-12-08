@@ -26,7 +26,7 @@
 #define CSP_UPDATE_PORT	9
 
 // Maximum CSP packet size
-#define DLC_MAX 256
+#define DLC_MAX 256 // TBC
 
 /***********************************************************/
 //Telemetry IDs
@@ -201,6 +201,9 @@ typedef enum
 	ADCS_GET_MEASUREMENT_MAGNETOMETER_CMD,
 	ADCS_GET_MEASUREMENT_SUN_CMD,
 	ADCS_COMMANDS_END,
+	// Immediate commands
+	GND_TELEMETRY_REQUEST_CMD,
+	IMMED_COMMANDS_END,
 } CommandId_t;
 // Task IDs
 typedef enum {

@@ -99,44 +99,51 @@ void log_telemetry(telemetryPacket_t * pkt)
 
 void get_telemetry(TelemetryChannel_t channel_id)
 {
-	// Get telemetry block parameters
-	uint32_t base_address = sc_status.channel_base[channel_id];
-	uint32_t rd_size_total = sc_status.channel_base[channel_id];
-	// Set packet parameters (other than data)
-	telemetryPacket_t pkt = {0};
-	pkt.telem_id = GND_FRAME_ID;
-	Calendar_t tx_time = {0}; // TBC: send time
-	pkt.timestamp = tx_time;
-	// Get total number of packets needed
-	// Sequence number = packet number of frame (4 bytes)
-	// Sequence size = total number of packets (4 bytes)
-	// # packets needed = rd_size_total / (DLC_MAX - sizeof(seq. num.) - sizeof(seq. size)) + 1
-	uint8_t sec_header_size = 2 * sizeof(uint32_t);
-	uint8_t read_size_max = DLC_MAX - sec_header_size;
-	uint8_t sequence_size = rd_size_total / read_size_max + 1;
-	pkt.data[0] = sequence_size;
-	// Send frames
-	uint8_t rd_size = 0;
-	uint32_t rd_offset = 0;
-	uint8_t seq_number;
-	uint32_t rd_address;
-	for(seq_number = 0; seq_number < sequence_size; seq_number++){
-		// Sequence number
-		pkt.data[1] = seq_number;
-		// Read size
-		if(rd_size_total - rd_offset > read_size_max){
-			rd_size = read_size_max;
+	if(channel_id < NUM_TLM_CHANNELS)
+	{
+		// Get telemetry channel parameters
+		uint32_t base_address = sc_status.channel_base[channel_id];
+		uint32_t rd_size_total = sc_status.channel_base[channel_id];
+		// Set packet parameters (other than data)
+		telemetryPacket_t pkt = {0};
+		pkt.telem_id = GND_FRAME_ID;
+		Calendar_t tx_time = {0}; // TBC: send time
+		pkt.timestamp = tx_time;
+		// Get total number of packets needed
+		// Sequence number = packet number of frame (4 bytes)
+		// Sequence size = total number of packets (4 bytes)
+		// # packets needed = rd_size_total / (DLC_MAX - sizeof(seq. num.) - sizeof(seq. size)) + 1
+		uint8_t sec_header_size = 2 * sizeof(uint32_t);
+		uint8_t read_size_max = DLC_MAX - sec_header_size;
+		uint8_t sequence_size = rd_size_total / read_size_max + 1;
+		pkt.data[0] = sequence_size;
+		// Send frames
+		uint8_t rd_size = 0;
+		uint32_t rd_offset = 0;
+		uint8_t seq_number;
+		uint32_t rd_address;
+		for(seq_number = 0; seq_number < sequence_size; seq_number++){
+			// Sequence number
+			pkt.data[4] = seq_number;
+			// Read size
+			if(rd_size_total - rd_offset > read_size_max){
+				rd_size = read_size_max;
+			}
+			else {
+				rd_size = rd_size_total - rd_offset;
+			}
+			// Read data
+			rd_address = base_address + rd_offset;
+			flash_read(DATA_FLASH, rd_address, &pkt.data[sec_header_size], rd_size);
+			// Send packet
+			sendTelemetryAddr(&pkt, GROUND_CSP_ADDRESS);
+			// Update offset
+			rd_offset += (uint32_t) rd_size;
 		}
-		else {
-			rd_size = rd_size_total - rd_offset;
-		}
-		// Read data
-		rd_address = base_address + rd_offset;
-		flash_read(DATA_FLASH, rd_address, &pkt.data[sec_header_size], rd_size);
-		// Send packet
-		sendTelemetryAddr(&pkt, GROUND_CSP_ADDRESS);
-		// Update offset
-		rd_offset += (uint32_t) rd_size;
+	}
+	else
+	{
+		// TBC: log event
 	}
 }
 
