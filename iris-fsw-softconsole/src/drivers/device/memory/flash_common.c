@@ -18,12 +18,6 @@
 #include "drivers/protocol/spi.h"
 #include "board_definitions.h"
 
-//#define MT25Q_DATA_FLASH
-#define W25N_DATA_FLASH
-//#define AT25SF_DATA_FLASH
-
-#define W25Q_PROGRAM_FLASH
-//#define AT25SF_PROGRAM_FLASH
 
 //Device specific spi functions
 void data_flash_spi_read(uint8_t *cmd_buffer,uint16_t cmd_size,uint8_t *rd_buffer,uint16_t rd_size);
@@ -58,9 +52,9 @@ static FlashDev_t 	data_flash = {	.driver = &data_flash_driver,
 
 //For testing only! TODO: put back proper driver when merging this.
 ////static W25NDevice_t data_flash_driver;
+//static AT25SF_Device_t program_flash_driver = {	.spi_read = program_flash_spi_read,
+//												.spi_write= program_flash_spi_write};
 #if defined(W25Q_PROGRAM_FLASH)
-static AT25SF_Device_t program_flash_driver = {	.spi_read = program_flash_spi_read,
-												.spi_write= program_flash_spi_write};
 static W25Q_Device_t program_flash_driver = {   .spi_read = program_flash_spi_read,
                                               .spi_write= program_flash_spi_write};
 
