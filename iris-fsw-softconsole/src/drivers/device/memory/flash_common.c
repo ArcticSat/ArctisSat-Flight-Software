@@ -80,8 +80,16 @@ static FlashDev_t   program_flash = {  .driver = &program_flash_driver,
 
 
 FlashDev_t *flash_devices[NUM_FLASH_DEVICES] = {
+#ifdef USING_DATA_FLASH
 		&data_flash,
+#else
+		NULL,
+#endif
+#ifdef USING_PROGRAM_FLASH
 		&program_flash
+#else
+		NULL,
+#endif
 };
 
 

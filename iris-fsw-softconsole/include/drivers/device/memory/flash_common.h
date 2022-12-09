@@ -19,15 +19,19 @@
 // DEFINES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Data Flash defines
-#define USING_DATA_FLASH
 //#define MT25Q_DATA_FLASH
 #define W25N_DATA_FLASH
 //#define AT25SF_DATA_FLASH
+#if defined(MT25Q_DATA_FLASH) || defined(W25N_DATA_FLASH) || defined(AT25SF_DATA_FLASH)
+#define USING_DATA_FLASH
+#endif
 
 // Program Flash defines
-//#define USING_PROGRAM_FLASH
-#define W25Q_PROGRAM_FLASH
+//#define W25Q_PROGRAM_FLASH
 //#define AT25SF_PROGRAM_FLASH
+#if defined(W25Q_PROGRAM_FLASH) || defined(AT25SF_PROGRAM_FLASH)
+#define USING_PROGRAM_FLASH
+#endif
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMERATIONS AND ENUMERATION TYPEDEFS
