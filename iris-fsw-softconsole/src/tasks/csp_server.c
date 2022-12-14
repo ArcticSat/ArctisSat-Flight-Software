@@ -36,8 +36,6 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-#define USING_EM_OR_FM 1
-
 
 //------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
