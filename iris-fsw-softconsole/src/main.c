@@ -134,7 +134,7 @@ int main( void )
 	BaseType_t status;
     status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+    status = xTaskCreate(vCanServerBasic,"CAN Rx",1000,NULL,2,&vCanServer_h);
     status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
     //Suspend these because csp server will start once csp is up.
@@ -171,6 +171,7 @@ int main( void )
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+//    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
 
 
     return 0;

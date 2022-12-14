@@ -240,6 +240,55 @@ extern QueueHandle_t can_rx_queue;
 uint8_t numCanMsgs = 0;
 CANMessage_t can_q[10] = {0};
 uint8_t telem_id = 0;
+
+void vCanServerBasic(void * pvParameters)
+{
+	int messages_processed = 0;
+	CANMessage_t rx_msg;
+	while(1)
+	{
+		if(numCanMsgs > 0)
+		{
+			numCanMsgs--;
+			uint8_t tm_id = can_q[numCanMsgs].data[0];
+			switch(tm_id)
+			{
+				case POWER_FRAM_GET_OPMODE_ID:{
+					telemetryPacket_t telemetry;
+					// Send telemetry value
+					telemetry.telem_id = POWER_FRAM_GET_OPMODE_ID;
+					telemetry.length = 3;
+					telemetry.data = &can_q[numCanMsgs].data[1];
+					log_telemetry(&telemetry);
+					break;
+				}
+				case POWER_READ_ADC_A_ID:{
+					telemetryPacket_t telemetry;
+					// Send telemetry value
+					telemetry.telem_id = POWER_READ_ADC_A_ID;
+					telemetry.length = 2;
+					telemetry.data = &can_q[numCanMsgs].data[1];
+					log_telemetry(&telemetry);
+					break;
+				}
+				case POWER_READ_ADC_B_ID:{
+					telemetryPacket_t telemetry;
+					// Send telemetry value
+					telemetry.telem_id = POWER_READ_ADC_A_ID;
+					telemetry.length = 2;
+					telemetry.data = &can_q[numCanMsgs].data[1];
+					log_telemetry(&telemetry);
+					break;
+				}
+				default:{
+					break;
+				}
+			}
+		}
+		vTaskDelay(500);
+	}
+}
+
 void vCanServer(void * pvParameters)
 {
 	int messages_processed = 0;
