@@ -110,7 +110,7 @@ FlashStatus_t flash_device_init(FlashDev_t *device){
 		    break;
 		} // case: DATA_FLASH
 		case PROGRAM_FLASH:{
-#if defined(MT25Q_PROGRAM_FLASH)
+#if defined(W25Q_PROGRAM_FLASH)
 		    result = W25Q_setup_flash(device->driver);
 #elif defined(AT25SF_PROGRAM_FLASH)
 			result = AT25SF_setup_flash(device->driver);
@@ -136,7 +136,7 @@ FlashStatus_t flash_write(FlashDev_t *device,uint32_t address, uint8_t *wr_buffe
 		    break;
 		} // case: DATA_FLASH
 		case PROGRAM_FLASH:{
-#if defined(MT25Q_PROGRAM_FLASH)
+#if defined(W25Q_PROGRAM_FLASH)
 			result = W25Q_flash_write_page(device->driver, address, wr_buffer, wr_size);
 #elif defined(AT25SF_PROGRAM_FLASH)
 			result = AT25SF_flash_write_page(device->driver, address, wr_buffer, wr_size);
@@ -162,7 +162,7 @@ FlashStatus_t flash_read(FlashDev_t *device, uint32_t address, uint8_t *rd_buffe
 		    break;
 		} // case: DATA_FLASH
 		case PROGRAM_FLASH:{
-#if defined(MT25Q_PROGRAM_FLASH)
+#if defined(W25Q_PROGRAM_FLASH)
 			result = W25Q_flash_read(device->driver, address, rd_buffer, rd_size);
 #elif defined(AT25SF_PROGRAM_FLASH)
 			result = AT25SF_flash_read(device->driver, address, rd_buffer, rd_size);
@@ -189,7 +189,7 @@ FlashStatus_t flash_erase(FlashDev_t *device, uint32_t address){
 	    break;
 	} // case: DATA_FLASH
 		case PROGRAM_FLASH:{
-#if defined(MT25Q_PROGRAM_FLASH)
+#if defined(W25Q_PROGRAM_FLASH)
 			result = W25Q_flash_erase_4k(device->driver, address);
 #elif defined(AT25SF_PROGRAM_FLASH)
 			result = AT25SF_flash_erase_4k(device->driver, address);
@@ -216,7 +216,7 @@ FlashStatus_t flash_erase_device(FlashDev_t *device){
 		    break;
 		} // case: DATA_FLASH
 		case PROGRAM_FLASH:{
-#if defined(MT25Q_PROGRAM_FLASH)
+#if defined(W25Q_PROGRAM_FLASH)
 			result = W25Q_flash_erase_device(device->driver);
 #elif defined(AT25SF_PROGRAM_FLASH)
 			result = AT25SF_flash_erase_device(device->driver);

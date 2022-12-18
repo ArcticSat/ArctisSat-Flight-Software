@@ -24,6 +24,9 @@
 
 #include <firmware/drivers/mss_spi/mss_spi.h> // For the MSS SPI functions
 #include <firmware/MSS_C0_hw_platform.h> // Contains the address of the CORE_SPI instance for the driver.
+#include "firmware/drivers/CoreSPI/core_spi.h"
+#include "firmware/drivers/CoreSPI/corespi_regs.h"
+#include "hal.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -84,8 +87,15 @@ int init_spi()
 		  // the value set in the Libero project
 		  SPI_init(&core_spi[ix], core_base_addr[ix], core_fifo_len[ix]);
 
+		  uint8_t reg=0;
+		  reg = HAL_get_8bit_reg( (&core_spi[ix])->base_addr, CTRL1);
+
+
 		  SPI_configure_master_mode(&core_spi[ix]);
 
+		  reg = HAL_get_8bit_reg( (&core_spi[ix])->base_addr, CTRL1);
+
+		  uint8_t a =0;
     	}
     }
 

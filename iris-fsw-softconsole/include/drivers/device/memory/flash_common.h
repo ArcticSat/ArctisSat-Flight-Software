@@ -27,7 +27,7 @@
 #endif
 
 // Program Flash defines
-#define W25Q_PROGRAM_FLASH
+//#define W25Q_PROGRAM_FLASH
 //#define AT25SF_PROGRAM_FLASH
 #if defined(W25Q_PROGRAM_FLASH) || defined(AT25SF_PROGRAM_FLASH)
 #define USING_PROGRAM_FLASH

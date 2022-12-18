@@ -84,7 +84,7 @@ int fs_erase(const struct lfs_config *c, lfs_block_t block);
 // GLOBALS AND FILE_SCOPE VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-int g_fs_status;
+int g_fs_status = FS_ERR_EXIST;
 
 //Buffers
 static uint8_t fs_lookahead_buffer[FS_LOOKAHEAD_SIZE];

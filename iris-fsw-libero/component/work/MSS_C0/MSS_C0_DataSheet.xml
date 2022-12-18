@@ -11,19 +11,19 @@
     <hdl-type>Verilog</hdl-type>
     <project-description>
     </project-description>
-    <location>C:/Users/mites/Desktop/CDH-Phase-C-Tests/IrisSat-Flight-Software/iris-fsw-libero/component/work/MSS_C0</location>
-    <state>GENERATED ( Wed Mar 24 10:16:36 2021 )</state>
+    <location>C:/iris/IrisSat-Flight-Software/iris-fsw-libero/component/work/MSS_C0</location>
+    <state>GENERATED ( Sat Dec 17 19:53:59 2022 )</state>
     <swide-toolchain>SoftConsole workspace has not been generated</swide-toolchain>
   </project-settings>
   <site-map>
   </site-map>
   <memorysystem>
     <title>Memory Map for MSS_C0</title>
-    <description>The project contains the following subsystems:</description>
+    <description>The SmartDesign MSS_C0 contains the following Initiators under its hierarchy</description>
     <subsystems>
       <subsystem>
-        <name>CM3</name>
-        <master>CM3</master>
+        <name>MSS_C0_MSS_0/ CM3</name>
+        <Initiator>MSS_C0_MSS_0/ CM3</Initiator>
         <addressNames>
           <count>1</count>
           <name>
@@ -36,6 +36,7 @@
           <remapAddress>0xD000_0000</remapAddress>
           <fullAddressSpace>0xD000_0000 - 0xDFFF_FFFF</fullAddressSpace>
           <range>0x1000_0000</range>
+          <Size>256MB</Size>
         </slave>
         <slave>
           <name>DDR_0_SPACE_2</name>
@@ -44,6 +45,7 @@
           <remapAddress>0xC000_0000</remapAddress>
           <fullAddressSpace>0xC000_0000 - 0xCFFF_FFFF</fullAddressSpace>
           <range>0x1000_0000</range>
+          <Size>256MB</Size>
         </slave>
         <slave>
           <name>DDR_0_SPACE_1</name>
@@ -52,6 +54,7 @@
           <remapAddress>0xB000_0000</remapAddress>
           <fullAddressSpace>0xB000_0000 - 0xBFFF_FFFF</fullAddressSpace>
           <range>0x1000_0000</range>
+          <Size>256MB</Size>
         </slave>
         <slave>
           <name>DDR_0_SPACE_0</name>
@@ -60,6 +63,7 @@
           <remapAddress>0xA000_0000</remapAddress>
           <fullAddressSpace>0xA000_0000 - 0xAFFF_FFFF</fullAddressSpace>
           <range>0x1000_0000</range>
+          <Size>256MB</Size>
         </slave>
         <slave>
           <name>AHB2ENVM1_REGISTERS</name>
@@ -68,6 +72,7 @@
           <remapAddress>0x600C_0000</remapAddress>
           <fullAddressSpace>0x600C_0000 - 0x600F_FFFF</fullAddressSpace>
           <range>0x0004_0000</range>
+          <Size>256KB</Size>
         </slave>
         <slave>
           <name>AHB2ENVM0_REGISTERS</name>
@@ -76,6 +81,7 @@
           <remapAddress>0x6008_0000</remapAddress>
           <fullAddressSpace>0x6008_0000 - 0x600B_FFFF</fullAddressSpace>
           <range>0x0004_0000</range>
+          <Size>256KB</Size>
         </slave>
         <slave>
           <name>ENTIRE_ENVM</name>
@@ -84,6 +90,7 @@
           <remapAddress>0x6000_0000</remapAddress>
           <fullAddressSpace>0x6000_0000 - 0x6003_FFFF</fullAddressSpace>
           <range>0x0004_0000</range>
+          <Size>256KB</Size>
         </slave>
         <slave>
           <name>ENVM-FSW_Program</name>
@@ -92,60 +99,77 @@
           <remapAddress>0x6000_0000</remapAddress>
           <fullAddressSpace>0x6000_0000 - 0x6000_8AFF</fullAddressSpace>
           <range>0x8B00</range>
+          <Size>34KB</Size>
         </slave>
         <slave>
-          <name>CORESPI_C0_0</name>
+          <name>CORESPI_C0_0:APB_bif</name>
           <fullPinName>CORESPI_C0_0:APB_bif</fullPinName>
           <remapAddress>0x5000_0000</remapAddress>
           <combinedAddressSpace>0x5000_0000 - 0x5000_FFFF</combinedAddressSpace>
           <remapAddress>0x3000_0000</remapAddress>
           <combinedAddressSpace>0x3000_0000 - 0x3000_FFFF</combinedAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
-          <name>CORESPI_C1_0</name>
+          <name>CORESPI_C1_0:APB_bif</name>
           <fullPinName>CORESPI_C1_0:APB_bif</fullPinName>
           <remapAddress>0x5001_0000</remapAddress>
           <combinedAddressSpace>0x5001_0000 - 0x5001_FFFF</combinedAddressSpace>
           <remapAddress>0x3001_0000</remapAddress>
           <combinedAddressSpace>0x3001_0000 - 0x3001_FFFF</combinedAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
-          <name>CORESPI_C1_1</name>
+          <name>CORESPI_C1_1:APB_bif</name>
           <fullPinName>CORESPI_C1_1:APB_bif</fullPinName>
           <remapAddress>0x5002_0000</remapAddress>
           <combinedAddressSpace>0x5002_0000 - 0x5002_FFFF</combinedAddressSpace>
           <remapAddress>0x3002_0000</remapAddress>
           <combinedAddressSpace>0x3002_0000 - 0x3002_FFFF</combinedAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
-          <name>CORESPI_C1_2</name>
-          <fullPinName>CORESPI_C1_2:APB_bif</fullPinName>
+          <name>CORESPI_C1_5:APB_bif</name>
+          <fullPinName>CORESPI_C1_5:APB_bif</fullPinName>
           <remapAddress>0x5003_0000</remapAddress>
           <combinedAddressSpace>0x5003_0000 - 0x5003_FFFF</combinedAddressSpace>
           <remapAddress>0x3003_0000</remapAddress>
           <combinedAddressSpace>0x3003_0000 - 0x3003_FFFF</combinedAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
-          <name>CORESPI_C1_3</name>
+          <name>CORESPI_C1_3:APB_bif</name>
           <fullPinName>CORESPI_C1_3:APB_bif</fullPinName>
           <remapAddress>0x5004_0000</remapAddress>
           <combinedAddressSpace>0x5004_0000 - 0x5004_FFFF</combinedAddressSpace>
           <remapAddress>0x3004_0000</remapAddress>
           <combinedAddressSpace>0x3004_0000 - 0x3004_FFFF</combinedAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
-          <name>CORESPI_C1_4</name>
+          <name>CORESPI_C1_4:APB_bif</name>
           <fullPinName>CORESPI_C1_4:APB_bif</fullPinName>
           <remapAddress>0x5005_0000</remapAddress>
           <combinedAddressSpace>0x5005_0000 - 0x5005_FFFF</combinedAddressSpace>
           <remapAddress>0x3005_0000</remapAddress>
           <combinedAddressSpace>0x3005_0000 - 0x3005_FFFF</combinedAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
+        </slave>
+        <slave>
+          <name>CORESPI_C1_2:APB_bif</name>
+          <fullPinName>CORESPI_C1_2:APB_bif</fullPinName>
+          <remapAddress>0x5006_0000</remapAddress>
+          <combinedAddressSpace>0x5006_0000 - 0x5006_FFFF</combinedAddressSpace>
+          <remapAddress>0x3006_0000</remapAddress>
+          <combinedAddressSpace>0x3006_0000 - 0x3006_FFFF</combinedAddressSpace>
+          <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
           <name>CACHE_BACKDOOR</name>
@@ -154,6 +178,7 @@
           <remapAddress>0x4040_0000</remapAddress>
           <fullAddressSpace>0x4040_0000 - 0x4040_FFFF</fullAddressSpace>
           <range>0x0001_0000</range>
+          <Size>64KB</Size>
         </slave>
         <slave>
           <name>SYSREG</name>
@@ -162,6 +187,7 @@
           <remapAddress>0x4003_8000</remapAddress>
           <fullAddressSpace>0x4003_8000 - 0x4003_8FFF</fullAddressSpace>
           <range>0x0000_1000</range>
+          <Size>4KB</Size>
           <memoryMap>
             <name>RegisterMap</name>
             <addressBlock>
@@ -3779,6 +3805,7 @@
           <remapAddress>0x4002_0000</remapAddress>
           <fullAddressSpace>0x4002_0000 - 0x4003_7FFF</fullAddressSpace>
           <range>0x0001_8000</range>
+          <Size>96KB</Size>
         </slave>
         <slave>
           <name>RTC</name>
@@ -3787,6 +3814,7 @@
           <remapAddress>0x4001_7000</remapAddress>
           <fullAddressSpace>0x4001_7000 - 0x4001_7FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>COMBLK</name>
@@ -3795,6 +3823,7 @@
           <remapAddress>0x4001_6000</remapAddress>
           <fullAddressSpace>0x4001_6000 - 0x4001_6FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>CAN</name>
@@ -3803,6 +3832,7 @@
           <remapAddress>0x4001_5000</remapAddress>
           <fullAddressSpace>0x4001_5000 - 0x4001_5FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>HDMA</name>
@@ -3811,6 +3841,7 @@
           <remapAddress>0x4001_4000</remapAddress>
           <fullAddressSpace>0x4001_4000 - 0x4001_4FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>GPIO</name>
@@ -3819,6 +3850,7 @@
           <remapAddress>0x4001_3000</remapAddress>
           <fullAddressSpace>0x4001_3000 - 0x4001_3FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>H2FINTERRUPT</name>
@@ -3827,6 +3859,7 @@
           <remapAddress>0x4000_6000</remapAddress>
           <fullAddressSpace>0x4000_6000 - 0x4000_6FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>WATCHDOG</name>
@@ -3835,6 +3868,7 @@
           <remapAddress>0x4000_5000</remapAddress>
           <fullAddressSpace>0x4000_5000 - 0x4000_5FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>TIMER</name>
@@ -3843,6 +3877,7 @@
           <remapAddress>0x4000_4000</remapAddress>
           <fullAddressSpace>0x4000_4000 - 0x4000_4FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>SPI_0</name>
@@ -3851,6 +3886,7 @@
           <remapAddress>0x4000_1000</remapAddress>
           <fullAddressSpace>0x4000_1000 - 0x4000_1FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>MMUART_0</name>
@@ -3859,6 +3895,7 @@
           <remapAddress>0x4000_0000</remapAddress>
           <fullAddressSpace>0x4000_0000 - 0x4000_0FFF</fullAddressSpace>
           <range>0x1000</range>
+          <Size>4KB</Size>
         </slave>
         <slave>
           <name>RECYCLED_ESRAM1</name>
@@ -3867,6 +3904,7 @@
           <remapAddress>0x2001_2000</remapAddress>
           <fullAddressSpace>0x2001_2000 - 0x2001_3FFF</fullAddressSpace>
           <range>0x0000_2000</range>
+          <Size>8KB</Size>
         </slave>
         <slave>
           <name>RECYCLED_ESRAM0</name>
@@ -3875,6 +3913,7 @@
           <remapAddress>0x2001_0000</remapAddress>
           <fullAddressSpace>0x2001_0000 - 0x2001_1FFF</fullAddressSpace>
           <range>0x0000_2000</range>
+          <Size>8KB</Size>
         </slave>
         <slave>
           <name>ESRAM1</name>
@@ -3883,6 +3922,7 @@
           <remapAddress>0x2000_8000</remapAddress>
           <fullAddressSpace>0x2000_8000 - 0x2000_FFFF</fullAddressSpace>
           <range>0x0000_8000</range>
+          <Size>32KB</Size>
         </slave>
         <slave>
           <name>ESRAM0</name>
@@ -3891,6 +3931,7 @@
           <remapAddress>0x2000_0000</remapAddress>
           <fullAddressSpace>0x2000_0000 - 0x2000_7FFF</fullAddressSpace>
           <range>0x0000_8000</range>
+          <Size>32KB</Size>
         </slave>
       </subsystem>
     </subsystems>

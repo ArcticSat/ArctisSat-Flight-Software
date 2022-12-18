@@ -14,6 +14,7 @@
 #include "board_definitions.h"
 
 #define ADCS_ACK_PREFIX 0x01
+#define MAX_SYNC_CYCLES 3
 
 // ADCS Command IDs
 typedef enum{
@@ -85,10 +86,16 @@ AdcsDriverError_t adcsSyncSpi(void)
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
 	uint8_t cmd_id = ADCS_CMD_PING;
 	uint8_t cmd_ack = 0;
-	do
+	uint8_t cycles = 0;
+	while(cmd_ack != ADCS_SYNC_SPI && cycles != MAX_SYNC_CYCLES)
 	{
 		AdcsDriverError_t status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
-	} while(cmd_ack != ADCS_SYNC_SPI);
+	}
+
+	if(cycles == MAX_SYNC_CYCLES)
+	{
+		status = ADCS_ERROR_BAD_ID;
+	}
 
 	return status;
 }

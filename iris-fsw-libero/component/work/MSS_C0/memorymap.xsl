@@ -15,14 +15,14 @@
                 <div class="dsheet">
                     <div>
                         <xsl:apply-templates select="project-settings"/>
+			<xsl:apply-templates select="project-settings1"/>
                     </div>
-                    <div>
+                    <!--div>
                         <div class="header">Table of Contents</div>
                         <div class="content" >                                                        
                             <a href="#memmap">Memory Map</a>
-                            <!-- <a href="{header}_MemoryMap.xml" >Memory Map</a> -->
                         </div>
-                    </div>
+                    </div-->
                                                             
                     <!-- ===== MEMORY MAP ====== -->
                     <div>
@@ -43,7 +43,7 @@
     <xsl:template match="header">
         <div class="title">
             <h1>
-                Memory Map: <xsl:value-of select="."/>
+                Memory Map Report: <xsl:value-of select="."/>
             </h1>
             <!-- ======= IO's ======= 
       <div class="copyright">
@@ -134,6 +134,92 @@
                     </td>
                     <td>
                         <xsl:apply-templates select="state"/>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <br/>
+    </xsl:template>
+    
+    <xsl:template match="project-settings1">
+        <div class="header">Design Details</div>
+
+        <div class="content">
+            <table border="0" cellspacing="4">
+               <tr>
+                    <td>
+                        <b>Family: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="fam"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Die: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="die"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Package: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="package"/>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Speed Grade: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="speed-grade"/>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Voltage: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="voltage"/>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Date: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="date"/>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Project Name: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="project_name"/>
+                    </td>
+                </tr>
+		<tr>
+                    <td>
+                        <b>Project Location: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="project_location"/>
+                    </td>
+                </tr>
+		<tr>
+                    <td width = "18%">
+                        <b>SmartDesign name: </b>
+                    </td>
+                    <td>
+                        <xsl:apply-templates select="SmartDesign_name"/>
                     </td>
                 </tr>
             </table>
@@ -562,6 +648,7 @@
     <xsl:template match="subsystems">
 
         <xsl:for-each select="subsystem">
+	<ul>
             <li>
                 <div class="content">
                     <a href="#{name} Memory Map">
@@ -569,6 +656,7 @@
                     </a>
                 </div>
             </li>
+	</ul>
         </xsl:for-each>
 
         <div class="content">
@@ -588,19 +676,21 @@
             <h2>
                 <a name="{name} Memory Map">
                     <xsl:value-of select="name"/>
-                </a> Subsystem
+                </a>
             </h2>
-            Master(s) on this bus:
+	    <!--Comment>
+            Master:
             <xsl:apply-templates select="master"/>
             <br></br><br></br>
+	    <Comment-->
 
             <xsl:apply-templates select="addressNames" />
-            <a href="#memmap">subsystem list</a>,
+            <a href="#memmap">Initiator list</a>,
             <xsl:call-template name="top-link"/>
 
             <br/><br/>
             <hr></hr>
-            <xsl:apply-templates select="slave"/>
+            <!--xsl:apply-templates select="slave"/-->
         </div>
     </xsl:template>
 
@@ -614,7 +704,7 @@
         <xsl:value-of select="text()"/>
     </xsl:template>
 
-    <xsl:template match="master">
+    <xsl:template match="Initiator">
         <li>
             <div class="content">
                 <xsl:value-of select="text()"/>
@@ -626,17 +716,32 @@
         <table class="regs" border="1" cellspace="0" cellpadding="10"  align="center" >
             <xsl:if test="count = 1">
                 <tr bgcolor="#aaaacc">
-                    <th rowspan="1"></th>
-                    <th colspan="2">Address Range</th>
+	
+                    <th rowspan="1">Target</th>
+                    <th colspan="1">Offset Address</th>
+		    <th colspan="1">Range  </th>
+		    <th colspan="1">High Address  </th>
+		    <!--th colspan="1">Size</th-->
+            	    <th colspan="1">DRC</th>
                 </tr>
             </xsl:if>
             <xsl:if test="count &gt; 1">
                 <tr bgcolor="#aaaacc">
-                    <th rowspan="2"></th>
-                    <th colspan="2">Address Range</th>
+	
+                    <th rowspan="2">Target</th>
+                    <th colspan="2">Offset Address</th>
+		    <th colspan="1" rowspan="2">Range  </th>
+		     <th colspan="2">High Address  </th>
+		    <!--th colspan="1">Size</th-->
+		    <th colspan="1" rowspan="2">DRC</th>
                 </tr>
                 <tr>
                     <xsl:for-each select="name">
+                        <th bgcolor="#aaaacc">
+                            <xsl:value-of select="text()"/>
+                        </th>
+                    </xsl:for-each>
+		    <xsl:for-each select="name">
                         <th bgcolor="#aaaacc">
                             <xsl:value-of select="text()"/>
                         </th>
@@ -648,35 +753,148 @@
                 <tr>
                     <th cellspace="0" colspan="1">
                         <b>
-                          <a class="toplinks" href="#{name}_{memoryMap/name} Register">
+                          <!--a class="toplinks" href="#{name}_{memoryMap/name} Register"-->
                             <xsl:value-of select="name"/>
-                            <xsl:if test="memoryMap/name">
+                            <!--xsl:if test="memoryMap/name">
                               : <xsl:value-of select="memoryMap/name"/>
-                            </xsl:if>
-                          </a>
+                            </xsl:if-->
+                          <!--/a-->
                         </b>
                     </th>
                     <xsl:for-each select="fullAddressSpace">
                         <td align="center">
-                            <xsl:value-of select="text()"/>
+                            <xsl:value-of select="substring-before(text(),'-')"/>
                         </td>
                     </xsl:for-each>
                     <xsl:if test="combinedAddressSpace">
                       <td align="center">
                         <xsl:for-each select="combinedAddressSpace">
-                          <xsl:value-of select="text()"/>
+                          <xsl:value-of select="substring-before(text(),'-')"/>
                           <br/>
 
                         </xsl:for-each>
                       </td>
-                    </xsl:if>
+		    </xsl:if>
+		    
+		    <xsl:if test="../addressNames/count &gt; 1">
+		      <xsl:for-each select="fullAddressSpace">
+		        <xsl:variable name = "namevar" select="@name"/>
+			<xsl:if test="not($namevar)">
+			<td align="center" colspan="1">
+			 <xsl:value-of select="''"/>
+			  </td>
+			 </xsl:if>
+		       
+		      </xsl:for-each>
+		      
+		      
+		      <xsl:for-each select="combinedAddressSpace">
+		        <xsl:variable name = "namevar" select="@name"/>
+			<xsl:if test="not($namevar)">
+			<td align="center" colspan="1">
+			 <xsl:value-of select="''"/>
+			  </td>
+			 </xsl:if>
+		      </xsl:for-each>
+		      
+		    </xsl:if>
+		    
+		    
+		    		    
+		     <xsl:for-each select="Size">
+                        <td align="center">
+                            <xsl:value-of select="text()"/>
+                        </td>
+                    </xsl:for-each>
+		    
+		    <xsl:for-each select="fullAddressSpace">
+                        <td align="center">
+                            <xsl:value-of select="substring-after(text(),'-')"/>
+                        </td>
+                    </xsl:for-each>
+                    <xsl:if test="combinedAddressSpace">
+                      <td align="center">
+                        <xsl:for-each select="combinedAddressSpace">
+                          <xsl:value-of select="substring-after(text(),'-')"/>
+                          <br/>
+
+                        </xsl:for-each>
+                      </td>
+		    </xsl:if>
+		    
+		     <xsl:if test="../addressNames/count &gt; 1">
+		      <xsl:for-each select="fullAddressSpace">
+		        <xsl:variable name = "namevar" select="@name"/>
+			<xsl:if test="not($namevar)">
+			<td align="center" colspan="1">
+			 <xsl:value-of select="''"/>
+			  </td>
+			 </xsl:if>
+		       
+		      </xsl:for-each>
+		      
+		      
+		      <xsl:for-each select="combinedAddressSpace">
+		        <xsl:variable name = "namevar" select="@name"/>
+			<xsl:if test="not($namevar)">
+			<td align="center" colspan="1">
+			 <xsl:value-of select="''"/>
+			  </td>
+			 </xsl:if>
+		      </xsl:for-each>
+		      
+		    </xsl:if>
+		    
+		    <xsl:if test="DRC">
+		    
+		 	<xsl:variable name = "msg" select="DRC/text()"/>
+                        <xsl:variable name="submsg" select="substring($msg,1,7)"/>
+                        <xsl:variable name="Errmsg" select = "'Error'"/>
+
+
+                        <xsl:variable name="submsg1">
+                         <xsl:value-of select =  "substring($msg,1,7)"/>
+                        </xsl:variable>
+
+			<xsl:if test="contains($submsg1,$Errmsg)">
+			    <td cellspace="0" colspan="1" bgcolor="#FFFFFF">
+			   <font color="AF0000">
+				<xsl:value-of select="DRC/text()"/>
+				<!--xsl:value-of select="text()"/-->
+			   </font>
+				</td>
+			</xsl:if>
+			<xsl:variable name="Warnmsg" select = "'Warning'"/>
+			<xsl:if test="contains($submsg1,$Warnmsg)">
+			    <td cellspace="0" colspan="1" bgcolor="#FFFFFF">
+			    <font color="#CFB000">
+				<xsl:value-of select="DRC/text()"/>
+			    </font>
+				</td>
+			</xsl:if>
+			<xsl:variable name="Infomsg" select = "'Info'"/>
+			<xsl:if test="contains($submsg1,$Infomsg)">
+			    <td cellspace="0" colspan="1" bgcolor="#FFFFFF">
+			    <font color="#0000FF">
+				<xsl:value-of select="DRC/text()"/>
+			    </font>
+				</td>
+			</xsl:if>
+		</xsl:if>
+			<xsl:if test="not(DRC)">
+			<td cellspace="0" colspan="1" bgcolor="#FFFFFF">
+				<!--xsl:value-of select="DRC"/-->
+				<xsl:value-of select="''"/>
+				</td>
+			</xsl:if>
+		
                 </tr>
             </xsl:for-each>
 
         </table>
     </xsl:template>
 
-    <xsl:template match="slave">
+    <!--xsl:template match="slave">
         <div class="content">
             <h3>
                 <a name="{name}_{memoryMap/name} Register">
@@ -714,7 +932,7 @@
         <br/>
         <br/>
         <hr></hr>
-    </xsl:template>
+    </xsl:template-->
 
     <xsl:template match="addressBlock">
         <table class="regs" border="2" cellspace="0" cellpadding="4" align="center">

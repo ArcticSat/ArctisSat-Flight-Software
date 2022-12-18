@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
-// Created by SmartDesign Tue Oct 25 00:20:19 2022
-// Version: 2022.1 2022.1.0.10
+// Created by SmartDesign Sat Dec 17 19:50:16 2022
+// Version: 2022.2 2022.2.0.10
 //////////////////////////////////////////////////////////////////////
 
 `timescale 1ns / 100ps
@@ -615,47 +615,47 @@ assign CoreAPB3_C0_0_APBmslave6_PRDATA_0_7to0 = CoreAPB3_C0_0_APBmslave6_PRDATA[
 //--------CoreAPB3_C0
 CoreAPB3_C0 CoreAPB3_C0_0(
         // Inputs
+        .PADDR     ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PADDR ),
         .PSEL      ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PSELx ),
         .PENABLE   ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PENABLE ),
         .PWRITE    ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PWRITE ),
-        .PREADYS0  ( CoreAPB3_C0_0_APBmslave0_PREADY ),
-        .PSLVERRS0 ( CoreAPB3_C0_0_APBmslave0_PSLVERR ),
-        .PREADYS1  ( CoreAPB3_C0_0_APBmslave1_PREADY ),
-        .PSLVERRS1 ( CoreAPB3_C0_0_APBmslave1_PSLVERR ),
-        .PREADYS2  ( CoreAPB3_C0_0_APBmslave2_PREADY ),
-        .PSLVERRS2 ( CoreAPB3_C0_0_APBmslave2_PSLVERR ),
-        .PREADYS3  ( CoreAPB3_C0_0_APBmslave3_PREADY ),
-        .PSLVERRS3 ( CoreAPB3_C0_0_APBmslave3_PSLVERR ),
-        .PREADYS4  ( CoreAPB3_C0_0_APBmslave4_PREADY ),
-        .PSLVERRS4 ( CoreAPB3_C0_0_APBmslave4_PSLVERR ),
-        .PREADYS5  ( CoreAPB3_C0_0_APBmslave5_PREADY ),
-        .PSLVERRS5 ( CoreAPB3_C0_0_APBmslave5_PSLVERR ),
-        .PREADYS6  ( CoreAPB3_C0_0_APBmslave6_PREADY ),
-        .PSLVERRS6 ( CoreAPB3_C0_0_APBmslave6_PSLVERR ),
-        .PADDR     ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PADDR ),
         .PWDATA    ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PWDATA ),
         .PRDATAS0  ( CoreAPB3_C0_0_APBmslave0_PRDATA_0 ),
+        .PREADYS0  ( CoreAPB3_C0_0_APBmslave0_PREADY ),
+        .PSLVERRS0 ( CoreAPB3_C0_0_APBmslave0_PSLVERR ),
         .PRDATAS1  ( CoreAPB3_C0_0_APBmslave1_PRDATA_0 ),
+        .PREADYS1  ( CoreAPB3_C0_0_APBmslave1_PREADY ),
+        .PSLVERRS1 ( CoreAPB3_C0_0_APBmslave1_PSLVERR ),
         .PRDATAS2  ( CoreAPB3_C0_0_APBmslave2_PRDATA_0 ),
+        .PREADYS2  ( CoreAPB3_C0_0_APBmslave2_PREADY ),
+        .PSLVERRS2 ( CoreAPB3_C0_0_APBmslave2_PSLVERR ),
         .PRDATAS3  ( CoreAPB3_C0_0_APBmslave3_PRDATA_0 ),
+        .PREADYS3  ( CoreAPB3_C0_0_APBmslave3_PREADY ),
+        .PSLVERRS3 ( CoreAPB3_C0_0_APBmslave3_PSLVERR ),
         .PRDATAS4  ( CoreAPB3_C0_0_APBmslave4_PRDATA_0 ),
+        .PREADYS4  ( CoreAPB3_C0_0_APBmslave4_PREADY ),
+        .PSLVERRS4 ( CoreAPB3_C0_0_APBmslave4_PSLVERR ),
         .PRDATAS5  ( CoreAPB3_C0_0_APBmslave5_PRDATA_0 ),
+        .PREADYS5  ( CoreAPB3_C0_0_APBmslave5_PREADY ),
+        .PSLVERRS5 ( CoreAPB3_C0_0_APBmslave5_PSLVERR ),
         .PRDATAS6  ( CoreAPB3_C0_0_APBmslave6_PRDATA_0 ),
+        .PREADYS6  ( CoreAPB3_C0_0_APBmslave6_PREADY ),
+        .PSLVERRS6 ( CoreAPB3_C0_0_APBmslave6_PSLVERR ),
         // Outputs
+        .PRDATA    ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PRDATA ),
         .PREADY    ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PREADY ),
         .PSLVERR   ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PSLVERR ),
+        .PADDRS    ( CoreAPB3_C0_0_APBmslave0_PADDR ),
         .PSELS0    ( CoreAPB3_C0_0_APBmslave0_PSELx ),
         .PENABLES  ( CoreAPB3_C0_0_APBmslave0_PENABLE ),
         .PWRITES   ( CoreAPB3_C0_0_APBmslave0_PWRITE ),
+        .PWDATAS   ( CoreAPB3_C0_0_APBmslave0_PWDATA ),
         .PSELS1    ( CoreAPB3_C0_0_APBmslave1_PSELx ),
         .PSELS2    ( CoreAPB3_C0_0_APBmslave2_PSELx ),
         .PSELS3    ( CoreAPB3_C0_0_APBmslave3_PSELx ),
         .PSELS4    ( CoreAPB3_C0_0_APBmslave4_PSELx ),
         .PSELS5    ( CoreAPB3_C0_0_APBmslave5_PSELx ),
-        .PSELS6    ( CoreAPB3_C0_0_APBmslave6_PSELx ),
-        .PRDATA    ( MSS_C0_MSS_0_FIC_0_APB_MASTER_PRDATA ),
-        .PADDRS    ( CoreAPB3_C0_0_APBmslave0_PADDR ),
-        .PWDATAS   ( CoreAPB3_C0_0_APBmslave0_PWDATA ) 
+        .PSELS6    ( CoreAPB3_C0_0_APBmslave6_PSELx ) 
         );
 
 //--------CoreResetP_C0
@@ -768,11 +768,11 @@ CORESPI_C1 CORESPI_C1_2(
         .SPISSI     ( GND_net ),
         .SPISDI     ( FLASH1_SPI_MISO ),
         .SPICLKI    ( GND_net ),
-        .PSEL       ( CoreAPB3_C0_0_APBmslave3_PSELx ),
+        .PSEL       ( CoreAPB3_C0_0_APBmslave6_PSELx ),
         .PENABLE    ( CoreAPB3_C0_0_APBmslave0_PENABLE ),
         .PWRITE     ( CoreAPB3_C0_0_APBmslave0_PWRITE ),
-        .PADDR      ( CoreAPB3_C0_0_APBmslave0_PADDR_3 ),
-        .PWDATA     ( CoreAPB3_C0_0_APBmslave0_PWDATA_3 ),
+        .PADDR      ( CoreAPB3_C0_0_APBmslave0_PADDR_6 ),
+        .PWDATA     ( CoreAPB3_C0_0_APBmslave0_PWDATA_6 ),
         // Outputs
         .SPIINT     ( CORESPI_C1_2_SPIINT ),
         .SPIRXAVAIL ( CORESPI_C1_2_SPIRXAVAIL ),
@@ -781,10 +781,10 @@ CORESPI_C1 CORESPI_C1_2(
         .SPIOEN     (  ),
         .SPISDO     ( FLASH1_SPI_MOSI_net_0 ),
         .SPIMODE    (  ),
-        .PREADY     ( CoreAPB3_C0_0_APBmslave3_PREADY ),
-        .PSLVERR    ( CoreAPB3_C0_0_APBmslave3_PSLVERR ),
+        .PREADY     ( CoreAPB3_C0_0_APBmslave6_PREADY ),
+        .PSLVERR    ( CoreAPB3_C0_0_APBmslave6_PSLVERR ),
         .SPISS      ( SPISS_net_3 ),
-        .PRDATA     ( CoreAPB3_C0_0_APBmslave3_PRDATA ) 
+        .PRDATA     ( CoreAPB3_C0_0_APBmslave6_PRDATA ) 
         );
 
 //--------CORESPI_C1
@@ -849,11 +849,11 @@ CORESPI_C1 CORESPI_C1_5(
         .SPISSI     ( GND_net ),
         .SPISDI     ( ADC_MISO ),
         .SPICLKI    ( GND_net ),
-        .PSEL       ( CoreAPB3_C0_0_APBmslave6_PSELx ),
+        .PSEL       ( CoreAPB3_C0_0_APBmslave3_PSELx ),
         .PENABLE    ( CoreAPB3_C0_0_APBmslave0_PENABLE ),
         .PWRITE     ( CoreAPB3_C0_0_APBmslave0_PWRITE ),
-        .PADDR      ( CoreAPB3_C0_0_APBmslave0_PADDR_6 ),
-        .PWDATA     ( CoreAPB3_C0_0_APBmslave0_PWDATA_6 ),
+        .PADDR      ( CoreAPB3_C0_0_APBmslave0_PADDR_3 ),
+        .PWDATA     ( CoreAPB3_C0_0_APBmslave0_PWDATA_3 ),
         // Outputs
         .SPIINT     ( CORESPI_C1_5_SPIINT ),
         .SPIRXAVAIL ( CORESPI_C1_5_SPIRXAVAIL ),
@@ -862,10 +862,10 @@ CORESPI_C1 CORESPI_C1_5(
         .SPIOEN     (  ),
         .SPISDO     ( ADC_MOSI_net_0 ),
         .SPIMODE    (  ),
-        .PREADY     ( CoreAPB3_C0_0_APBmslave6_PREADY ),
-        .PSLVERR    ( CoreAPB3_C0_0_APBmslave6_PSLVERR ),
+        .PREADY     ( CoreAPB3_C0_0_APBmslave3_PREADY ),
+        .PSLVERR    ( CoreAPB3_C0_0_APBmslave3_PSLVERR ),
         .SPISS      ( SPISS_net_6 ),
-        .PRDATA     ( CoreAPB3_C0_0_APBmslave6_PRDATA ) 
+        .PRDATA     ( CoreAPB3_C0_0_APBmslave3_PRDATA ) 
         );
 
 //--------FCCC_C0

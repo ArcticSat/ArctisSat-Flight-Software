@@ -99,8 +99,8 @@ void SPI_init
         /* Ensure all slaves are deselected */
         HAL_set_8bit_reg( this_spi->base_addr, SSEL, 0u );
 
-        /* Flush the receive and transmit FIFOs*/
         HAL_set_8bit_reg( this_spi->base_addr, CMD, CMD_TXFIFORST_MASK | CMD_RXFIFORST_MASK );
+        /* Flush the receive and transmit FIFOs*/
 
         /* Clear all interrupts */
         HAL_set_8bit_reg( this_spi->base_addr, INTCLR, SPI_ALL_INTS );
