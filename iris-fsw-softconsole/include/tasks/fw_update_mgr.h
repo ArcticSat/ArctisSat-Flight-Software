@@ -46,6 +46,15 @@ typedef enum{
 
 } fwMgrState_t;
 
+typedef enum{
+
+    GODLEN_LOCATION,  
+    UPDATE_LOCATION_LOCATION,
+    GOLDEN_BACKUP_LOCATION,
+    UPDATE_BACKUP_LOCATION,
+
+}fwMgrDataLocation;
+
 
 extern QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

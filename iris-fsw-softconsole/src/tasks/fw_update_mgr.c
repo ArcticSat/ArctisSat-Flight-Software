@@ -24,6 +24,16 @@
 #include "task.h"
 
 
+//Use this define to select if filesystem is used.
+#define FW_UPDATE_USE_FS    1
+
+//This is the beginning of where the fw images stored in data flash
+#define FW_DATA_BASE_LOCATION   0x00000000
+
+//The max size of a fw image. For full fpga+software it's around 650 kb, so we'll use 1MB.
+#define FW_MAX_SIZE     0x100000
+
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -43,6 +53,8 @@ static char * fwFileNames[4]={
         "goldenFW_bak.spi",
         "updateFW_bak.spi"
 };
+
+static uin32_t fw_base_address[5];
 
 fwVerificationData_t verifiedStatus;
 
@@ -71,12 +83,30 @@ static int checksumAllFw(); //Runs checksum on the golden and update files, and 
 int checksumAllFw(){
     int result = 1;
 
-    for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+    #if FW_UPDATE_USE_FS
+
+        for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+
+            verifiedStatus.verified[i] = 0;
+
+            uint32_t check = 0;
+            checksum_file(&check,fwFileNames[i]);
+            if(check == fwFiles[i].checksum && fwFiles[i].filesize>0 ){
+                verifiedStatus.verified[i]=1;
+            }
+            printf("Firmware %d (%s) verify: %s  (%x, %x)",i,fwFileNames[i],(verifiedStatus.verified[i]?"PASS":"FAIL"),fwFiles[i].checksum,check);
+
+            result &= verifiedStatus.verified[i];
+        }
+
+    #else
+
+        for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
 
         verifiedStatus.verified[i] = 0;
 
         uint32_t check = 0;
-        checksum_file(&check,fwFileNames[i]);
+        checksum_program_area(&check,DATA_FLASH,fw_base_address[i],fwFiles[i].size);
         if(check == fwFiles[i].checksum && fwFiles[i].filesize>0 ){
             verifiedStatus.verified[i]=1;
         }
@@ -84,6 +114,10 @@ int checksumAllFw(){
 
         result &= verifiedStatus.verified[i];
     }
+
+    #endif
+
+
     return result;
 }
 
@@ -132,10 +166,9 @@ void checksum_file(uint32_t * out, char * filename){
     printf("crc32'd %d bytes\n",count);
 }
 
+void checksum_flash_area(uint32_t*out, FlashDevicesIndex_t device , uint32_t address, uint32_t size){
 
-void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
-
-    //Based on the libcrc example/test program.
+        //Based on the libcrc example/test program.
     uint32_t crc_32_val = 0xffffffffL;
     char ch;
     unsigned char prev_byte;
@@ -149,7 +182,7 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
     int bytes_left = size;
     int bytes_to_process = bytes_left>256 ? 256:bytes_left;
     int addr_curr = address;
-    FlashStatus_t stat = flash_read(flash_devices[PROGRAM_FLASH],addr_curr, byte_buff, bytes_to_process);
+    FlashStatus_t stat = flash_read(flash_devices[device],addr_curr, byte_buff, bytes_to_process);
 
     while( stat == FLASH_OK && bytes_to_process > 0) {
 
@@ -161,7 +194,7 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
         bytes_left = bytes_left-bytes_to_process;
         bytes_to_process = bytes_left>256 ? 256:bytes_left;
 
-        stat = flash_read(flash_devices[PROGRAM_FLASH],addr_curr, byte_buff, bytes_to_process);
+        stat = flash_read(flash_devices[device],addr_curr, byte_buff, bytes_to_process);
 
     }
 
@@ -172,41 +205,113 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
 //    TickType_t time = xTaskGetTickCount()-start;
 //    printf("Checksum took %d ms\n",time);
     printf("crc32'd %d bytes\n",count);
-}
-
-int copy_to_prog_flash(char * filename, uint32_t address){
-
-    uint32_t filesize = fs_file_size_from_path(filename);
-    uint32_t chunksize = 256;
-    uint8_t byte_buff[256] = {0};
-    int addr_curr = address;
-
-    lfs_file_t file = {0};
-    int result_fs = fs_file_open( &file, filename, LFS_O_RDONLY);
-    if(result_fs < 0){
-        printf("%s: Could not open fw file to read: %d\n",__FUNCTION__,result_fs);
-        return -1;
-    }
-
-
-    //Erase the area first.
-    for(int i=0; i< filesize/4096 + (filesize % 4096 > 0);i++){
-        flash_erase(flash_devices[PROGRAM_FLASH],address+(i*4096));
-    }
-
-    flash_read(flash_devices[PROGRAM_FLASH],4096,byte_buff,256);
-
-    int bytes_to_process = 0;
-    while( (bytes_to_process = fs_file_read(&file, byte_buff, chunksize)) >0 ) {
-       flash_write(flash_devices[PROGRAM_FLASH],addr_curr,byte_buff,bytes_to_process);
-       addr_curr += bytes_to_process;
-    }
-
-    fs_file_close(&file);
-    return 0;
 
 }
 
+void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
+
+    //Just to avoid redo previous code, just call the new function, hardcocded to use program flash.
+    checksum_flash_area(out,PROGRAM_FLASH,address,size);
+}
+
+int copy_to_prog_flash(fwMgrDataLocation fw_select, uint32_t address){
+
+    #if FW_UPDATE_USE_FS
+
+        char * filename = fwFileNames[fw_select];
+        uint32_t filesize = fs_file_size_from_path(filename);
+        uint32_t chunksize = 256;
+        uint8_t byte_buff[256] = {0};
+        int addr_curr = address;
+
+        lfs_file_t file = {0};
+        int result_fs = fs_file_open( &file, filename, LFS_O_RDONLY);
+        if(result_fs < 0){
+            printf("%s: Could not open fw file to read: %d\n",__FUNCTION__,result_fs);
+            return -1;
+        }
+
+
+        //Erase the area first.
+        for(int i=0; i< filesize/4096 + (filesize % 4096 > 0);i++){
+            flash_erase(flash_devices[PROGRAM_FLASH],address+(i*4096));
+        }
+
+        flash_read(flash_devices[PROGRAM_FLASH],4096,byte_buff,256);
+
+        int bytes_to_process = 0;
+        while( (bytes_to_process = fs_file_read(&file, byte_buff, chunksize)) >0 ) {
+        flash_write(flash_devices[PROGRAM_FLASH],addr_curr,byte_buff,bytes_to_process);
+        addr_curr += bytes_to_process;
+        }
+
+        fs_file_close(&file);
+        return 0;
+    #else
+
+        
+        uint32_t filesize = fwFiles[fw_select].size;
+        uint32_t chunksize = 256;
+        uint8_t byte_buff[256] = {0};
+        int wr_addr_curr = address;
+        int rd_addr_curr = fw_base_address[fw_select];
+
+        //Erase the area first.
+        for(int i=0; i< filesize/4096 + (filesize % 4096 > 0);i++){
+            flash_erase(flash_devices[PROGRAM_FLASH],address+(i*4096));
+        }
+
+        int bytes_processed = 0;
+
+        while( (bytes_processed < filesize ) ) {
+            
+            if(bytes_processed + chunksize > filesize) chunksize = filesize-bytes_processed;//Handle the last chunk which will be less than 256.
+
+            flash_read(flash_devices[DATA_FLASH],rd_addr_curr,byte_buff,chunksize)
+            flash_write(flash_devices[PROGRAM_FLASH]wr_,addr_curr,byte_buff,chunksize);
+            wr_addr_curr += chunksize;
+            rd_addr_curr += chunksize;
+            bytes_processed += chunksize;
+        }
+
+        return 0;
+
+
+    #endif
+
+}
+
+void flash_copy_file(uint32_t src_addr, uint32_t filesize, uint32_t dst_addr){
+
+        uint32_t chunksize = 256;
+        uint8_t byte_buff[256] = {0};
+        int wr_addr_curr = dst_addr;
+        int rd_addr_curr = src_addr;
+
+        //Erase the area first.
+        for(int i=0; i< filesize/4096 + (filesize % 4096 > 0);i++){
+            flash_erase(flash_devices[DATA_FLASH],src_addr+(i*4096));
+        }
+
+        int bytes_processed = 0;
+
+        while( (bytes_processed < filesize ) ) {
+            
+            if(bytes_processed + chunksize > filesize) chunksize = filesize-bytes_processed;//Handle the last chunk which will be less than 256.
+
+            flash_read(flash_devices[DATA_FLASH], rd_addr_curr,byte_buff,chunksize)
+            flash_write(flash_devices[DATA_FLASH], wr_addr_curr,byte_buff,chunksize);
+            wr_addr_curr += chunksize;
+            rd_addr_curr += chunksize;
+            bytes_processed += chunksize;
+        }
+
+}
+
+void handle_fw_upload_no_fs(){
+
+
+}
 
 void vFw_Update_Mgr_Task(void * pvParams){
 
@@ -246,7 +351,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 }
                 else{
 
-
+                    #if FW_UPDATE_USE_FS
                     //Open up the file.
                     if(!fwTempFileOpen){
 
@@ -329,7 +434,9 @@ void vFw_Update_Mgr_Task(void * pvParams){
                         }
 
                     }
-
+                    #else   
+                    handle_fw_upload_no_fs();
+                    #endif
                 }
 
 
@@ -350,9 +457,15 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     //Backup images are kept sequentially after originals(golden->0, upgrade->1, golden backup->2 etc.)
                     if(verifiedStatus.verified[i] ==0 && verifiedStatus.verified[i+2]==1){
                         //We have a corrupted original so just copy the backup to replace the orig.
+                        #if FW_UPDATE_USE_FS
                         fs_copy_file(fwFileNames[i+2], fwFileNames[i]);
+                        #else   
+                        flash_copy_file(fw_base_address[i+2],fwFiles[i+2].size,fw_base_address[i])
+                        #endif
+
                         fwFiles[i].checksum = fwFiles[i+2].checksum;
-                        fwFiles[i].filesize = fs_file_size_from_path(fwFileNames[i+2]);
+                        fwFiles[i].filesize = fwFiles[i+2].size;
+
                     }
                 }
 
@@ -361,9 +474,13 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     //Backup images are kept sequentially after originals(golden->0, upgrade->1, golden backup->2 etc.)
                     if(verifiedStatus.verified[i+2] ==0 && verifiedStatus.verified[i]==1){
                         //We have a corrupted original so just copy the backup to replace the orig.
+                        #if FW_UPDATE_USE_FS
                         fs_copy_file(fwFileNames[i], fwFileNames[i+2]);
+                        #else   
+                        flash_copy_file(fw_base_address[i],fwFiles[i].size,fw_base_address[i+2])
+                        #endif
                         fwFiles[i+2].checksum = fwFiles[i].checksum;
-                        fwFiles[i+2].filesize = fs_file_size_from_path(fwFileNames[i]);
+                        fwFiles[i+2].filesize = fwFiles[i].size;
                     }
                 }
 #endif
@@ -390,7 +507,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 if(check != fwFiles[0].checksum){
                     //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
-                    if(copy_to_prog_flash(fwFileNames[0],FIRMWARE_GOLDEN_ADDRESS)){
+                    if(copy_to_prog_flash(0,FIRMWARE_GOLDEN_ADDRESS)){
                         printf("Unrecoverable error: problem copying fw to program flash\n");
                         updateState(FW_STATE_IDLE);
                         break;
@@ -410,7 +527,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
                 if(check != fwFiles[1].checksum){
                     //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
-                    if (copy_to_prog_flash(fwFileNames[1],FIRMWARE_UPDATE_ADDRESS)<0){
+                    if (copy_to_prog_flash(1,FIRMWARE_UPDATE_ADDRESS)<0){
                         printf("Unrecoverable error: problem copying fw to program flash\n");
                         updateState(FW_STATE_IDLE);
                         break;
@@ -679,7 +796,43 @@ void initializeFwMgr(){
     rx_in_progress = 0;
     rx_slot_index = 0;
 
-    //Load/calculate our file metadata
+    #if !FW_UPDATE_USE_FS
+
+    //Initialize the address for storing fw in data flash. Extra slot is for temp file during dowload.
+    for(int i=0; i< NUM_FIRMWARES_TOTAL+1; i++){
+
+        fw_base_address[i] = FW_DATA_BASE_LOCATION + i*FW_MAX_SIZE;
+
+    }
+
+    #endif
+
+    load_fw_metadata();
+
+}
+
+void execute_confirm(){
+
+    if(fwMgrState == FW_STATE_UPDATE){
+        fwMgrExeConfirmed = 1;
+    }
+    else{
+        fwMgrExeConfirmed =0;
+    }
+}
+
+void setFwTargetImage(uint8_t target){
+
+    if(target == 0 || target == 1)
+        targetFw = target;
+}
+
+void load_fw_metadata(){
+
+
+#if FW_UPDATE_USE_FS
+
+ //Load/calculate our file metadata
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
 
         lfs_file_t checkFile = {0};
@@ -749,21 +902,10 @@ void initializeFwMgr(){
         printf("fs_stat: %s %d",fwFileNames[i],fwFiles[i].filesize);
     }
 
-}
+#else
 
-void execute_confirm(){
 
-    if(fwMgrState == FW_STATE_UPDATE){
-        fwMgrExeConfirmed = 1;
-    }
-    else{
-        fwMgrExeConfirmed =0;
-    }
-}
 
-void setFwTargetImage(uint8_t target){
-
-    if(target == 0 || target == 1)
-        targetFw = target;
+#endif
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
