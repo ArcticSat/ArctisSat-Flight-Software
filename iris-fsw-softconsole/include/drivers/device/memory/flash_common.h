@@ -23,7 +23,7 @@
 #define W25N_DATA_FLASH
 //#define AT25SF_DATA_FLASH
 #if defined(MT25Q_DATA_FLASH) || defined(W25N_DATA_FLASH) || defined(AT25SF_DATA_FLASH)
-#define USING_DATA_FLASH
+//#define USING_DATA_FLASH
 #endif
 
 // Program Flash defines

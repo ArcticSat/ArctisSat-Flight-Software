@@ -78,8 +78,8 @@ PARENT="<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.cxf"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\coreparameters.v,tb_hdl"
 STATE="utd"
-TIME="1671328199"
-SIZE="1284"
+TIME="1673116831"
+SIZE="1239"
 PARENT="<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\CoreAPB3.cxf"
 IS_READONLY="TRUE"
 IS_INCLUDED="TRUE"
@@ -187,59 +187,59 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf,actgen_cxf"
 STATE="utd"
-TIME="1667583379"
+TIME="1673491964"
 SIZE="2961"
 PARENT="<project>\component\work\CORESPI_C0\CORESPI_C0.cxf"
 PARENT="<project>\component\work\CORESPI_C1\CORESPI_C1.cxf"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\mti\bfmtovec_compile.do,do"
 STATE="utd"
-TIME="1667583379"
-SIZE="899"
+TIME="1673491964"
+SIZE="922"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\mti\user_tb.bfm,sim"
 STATE="utd"
-TIME="1667583379"
-SIZE="7062"
+TIME="1673491964"
+SIZE="7303"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\mti\wave.do,do"
 STATE="utd"
-TIME="1667583379"
-SIZE="3332"
+TIME="1673491964"
+SIZE="3399"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\amba_bfm\bfm_ahbtoapb.v,tb_hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="6301"
+TIME="1673491963"
+SIZE="6496"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\amba_bfm\bfm_apb.v,tb_hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="8940"
+TIME="1673491963"
+SIZE="9225"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\amba_bfm\bfm_main.v,tb_hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="194130"
+TIME="1673491963"
+SIZE="197644"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\amba_bfm\bfm_package.v,tb_hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="38892"
+TIME="1673491963"
+SIZE="40025"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
@@ -247,64 +247,64 @@ IS_INCLUDED="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\corespi.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="4542"
+TIME="1673491964"
+SIZE="4698"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\spi.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="12767"
+TIME="1673491964"
+SIZE="13098"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\spi_chanctrl.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="41126"
+TIME="1673491964"
+SIZE="42389"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\spi_clockmux.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="995"
+TIME="1673491964"
+SIZE="1034"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\spi_control.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="2971"
+TIME="1673491964"
+SIZE="3070"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\spi_fifo.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="5917"
+TIME="1673491964"
+SIZE="6157"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\spi_rf.v,hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="8962"
+TIME="1673491964"
+SIZE="9209"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\test\user\testbench.v,tb_hdl"
 STATE="utd"
-TIME="1667583379"
-SIZE="6428"
+TIME="1673491963"
+SIZE="6648"
 LIBRARY="CORESPI_LIB"
 PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 MODULE_UNDER_TEST="testbench"
@@ -463,13 +463,13 @@ PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 ENDFILE
 VALUE "<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.cxf,actgen_cxf"
 STATE="utd"
-TIME="1671328201"
+TIME="1673116831"
 SIZE="19263"
 ENDFILE
 VALUE "<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.v,hdl"
 STATE="utd"
-TIME="1671328199"
-SIZE="14393"
+TIME="1673116831"
+SIZE="13994"
 PARENT="<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.cxf"
 IS_READONLY="TRUE"
 ENDFILE
@@ -499,19 +499,19 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\CORESPI_C1\CORESPI_C1.cxf,actgen_cxf"
 STATE="utd"
-TIME="1671304366"
+TIME="1673491964"
 SIZE="6540"
 ENDFILE
 VALUE "<project>\component\work\CORESPI_C1\CORESPI_C1.v,hdl"
 STATE="utd"
-TIME="1671304366"
-SIZE="5733"
+TIME="1673491964"
+SIZE="5921"
 PARENT="<project>\component\work\CORESPI_C1\CORESPI_C1.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\DESIGN_FIRMWARE\DESIGN_FIRMWARE.cxf,actgen_cxf"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="437"
 ENDFILE
 VALUE "<project>\component\work\FCCC_C0\FCCC_C0.cxf,actgen_cxf"
@@ -541,40 +541,40 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\MSS_C0.cxf,actgen_cxf"
 STATE="utd"
-TIME="1671328216"
+TIME="1673116831"
 SIZE="12244"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\MSS_C0.v,hdl"
 STATE="utd"
-TIME="1671328216"
-SIZE="42418"
+TIME="1673116831"
+SIZE="41396"
 PARENT="<project>\component\work\MSS_C0\MSS_C0.cxf"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\subsystem.bfm,sim"
 STATE="utd"
-TIME="1671328216"
-SIZE="840"
+TIME="1673116831"
+SIZE="814"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\CM3_compile_bfm.tcl,sim"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="491"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf,actgen_cxf"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="23369"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.v,hdl"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="50789"
 PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS_pre.v,hdl"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="57868"
 PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 BEGIN_USE_CONSTRAINT
@@ -586,7 +586,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS_syn.v,hdl"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="49907"
 PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 BEGIN_USE_CONSTRAINT
@@ -598,7 +598,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\test.bfm,sim"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="710"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\user.bfm,sim"
@@ -633,7 +633,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\constraint\io\user.pdc,io_pdc"
 STATE="utd"
-TIME="1671304366"
+TIME="1673116831"
 SIZE="5579"
 IS_TARGET="TRUE"
 ENDFILE
@@ -691,7 +691,7 @@ TIME="1671328247"
 SIZE="234"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.vm,syn_vm"
-STATE="ood"
+STATE="utd"
 TIME="1671328247"
 SIZE="1115713"
 ENDFILE
@@ -711,8 +711,63 @@ ENDLIST
 LIST NewModulesInfo
 LIST "MSS_C0::work"
 FILE "<project>\component\work\MSS_C0\MSS_C0.v,hdl"
+LIST Other_Association
+VALUE "<project>\simulation\subsystem.bfm,sim"
+ENDLIST
 LIST PNRConstraints
 VALUE "<project>\constraint\io\user.pdc,io_pdc"
+ENDLIST
+LIST ProjectState5.1
+LIST Impl1
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl2
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl3
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl4
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl5
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
 ENDLIST
 ENDLIST
 LIST "MSS_C0_MSS::work"
@@ -722,6 +777,30 @@ VALUE "<project>\simulation\CM3_compile_bfm.tcl,sim"
 VALUE "<project>\simulation\user.bfm,sim"
 VALUE "<project>\simulation\test.bfm,sim"
 VALUE "<project>\simulation\peripheral_init.bfm,sim"
+ENDLIST
+ENDLIST
+LIST "CoreAPB3::COREAPB3_LIB"
+FILE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\core\coreapb3.v,hdl"
+LIST Other_Association
+VALUE "<project>\simulation\bfmtovec_compile.tcl,sim"
+VALUE "<project>\simulation\coreapb3_usertb_master.bfm,sim"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\coreparameters.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_main.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_ahbtoapb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslaveext.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslave.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\test\user\testbench.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\mti\scripts\wave_user.do,do"
+ENDLIST
+LIST AssociatedStimulus
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\coreparameters.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_main.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_ahbtoapb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslaveext.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslave.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\test\user\testbench.v,tb_hdl"
 ENDLIST
 ENDLIST
 LIST "CORESPI::CORESPI_LIB"
@@ -739,8 +818,20 @@ ENDLIST
 ENDLIST
 ENDLIST
 LIST AssociatedStimulus
+LIST CoreAPB3
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\coreparameters.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_main.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_ahbtoapb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslaveext.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslave.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\test\user\testbench.v,tb_hdl"
+ENDLIST
 ENDLIST
 LIST Other_Association
+LIST MSS_C0
+VALUE "<project>\simulation\subsystem.bfm,sim"
+ENDLIST
 LIST CORESPI
 VALUE "<project>\simulation\user_tb.bfm,sim"
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\amba_bfm\bfm_ahbtoapb.v,tb_hdl"
@@ -750,6 +841,18 @@ VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\amba_bfm\bf
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\test\user\testbench.v,tb_hdl"
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\mti\bfmtovec_compile.do,do"
 VALUE "<project>\component\Actel\DirectCore\CORESPI\5.2.104\mti\wave.do,do"
+ENDLIST
+LIST CoreAPB3
+VALUE "<project>\simulation\bfmtovec_compile.tcl,sim"
+VALUE "<project>\simulation\coreapb3_usertb_master.bfm,sim"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\coreparameters.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_main.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_ahbtoapb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apb.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslaveext.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\amba_bfm\bfm_apbslave.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\rtl\vlog\test\user\testbench.v,tb_hdl"
+VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\mti\scripts\wave_user.do,do"
 ENDLIST
 LIST MSS_C0_MSS
 VALUE "<project>\simulation\CM3_compile_bfm.tcl,sim"
@@ -826,8 +929,8 @@ NAME="Synplify Pro ME"
 FUNCTION="Synthesis"
 TOOL="Synplify Pro ME"
 LOCATION="C:\Microchip\Libero_SoC_v2022.2\SynplifyPro\bin\synplify_pro.exe"
-PARAM=""
-BATCH=0
+PARAM="-licensetype synplifypro_actel -batch -log synplify.log"
+BATCH=1
 LICENSE=""
 IS32BIT="1"
 EndProfile
@@ -851,6 +954,58 @@ IS32BIT="1"
 EndProfile
 ENDLIST
 LIST ProjectState5.1
+LIST "MSS_C0::work"
+LIST Impl1
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl2
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl3
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl4
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+LIST Impl5
+ideSYNTHESIS(<project>\synthesis\MSS_C0.vm,syn_vm)=StateSuccess
+LIST FlowOptions
+UsePhySynth=FALSE
+UseSynth=TRUE
+UseFhbAutoInst=FALSE
+ENDLIST
+Used_File_List
+ENDUsed_File_List
+ENDLIST
+ENDLIST
 ENDLIST
 LIST ExcludePackageForSimulation
 ENDLIST
@@ -864,8 +1019,11 @@ LIST UserCustomizedFileList
 ENDLIST
 LIST OpenedFileList
 ORIENTATION;HORIZONTAL
+Reports;Reports;0
+ReportsCurrentItem;Run Programming Action:MSS_C0_PROGRAM.log
+SmartDesign;MSS_C0;0
 StartPage;StartPage;0
-ACTIVEVIEW;StartPage
+ACTIVEVIEW;Reports
 ENDLIST
 LIST ModuleSubBlockList
 LIST "CoreAPB3_C0::work","component\work\CoreAPB3_C0\CoreAPB3_C0.v","TRUE","FALSE"
@@ -884,6 +1042,8 @@ SUBBLOCK "CORESPI::CORESPI_LIB","component\Actel\DirectCore\CORESPI\5.2.104\rtl\
 ENDLIST
 LIST "CORESPI_C1::work","component\work\CORESPI_C1\CORESPI_C1.v","TRUE","FALSE"
 SUBBLOCK "CORESPI::CORESPI_LIB","component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\corespi.v","FALSE","FALSE"
+ENDLIST
+LIST "DESIGN_FIRMWARE::work","component\work\DESIGN_FIRMWARE\DESIGN_FIRMWARE.cxf","TRUE","FALSE"
 ENDLIST
 LIST "MSS_010::work","component\work\MSS_C0_MSS\MSS_C0_MSS_syn.v","FALSE","FALSE"
 ENDLIST

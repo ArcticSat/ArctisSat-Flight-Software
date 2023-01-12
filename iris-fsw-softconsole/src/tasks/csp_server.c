@@ -72,11 +72,11 @@ void vCSP_Server(void * pvParameters){
     csp_listen(socket,4);
 
     //Start up any tasks that depend on CSP, FS.
-    vTaskResume(vCanServer_h);
+//    vTaskResume(vCanServer_h);
     vTaskResume(vTTTScheduler_h);
-    if(get_fs_status() == FS_OK){
-    	vTaskResume(vFw_Update_Mgr_Task_h);
-    }
+//    if(get_fs_status() == FS_OK){
+//    	vTaskResume(vFw_Update_Mgr_Task_h);
+//    }
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -117,7 +117,7 @@ void vCSP_Server(void * pvParameters){
 							telem.timestamp = currTime;
 							telem.length =0;//No data, since the data is in the timestamp.
 							telem.data = NULL;
-				//			sendTelemetry_direct(&telem, conn); // TBC: send direct?
+							sendTelemetry_direct(&telem, conn); // TBC: send direct?
 							break;
 						}
 						case GND_TELEMETRY_REQUEST_CMD:{
@@ -177,7 +177,7 @@ uint8_t configure_csp(){
         return result;
     }
 
-    csp_kiss_init(&uartInterface, &uartHandle, uartPutChar, NULL, "KISS");
+//    csp_kiss_init(&uartInterface, &uartHandle, uartPutChar, NULL, "KISS");
 
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);

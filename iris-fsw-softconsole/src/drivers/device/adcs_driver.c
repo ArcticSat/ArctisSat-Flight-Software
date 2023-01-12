@@ -13,8 +13,10 @@
 #include "drivers/device/adcs_driver.h"
 #include "board_definitions.h"
 
+#define SPI_EFFICIENT
+
 #define ADCS_ACK_PREFIX 0x01
-#define MAX_SYNC_CYCLES 3
+#define MAX_SYNC_CYCLES 10
 
 // ADCS Command IDs
 typedef enum{
@@ -55,6 +57,7 @@ AdcsDriverError_t adcs_init_driver(void)
 	return status;
 }
 
+#ifdef SPI_EFFICIENT
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
 {
 	spi_transaction_block_read_without_toggle(
@@ -66,6 +69,32 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 			rx_size);
 	return ADCS_DRIVER_NO_ERROR;
 }
+#elif
+AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
+{
+	uint8_t i;
+	for(i=0; i < tx_size; i++)
+	{
+		spi_transaction_block_read_without_toggle(
+				ADCS_SPI_CORE,
+				ADCS_SLAVE_CORE,
+				&tx_data[i],
+				1,
+				NULL,
+				0);
+	}
+	for(i=0; i < rx_size; i++)
+	{
+		spi_transaction_block_read_without_toggle(
+				ADCS_SPI_CORE,
+				ADCS_SLAVE_CORE,
+				NULL,
+				0,
+				&rx_data[i],
+				1);
+	}
+}
+#endif
 
 /*
  * ADCS Utility Commands
@@ -77,7 +106,28 @@ AdcsDriverError_t pingAdcs(void)
 	uint8_t cmd_id = ADCS_CMD_PING;
 	uint8_t cmd_ack = 0;
 	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+	return status;
+}
 
+AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
+{
+    AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
+    // Command ack
+	uint8_t cmd_ack = 0;
+//	uint8_t cmd[2] = {cmd_id,cmd_id};
+//	status = adcsTxRx(cmd,2,NULL,0);
+	status = adcsTxRx(&cmd_id,1,NULL,0);
+	vTaskDelay(10);
+	status = adcsTxRx(NULL,0,&cmd_ack,1);
+	// Verify result
+	if(cmd_id == cmd_ack)
+	{
+		status = ADCS_DRIVER_NO_ERROR;
+	}
+	else
+	{
+		status = ADCS_ERROR_BAD_ACK;
+	}
 	return status;
 }
 
@@ -90,6 +140,7 @@ AdcsDriverError_t adcsSyncSpi(void)
 	while(cmd_ack != ADCS_SYNC_SPI && cycles != MAX_SYNC_CYCLES)
 	{
 		AdcsDriverError_t status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+		cycles++;
 	}
 
 	if(cycles == MAX_SYNC_CYCLES)
@@ -213,11 +264,10 @@ AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasure
     // SPI transactions
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
-	uint8_t cmd_ack = 0;
-	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+    status = adcsSyncSpiCommand(cmd_id);
+	vTaskDelay(100);
     // Get measurements
-	uint8_t tx_data[6] = {0};
-	status = adcsTxRx(tx_data,ADCS_GYRO_DATA_SIZE,gyroMeasurements,ADCS_GYRO_DATA_SIZE);
+	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_DATA_SIZE);
 
 	return status;
 }
@@ -229,10 +279,10 @@ AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumbe
     switch(magnetometerNumber)
     {
     case GYRO_1:
-        cmd_id = ADCS_CMD_GET_MEASUREMENT_GYRO_1;
+        cmd_id = ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1;
         break;
     case GYRO_2:
-        cmd_id = ADCS_CMD_GET_MEASUREMENT_GYRO_2;
+        cmd_id = ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2;
         break;
     default:
         return ADCS_ERROR_BAD_ID;
@@ -240,11 +290,10 @@ AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumbe
     // SPI transactions
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
-	uint8_t cmd_ack = 0;
-	status = adcsTxRx(&cmd_id,1,&cmd_ack,1);
+    status = adcsSyncSpiCommand(cmd_id);
+	vTaskDelay(100);
     // Get measurements
-	uint8_t tx_data[6] = {0};
-	status = adcsTxRx(tx_data,ADCS_MAGNETORQUER_DATA_SIZE,magnetometerMeasurements,ADCS_MAGNETORQUER_DATA_SIZE);
+	status = adcsTxRx(NULL,0,magnetometerMeasurements,ADCS_MAGNETORQUER_DATA_SIZE);
 
 	return status;
 }

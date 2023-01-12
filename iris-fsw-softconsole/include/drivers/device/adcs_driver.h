@@ -82,6 +82,7 @@ AdcsDriverError_t adcs_init_driver(void);
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size);
 // Utility commands
 AdcsDriverError_t pingAdcs(void);
+AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id);
 AdcsDriverError_t adcsSyncSpi(void);
 // Torque Rod commands
 AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t rod_state);

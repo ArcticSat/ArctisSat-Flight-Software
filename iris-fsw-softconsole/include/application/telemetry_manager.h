@@ -10,6 +10,7 @@
 
 #include "tasks/telemetry.h"
 
+#define TM_VERBOSITY
 #define EVENT_DATA_SIZE 4
 
 // Telemetry channels
@@ -31,7 +32,9 @@ typedef enum
 } EventId_t;
 
 void init_telemetry_manager(void);
+void set_telemetry_verbose(bool verbose);
 void log_telemetry(telemetryPacket_t * pkt);
 void get_telemetry(TelemetryChannel_t channel_id);
+void log_event(telemetryPacket_t * pkt);
 
 #endif /* INCLUDE_APPLICATION_TELEMETRY_MANAGER_H_ */

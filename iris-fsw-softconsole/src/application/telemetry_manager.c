@@ -13,6 +13,8 @@
 #define PAGE_SIZE MT25Q_PAGE_SIZE
 #define BLOCK_SIZE MT25Q_SUBSECTOR_SMALL_SIZE
 
+static bool verbosity = true;
+
 // Telemetry channel sizes
 uint32_t channel_sizes[NUM_TLM_CHANNELS] = {
 	1, // Spacecraft status
@@ -35,6 +37,12 @@ struct ScStatus_TypeDef {
 
 void init_telemetry_manager(void)
 {
+	// Verbosity
+#ifdef TM_VERBOSITY
+	verbosity = true;
+#else
+	verbosity = false;
+#endif
 	int i;
 	// Initialize spacecraft status struct
 	for(i=0; i < NUM_TLM_CHANNELS; i++){
@@ -51,10 +59,17 @@ void init_telemetry_manager(void)
 		sc_status.channel_base[i] = sc_status.channel_base[i-1] + channel_sizes[i];
 	}
 }
+
+void set_telemetry_verbose(bool verbose)
+{
+	verbosity = verbose;
+}
 void log_telemetry(telemetryPacket_t * pkt)
 {
 	// Debugging
-	sendTelemetryAddr(&pkt, GROUND_CSP_ADDRESS);
+	if (verbosity)
+		sendTelemetryAddr(pkt, GROUND_CSP_ADDRESS);
+	/*
 	// TBC: Set packet time?!?!
 	Calendar_t rx_time = {0};
 	pkt->timestamp = rx_time;
@@ -95,6 +110,7 @@ void log_telemetry(telemetryPacket_t * pkt)
 //	wr_size = sizeof(ScStatus_TypeDef);
 	wr_size = SC_STATUS_TYPEDEF_SIZE_BYTES;
 	flash_write(DATA_FLASH, address, (uint8_t *) &sc_status, wr_size);
+	*/
 }
 
 void get_telemetry(TelemetryChannel_t channel_id)
@@ -147,6 +163,10 @@ void get_telemetry(TelemetryChannel_t channel_id)
 	}
 }
 
+void log_event(telemetryPacket_t * pkt)
+{
+
+}
 
 
 

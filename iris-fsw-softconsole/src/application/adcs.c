@@ -22,15 +22,20 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 	case ADCS_INIT_CMD:
 		error_code = adcs_init_driver();
 		break;
-	case ADCS_ADCS_TX_RX_CMD:
-		tx_buf[0] = 0x11;
-		tx_buf[1] = 0x22;
-		tx_buf[2] = 0x33;
+	case ADCS_TX_RX_CMD:
+		// Parameters
+//		uint8_t txlen = cmd_pkt->data[0];
+//		uint8_t rxlen = cmd_pkt->data[1];
+//		error_code = adcsTxRx(
+//				&cmd_pkt->data[2],
+//				(uint16_t) txlen,
+//				rx_buf,
+//				(uint16_t) rxlen);
 		error_code = adcsTxRx(
-				tx_buf,
-				3,
-				rx_buf,
-				2);
+				&cmd_pkt->data[2],				// Tx data
+				(uint16_t) cmd_pkt->data[0],	// Tx length
+				rx_buf,							// Rx data
+				(uint16_t) cmd_pkt->data[1]);	// Rx length
 		break;
 	case ADCS_PING_CMD:
 		error_code = pingAdcs();

@@ -113,7 +113,7 @@ void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr){
 
     csp_conn_t * conn;
     csp_packet_t * outPacket;
-    conn = csp_connect(2,addr,CSP_TELEM_PORT,1000,0);   //Create a connection. This tells CSP where to send the data (address and destination port).
+    conn = csp_connect(2,addr,CSP_TELEM_PORT,100,0);   //Create a connection. This tells CSP where to send the data (address and destination port).
     outPacket = csp_buffer_get(TELEM_HEADER_SIZE+packet->length);
 
     memcpy(&outPacket->data[0],&packet->timestamp,sizeof(Calendar_t));
