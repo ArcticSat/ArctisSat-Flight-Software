@@ -310,6 +310,10 @@ void flash_copy_file(uint32_t src_addr, uint32_t filesize, uint32_t dst_addr){
 
 void handle_fw_upload_no_fs(){
 
+            //We can wait for data and write to the file.
+            BaseType_t res = xQueueReceive(fwDataQueue,rxDataBuff,pdMS_TO_TICKS(10000));
+
+            w
 
 }
 
@@ -833,13 +837,18 @@ void load_fw_metadata(){
 #if FW_UPDATE_USE_FS
 
  //Load/calculate our file metadata
+
+    //First try and get the checksum for each firmware.
+    //If the file doesn't exist we create empty files, if it does exist we load in the checksum to the fwFiles data struct.
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
 
         lfs_file_t checkFile = {0};
         char checksumFileName[64]={0};
         uint32_t check =0;
+
         sprintf(checksumFileName,"%s.check",fwFileNames[i%2]);
         int result_fs = fs_file_open(&checkFile,checksumFileName, LFS_O_RDONLY);
+
         if(result_fs < 0 && result_fs  == LFS_ERR_NOENT){
             printf("Could not open checksum file %s to load: %d\n Creating File...",checksumFileName,result_fs);
 
@@ -863,6 +872,7 @@ void load_fw_metadata(){
         fwFiles[i].checksum = check;
         fs_file_close(&checkFile);
 
+        //Next we follow same process with the design version.
         uint8_t ver = 0xFF;
         lfs_file_t designVerFile = {0};
         char designVerFileName[64]={0};
@@ -903,6 +913,27 @@ void load_fw_metadata(){
     }
 
 #else
+
+    //In this case we just store the data on raw memory as continuous bytes.
+    Fw_metadata_t fwFiles_loaded[NUM_FIRMWARES_TOTAL] = {0};
+    flash_read(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL); //TODO: This could be good use of mram.
+    
+    for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
+        
+        //Since we already loaded the data we just need to verify then copy over to the live struct.
+        if(fwFiles_loaded[i].checksum == 0 || fwFiles_loaded[i].checksum == 0xFFFFFFFF ){
+            //probably sodwWDWmething wrong.
+            continue;
+        }
+        
+        if(fwFiles_loaded[i].filesize <=0 ||  fwFiles_loaded[i].filesize == 0xFFFFFFFF  ){
+            continue;
+        }
+
+        //If the checksum and filessize are reasonable then we can continue, ultimately a checksum of the file will root out any other corrutption.
+        memcpy(fwFiles[i],fwFiles_loaded[i])
+
+    }
 
 
 
