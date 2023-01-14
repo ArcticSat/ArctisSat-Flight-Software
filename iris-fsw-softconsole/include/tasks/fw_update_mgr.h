@@ -49,9 +49,10 @@ typedef enum{
 typedef enum{
 
     GODLEN_LOCATION,  
-    UPDATE_LOCATION_LOCATION,
+    UPDATE_LOCATION,
     GOLDEN_BACKUP_LOCATION,
     UPDATE_BACKUP_LOCATION,
+    TEMP_LOCATION,
 
 }fwMgrDataLocation;
 
@@ -113,6 +114,7 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size);
 
 //This will copy a file to the program flash at the specified address.
 int  copy_to_prog_flash(char * filename, uint32_t address);
+int  copy_raw_to_prog_flash(fwMgrDataLocation fw_select, uint32_t address);
 
 //This will actually do the upgrade. Must be in the UPDATE stat, then call this function to confirm the upgrade.
 void execute_confirm();
