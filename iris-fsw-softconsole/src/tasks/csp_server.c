@@ -17,11 +17,11 @@
 #include "tasks/csp_server.h"
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
-//#include "tasks/fw_update_mgr.h"
+#include "tasks/fw_update_mgr.h"
 #include "application/telemetry_manager.h"
 //
 #include "drivers/filesystem_driver.h"
-//#include "drivers/software_update_driver.h"
+#include "drivers/software_update_driver.h"
 #include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/device/rtc/rtc_time.h"
 //#include "drivers/device/memory/flash_common.h"
@@ -31,7 +31,7 @@
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
 #include "taskhandles.h"
-//#include "version.h"
+#include "version.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -74,9 +74,9 @@ void vCSP_Server(void * pvParameters){
     //Start up any tasks that depend on CSP, FS.
     vTaskResume(vCanServer_h);
     vTaskResume(vTTTScheduler_h);
-    if(get_fs_status() == FS_OK){
+    //if(get_fs_status() == FS_OK){
     	vTaskResume(vFw_Update_Mgr_Task_h);
-    }
+    //}
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -117,7 +117,7 @@ void vCSP_Server(void * pvParameters){
 							telem.timestamp = currTime;
 							telem.length =0;//No data, since the data is in the timestamp.
 							telem.data = NULL;
-				//			sendTelemetry_direct(&telem, conn); // TBC: send direct?
+							sendTelemetry_direct(&telem, conn); // TBC: send direct?
 							break;
 						}
 						case GND_TELEMETRY_REQUEST_CMD:{
@@ -126,6 +126,146 @@ void vCSP_Server(void * pvParameters){
 							get_telemetry(channel_id);
 							break;
 						}
+				        case CDH_LIST_FW_CMD:{
+				            listFwFiles();
+				            break;
+				        }
+				        case CDH_CHECKSUM_PGRM_FLASH_CMD:{
+				            uint32_t* start = (uint32_t*)(&cmd_pkt.data[0]);
+				            uint32_t* len = (uint32_t*)(&cmd_pkt.data[sizeof(uint32_t)]);
+				            printf("Running checksum of program flash %x for %d bytes\n",*start,*len);
+				            //TODO: Document limitation with checksum, cannot be 0. Should be very rare, but pre checksum all files before upload.
+				            uint32_t check = 0;
+				            checksum_program_flash_area(&check,*start, *len);
+				            printf("Checksum of program flash area %d bytes @ 0x%X = %X\n",*len,*start,check);
+				            break;
+				        }
+				        case CDH_CP_TO_PGRM_FLASH_CMD:{
+				            printf("Copy to addr %d from file %s to prog flash\n",*((uint32_t*)(&cmd_pkt.data[0])),&cmd_pkt.data[sizeof(uint32_t)]);
+				            copy_to_prog_flash(&cmd_pkt.data[sizeof(uint32_t)], *((uint32_t*)(&cmd_pkt.data[0])));
+				            break;
+				        }
+				        case CDH_FW_IDLE_CMD:{
+				            setFwManagerState(FW_STATE_IDLE);
+				            break;
+				        }
+				        case CDH_FW_RX_FW_CMD:{
+				            if(cmd_pkt.length == sizeof(Fw_metadata_t)){
+				                updateFwMetaData((Fw_metadata_t*)cmd_pkt.data);
+				            }
+				            setFwManagerState(FW_STATE_RX_FW);
+				            break;
+				        }
+				        case CDH_FW_PRE_VER_CMD:{
+				            setFwManagerState(FW_STATE_PRE_VERIFY);
+				            break;
+				        }
+				        case CDH_FW_ARM_CMD:{
+				            setFwManagerState(FW_STATE_ARMED);
+				            break;
+				        }
+				        case CDH_FW_EXECUTE_CMD:{
+				            setFwManagerState(FW_STATE_UPDATE);
+				            setFwTargetImage(cmd_pkt.data[0]);
+				            break;
+				        }
+				        case CDH_FW_EXECUTE_CONFIRM_CMD:{
+				            execute_confirm();
+				            break;
+				        }
+				        case CDH_FW_POST_VER_CMD:{
+				            setFwManagerState(FW_STATE_POST_VERIFY);
+				            break;
+				        }
+				        case CDH_FW_PUT_DATA_CMD:{
+				            uploadFwChunk(cmd_pkt.data,cmd_pkt.length);
+				            break;
+				        }
+				        case CDH_FW_GET_STATE_CMD:{
+				            uint8_t state = getFwManagerState();
+				            //They send us a Calendar_t
+				            Calendar_t currTime;
+				            MSS_RTC_get_calendar_count(&currTime);
+				            telemetryPacket_t telem;
+				            telem.telem_id = CDH_FW_STATE_ID;
+				            telem.timestamp = currTime;
+				            telem.length =1;
+				            telem.data = &state;
+				            sendTelemetryAddr(&telem, GROUND_CSP_ADDRESS); // TBC: send direct?
+				            break;
+				        }
+				        case CDH_CHECKSUM_FILE_CMD:{
+				            uint32_t check =0;
+				            printf("checksum file: %s\n",cmd_pkt.data);
+				            checksum_file(&check, cmd_pkt.data);
+				            printf("checksum: %0x\n",check);
+				            break;
+				        }
+				        case CDH_GET_SW_VER_CMD:{
+				            printf("Iris CDH FSW Version: %s",CDH_SW_VERSION_STRING);
+				            break;
+				        }
+				        case CDH_GET_DES_VER_CMD:{
+				            uint16_t dv = get_design_version();
+				            printf("Found design ver. %d\n",dv);
+				            break;
+				        }
+				        case CDH_GET_SPI_DIR_CMD:{
+				            uint8_t dir[13]={0};
+				            get_spi_dir(dir);
+				            for(int i=0;i<13;i++){
+				                printf("0x%02X ",dir[i]);
+				            }
+				            break;
+				        }
+				        case CDH_GET_FS_FREE_SPACE_CMD:{
+				            uint32_t free = fs_free_space();
+				            printf("FS free space = %d bytes\n",free);
+				            break;
+				        }
+				        case CDH_FW_UPDATE_SPI_DIR_CMD:{
+				            //data[0] is the design version of update fw.
+				            update_spi_dir(cmd_pkt.data[0], cmd_pkt.data[1]);
+				            break;
+				        }
+				        case CDH_FW_CREATE_SPI_DIR_CMD:{
+				            uint8_t len = cmd_pkt.data[0];
+				            create_spi_dir(&cmd_pkt.data[1],len);
+				            break;
+				        }
+				        case CDH_WRITE_PROG_FLASH_CMD:{
+				            uint32_t address=0;
+				            memcpy(&address,&cmd_pkt.data[0],sizeof(uint32_t));
+				            flash_write(flash_devices[PROGRAM_FLASH], address, &cmd_pkt.data[sizeof(uint32_t)], 128);
+				//                      uint8_t check[128]={0};
+				//                      flash_read(flash_devices[PROGRAM_FLASH], address, check, 150);
+				            break;
+				        }
+				        case CDH_ERASE_PROG_FLASH_CMD:{
+				            uint32_t address=0;
+				            memcpy(&address,&cmd_pkt.data[0],sizeof(uint32_t));
+				            uint32_t numblocks = 0;
+				            memcpy(&numblocks,&cmd_pkt.data[sizeof(uint32_t)],sizeof(uint32_t));
+				            for(int i=0; i< numblocks; i++){
+				                flash_erase(flash_devices[PROGRAM_FLASH], address);
+				                address += flash_devices[PROGRAM_FLASH]->erase_size;
+				            }
+				            break;
+				        }
+				        case CDH_RESET_FW_MNGR_CMD:{
+				            initializeFwMgr();
+				            break;
+				        }
+				        case CDH_FW_SET_CHECKSUM_CMD:{
+				            uint32_t check;
+				            memcpy(&check,&cmd_pkt.data[1], sizeof(uint32_t));
+				            setFwChecksum(cmd_pkt.data[0], check);
+				            break;
+				        }
+				        case CDH_FW_SET_DESVER_CMD: {
+				            setFwDesignVer(cmd_pkt.data[0], cmd_pkt.data[1]);
+				            break;
+				        }
 						default:{
 							schedule_command(&cmd_pkt);
 							break;
@@ -181,11 +321,11 @@ uint8_t configure_csp(){
 
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
-    char* canRoute = "0/0 CAN";
-//    char* gndRoute = "9/5 KISS";
+    char* canRoute = "0/2 CAN";
+    char* gndRoute = "9/5 KISS";
 
    csp_rtable_load(canRoute);
-//   csp_rtable_load(gndRoute);
+   csp_rtable_load(gndRoute);
     if(status != CSP_ERR_NONE){
         result = 0;
         return result;

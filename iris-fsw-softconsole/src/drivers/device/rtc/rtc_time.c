@@ -25,7 +25,7 @@
 void init_rtc()
 {
 	// Initialize the external RTC and the internal RTC, and copy the external RTC date into the internal RTC.
-	ds1393_init();
+	//ds1393_init();
 	MSS_RTC_init(MSS_RTC_CALENDAR_MODE, TICKS_TO_SECONDS);
 	MSS_RTC_start();
 }

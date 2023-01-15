@@ -14,6 +14,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "drivers/device/memory/flash_common.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -108,6 +109,8 @@ void uploadFwChunk(uint8_t * data, uint16_t length);//Will length ever be larger
 
 //Computes the checksum of a file.
 void checksum_file(uint32_t * out, char * filename);
+
+void checksum_flash_area(uint32_t*out, FlashDevicesIndex_t device , uint32_t address, uint32_t size);
 
 //Will run the checksum algorithm on the program flash, starting at the specified address and using "size" bytes.
 void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size);
