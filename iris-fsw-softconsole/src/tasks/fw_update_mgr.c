@@ -46,6 +46,7 @@ static uint8_t fwMgrExeConfirmed = 0;
 static uint8_t rx_in_progress = 0;
 static uint8_t rx_slot_index = 0;
 static uint8_t targetFw = 1;//Which image will we upgrade to. 1 is default for update image. 0 for golden.
+static uint16_t page_idx=0;
 
 static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
 
@@ -83,6 +84,8 @@ void load_fw_metadata();
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 int checksumAllFw(){
     int result = 1;
 
@@ -186,7 +189,7 @@ void checksum_flash_area(uint32_t*out, FlashDevicesIndex_t device , uint32_t add
     int bytes_to_process = bytes_left>256 ? 256:bytes_left;
     int addr_curr = address;
     FlashStatus_t stat = flash_read(flash_devices[device],addr_curr, byte_buff, bytes_to_process);
-
+    int j=0;
     while( stat == FLASH_OK && bytes_to_process > 0) {
 
         for(int i =0; i < bytes_to_process; i++){
@@ -198,7 +201,7 @@ void checksum_flash_area(uint32_t*out, FlashDevicesIndex_t device , uint32_t add
         bytes_to_process = bytes_left>256 ? 256:bytes_left;
 
         stat = flash_read(flash_devices[device],addr_curr, byte_buff, bytes_to_process);
-
+        j = j+1;
     }
 
     crc_32_val        ^= 0xffffffffL;
@@ -207,7 +210,7 @@ void checksum_flash_area(uint32_t*out, FlashDevicesIndex_t device , uint32_t add
 
 //    TickType_t time = xTaskGetTickCount()-start;
 //    printf("Checksum took %d ms\n",time);
-    printf("crc32'd %d bytes\n",count);
+    printf("crc32'd %d bytes %x\n",count,*out);
 
 }
 
@@ -290,7 +293,7 @@ void flash_copy_file(uint32_t src_addr, uint32_t filesize, uint32_t dst_addr){
 
         //Erase the area first.
         for(int i=0; i< filesize/4096 + (filesize % 4096 > 0);i++){
-            flash_erase(flash_devices[DATA_FLASH],src_addr+(i*4096));
+            flash_erase(flash_devices[DATA_FLASH],dst_addr+(i*4096));
         }
 
         int bytes_processed = 0;
@@ -317,7 +320,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
     uint8_t rxDataBuff[FW_CHUNK_SIZE];
     char tempFileName[64];
     uint8_t fwTempFileOpen = 0;
-    uint16_t page_idx=0;
+    page_idx=0;
     const uint32_t pageSize = flash_devices[DATA_FLASH]->page_size;
     uint8_t rxPageBuff[pageSize];
 
@@ -446,9 +449,15 @@ void vFw_Update_Mgr_Task(void * pvParams){
                            //Copy the data over to a flash page sized buffer.
                            if(page_idx + FW_CHUNK_SIZE < pageSize){
                                //If the new chunk + the existing data fits in the buffer just copy over.
-                               memcpy(rxPageBuff,rxDataBuff,FW_CHUNK_SIZE);
+                               memcpy(&rxPageBuff[page_idx],rxDataBuff,FW_CHUNK_SIZE);
                                page_idx += FW_CHUNK_SIZE;
                                rx_byte_index += FW_CHUNK_SIZE;
+
+                               //Handle the partial buffer for the last chunk.
+                               if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
+                                   flash_write(flash_devices[DATA_FLASH], fw_base_address[TEMP_LOCATION]+(rx_byte_index-page_idx),rxPageBuff,page_idx );
+                               }
+
                            }
                            else{
                                //If not we copy until full, write to flash then fill with remaining data.
@@ -457,23 +466,28 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                int remaining = FW_CHUNK_SIZE - firstCpyNum;
 
                                memcpy(&rxPageBuff[page_idx],rxDataBuff,firstCpyNum);
-                               rx_byte_index+= firstCpyNum;//This should always be multiple of page size.
-                               if(rx_byte_index % pageSize != 0) printf("rx_byte index not mulitple of page size :( \n");
+                               rx_byte_index += firstCpyNum;//This should always be multiple of page size.
+                               if(rx_byte_index % pageSize != 0) printf("rx_byte index not multiple of page size :( \n");
 
                                //Since the rx_byte_index points to end of data, it will be one page ahead, so we subtract then add to base to get the proper address.
-                               uint8_t checkbuff[256]={0};
-//                               flash_erase(flash_devices[DATA_FLASH],fw_base_address[TEMP_LOCATION]+(rx_byte_index-pageSize));
-//                               flash_read(flash_devices[DATA_FLASH],fw_base_address[TEMP_LOCATION]+(rx_byte_index-pageSize),checkbuff,pageSize);
                                flash_write(flash_devices[DATA_FLASH], fw_base_address[TEMP_LOCATION]+(rx_byte_index-pageSize),rxPageBuff,pageSize);
-//                               flash_read(flash_devices[DATA_FLASH],fw_base_address[TEMP_LOCATION]+(rx_byte_index-pageSize),checkbuff,pageSize);
 
                                memcpy(rxPageBuff,&rxDataBuff[firstCpyNum],remaining);
                                rx_byte_index += remaining;
                                page_idx = remaining;
+                               if(rx_byte_index % FW_CHUNK_SIZE != 0) printf("rx_byte index not multiple of chunk size :( \n");
+
+                               //Handle the partial buffer for the last chunk.
+                               if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
+                                   flash_write(flash_devices[DATA_FLASH], fw_base_address[TEMP_LOCATION]+(rx_byte_index-pageSize),rxPageBuff,remaining);
+                               }
 
                            }
-
+                          // printf("rx_bytes: %d\n",rx_byte_index);
                            if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
+
+
+
                                //We got the full file.
                                uint32_t check = 0;
                                checksum_flash_area(&check, DATA_FLASH, fw_base_address[TEMP_LOCATION],fwFiles[rx_slot_index].filesize );
@@ -483,6 +497,24 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                    flash_copy_file(fw_base_address[TEMP_LOCATION],fwFiles[rx_slot_index].filesize , fw_base_address[rx_slot_index]);
 
                                }
+                               else{
+                                   //If the upload failed we will should wipe the metadata, so that the listfw command doesn't show data for failed upload.
+                                  // updateFwMetaData(fwFiles); Need new function.
+
+                               }
+
+                               //If we make it here we are done!
+                              rx_byte_index  =0;
+                              rx_in_progress =0;
+                              page_idx=0;
+
+                              //We also need to clear out the temp slot for upload.
+                              for(int i=0; i< FW_MAX_SIZE/flash_devices[DATA_FLASH]->erase_size;i++){
+
+                                  flash_erase(flash_devices[DATA_FLASH],fw_base_address[TEMP_LOCATION]+i*flash_devices[DATA_FLASH]->erase_size);
+                              }
+
+                              updateState(FW_STATE_IDLE);
                            }
 
 
@@ -852,7 +884,9 @@ void uploadFwChunk(uint8_t * data, uint16_t length){
         printf("fw chunk larger than chunk size!Not ok\n");
         return;
     }
-    xQueueSendToBack(fwDataQueue,data,100);
+    if(xQueueSendToBack(fwDataQueue,data,100) != pdPASS){
+        printf("rx queue overflow lost packet. please re-upload.\n");
+    }
 }
 
 void initializeFwMgr(){
@@ -864,7 +898,7 @@ void initializeFwMgr(){
     fwMgrExeConfirmed = 0;
     rx_in_progress = 0;
     rx_slot_index = 0;
-
+    page_idx=0;
     #if !FW_UPDATE_USE_FS
 
     //Initialize the address for storing fw in data flash. Extra slot is for temp file during dowload.
