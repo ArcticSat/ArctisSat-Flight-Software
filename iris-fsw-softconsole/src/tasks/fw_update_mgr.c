@@ -32,7 +32,7 @@
 
 //The max size of a fw image. For full fpga+software it's around 650 kb, so we'll use 1MB. FYI software only is around 120kb.
 //Also should be multiple of the flash erase size for convenience if no filesystem.
-#define FW_MAX_SIZE     0x50000//0x100000
+#define FW_MAX_SIZE     0x100000
 
 #define FW_MGR_METADATA_ADDR    ((NUM_FIRMWARES_TOTAL+1)*FW_MAX_SIZE)   //Store it after the fw. So we have (4) total images, plus a temp slot during upload (+1).
 
