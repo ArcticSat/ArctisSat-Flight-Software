@@ -33,10 +33,7 @@ FlashStatus_t AT25SF_setup_flash(AT25SF_Device_t * dev){
 	//Init GPIO
 	 MSS_GPIO_config( PROGRAM_FLASH_WP_PIN, MSS_GPIO_OUTPUT_MODE );
 	 MSS_GPIO_config( PROGRAM_FLASH_HOLD_PIN, MSS_GPIO_OUTPUT_MODE );
-	 MSS_GPIO_config( MSS_GPIO_8, MSS_GPIO_OUTPUT_MODE );
-	 MSS_GPIO_config( MSS_GPIO_9, MSS_GPIO_OUTPUT_MODE );
-	 MSS_GPIO_set_output(MSS_GPIO_8,1);
-	 MSS_GPIO_set_output(MSS_GPIO_9,1);
+
 	//set gpio high
 	 MSS_GPIO_set_output(PROGRAM_FLASH_WP_PIN, 1);
 	 MSS_GPIO_set_output(PROGRAM_FLASH_HOLD_PIN, 1);

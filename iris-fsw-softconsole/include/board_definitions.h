@@ -27,7 +27,7 @@
 #define MRAM0_SPI_CORE   CORE_SPI_2
 #define MRAM0_SLAVE_CORE SPI_SLAVE_0 // MRAM0 uses MSS_GPIO for SS, so this is not relevant.
 
-#define FLASH_SPI_CORE   MSS_SPI_0//CORE_SPI_3
+#define FLASH_SPI_CORE   CORE_SPI_3
 #define FLASH_SLAVE_CORE SPI_SLAVE_0 // FLASH uses MSS_GPIO for SS, so this is not relevant.
 
 #define ADCS_SPI_CORE   CORE_SPI_1
@@ -63,8 +63,8 @@
 #define ADCS_SS_PIN    MSS_GPIO_13
 
 #define PROGRAM_FLASH_SPI_CORE  MSS_SPI_0
-#define PROGRAM_FLASH_WP_PIN    MSS_GPIO_6//MSS_GPIO_16
-#define PROGRAM_FLASH_HOLD_PIN  MSS_GPIO_7//MSS_GPIO_17
+#define PROGRAM_FLASH_WP_PIN    MSS_GPIO_16
+#define PROGRAM_FLASH_HOLD_PIN  MSS_GPIO_17
 
 #endif // BOARD_DEFINITIONS_H// SPI Master and Slave core definitions
 

@@ -211,7 +211,7 @@ MSS_RTC_set_calendar_count
      * calendar counter mode. 
      */
     clock_mode = get_clock_mode();
-//    ASSERT(MSS_RTC_CALENDAR_MODE == clock_mode);
+    ASSERT(MSS_RTC_CALENDAR_MODE == clock_mode);
     
     if((0u == error) && (MSS_RTC_CALENDAR_MODE == clock_mode))
     {
@@ -303,7 +303,7 @@ MSS_RTC_get_calendar_count
      * calendar counter mode. 
      */
     clock_mode = get_clock_mode();
-   // ASSERT(MSS_RTC_CALENDAR_MODE == clock_mode);
+    ASSERT(MSS_RTC_CALENDAR_MODE == clock_mode);
     
     if(MSS_RTC_CALENDAR_MODE == clock_mode)
     {

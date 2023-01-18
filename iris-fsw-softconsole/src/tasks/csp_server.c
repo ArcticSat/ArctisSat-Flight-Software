@@ -321,11 +321,11 @@ uint8_t configure_csp(){
 
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
-    char* canRoute = "0/2 CAN";
-    char* gndRoute = "9/5 KISS";
+    char* canRoute = "0/0 CAN";
+//    char* gndRoute = "9/5 KISS";
 
    csp_rtable_load(canRoute);
-   csp_rtable_load(gndRoute);
+//   csp_rtable_load(gndRoute);
     if(status != CSP_ERR_NONE){
         result = 0;
         return result;

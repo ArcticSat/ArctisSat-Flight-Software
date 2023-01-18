@@ -132,21 +132,21 @@ int main( void )
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
 	BaseType_t status;
-    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
+//    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-    status = xTaskCreate(vCanServerBasic,"CAN Rx",1000,NULL,2,&vCanServer_h);
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
-                            "UART0 Receiver",            // Text name for debugging
-                            1200,                        // Size of the stack allocated for this task
-                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-                            3,                           // Task runs at priority 2
-                            &xUART0RxTaskToNotify);      // Task handle for task notification
+//    status = xTaskCreate(vCanServerBasic,"CAN Rx",1000,NULL,2,&vCanServer_h);
+//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+//    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+//    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
+//                            "UART0 Receiver",            // Text name for debugging
+//                            1200,                        // Size of the stack allocated for this task
+//                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
+//                            3,                           // Task runs at priority 2
+//                            &xUART0RxTaskToNotify);      // Task handle for task notification
 //    //Suspend these because csp server will start once csp is up.
-    vTaskSuspend(vFw_Update_Mgr_Task_h);
-    vTaskSuspend(vTTTScheduler_h);
-    vTaskSuspend(vCanServer_h);
+//    vTaskSuspend(vFw_Update_Mgr_Task_h);
+//    vTaskSuspend(vTTTScheduler_h);
+//    vTaskSuspend(vCanServer_h);
     // Start FreeRTOS Tasks
 	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
@@ -195,11 +195,11 @@ static void prvSetupHardware( void )
 //
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-    vInitializeUARTs(MSS_UART_115200_BAUD);
+//    vInitializeUARTs(MSS_UART_115200_BAUD);
 //
 //    init_WD();
     init_spi();
-    init_rtc();
+//    init_rtc();
 //    init_mram();
 //    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
