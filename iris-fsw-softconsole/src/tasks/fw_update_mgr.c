@@ -80,6 +80,8 @@ QueueHandle_t fwDataQueue;
 static int updateState(int state);
 static int checksumAllFw(); //Runs checksum on the golden and update files, and their backups. The verifiedStatus global will be updated.
 void load_fw_metadata();
+int saveFwMetaData(int index);//Will modify the metadata stored on disk with the data from the fwFiles in RAM.
+int writeFwMetadata();//Will overwrite the metadata on disk with the current struct in RAM.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
@@ -479,7 +481,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                                //Handle the partial buffer for the last chunk.
                                if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
-                                   flash_write(flash_devices[DATA_FLASH], fw_base_address[TEMP_LOCATION]+(rx_byte_index-pageSize),rxPageBuff,remaining);
+                                   flash_write(flash_devices[DATA_FLASH], fw_base_address[TEMP_LOCATION]+(rx_byte_index-remaining),rxPageBuff,remaining);
                                }
 
                            }
@@ -495,12 +497,17 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                if(check == fwFiles[rx_slot_index].checksum){
                                    //So now we can erase the original and then copy from the temp spot to the actual location.
                                    flash_copy_file(fw_base_address[TEMP_LOCATION],fwFiles[rx_slot_index].filesize , fw_base_address[rx_slot_index]);
-
+                                   memcpy(&fwFiles[rx_slot_index+2],&fwFiles[rx_slot_index],sizeof(Fw_metadata_t));
+                                   saveFwMetaData(rx_slot_index+2);//Update metadata for backup file.
                                }
                                else{
                                    //If the upload failed we will should wipe the metadata, so that the listfw command doesn't show data for failed upload.
                                   // updateFwMetaData(fwFiles); Need new function.
-
+                                   fwFiles[rx_slot_index].checksum=0;
+                                   fwFiles[rx_slot_index].filesize=0;
+                                   fwFiles[rx_slot_index].designver=0;
+                                  saveFwMetaData(rx_slot_index);
+                                  saveFwMetaData(rx_slot_index+2);
                                }
 
                                //If we make it here we are done!
@@ -534,9 +541,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 //Run through the files and do the checksums.
                 checksumAllFw();
-
                 //Now based on the status we can attempt to fix our problem or alert ground.
-#ifndef NO_FW_BACKUP
+            #ifndef NO_FW_BACKUP
                 //First we see if we can copy backup to replace original:
                 for(int i=0; i<NUM_FIRMWARES; i++){
                     //Backup images are kept sequentially after originals(golden->0, upgrade->1, golden backup->2 etc.)
@@ -550,6 +556,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                         fwFiles[i].checksum = fwFiles[i+2].checksum;
                         fwFiles[i].filesize = fwFiles[i+2].filesize;
+                        fwFiles[i].designver = fwFiles[i+2].designver;
 
                     }
                 }
@@ -566,10 +573,13 @@ void vFw_Update_Mgr_Task(void * pvParams){
                         #endif
                         fwFiles[i+2].checksum = fwFiles[i].checksum;
                         fwFiles[i+2].filesize = fwFiles[i].filesize;
+                        fwFiles[i+2].designver = fwFiles[i].designver;
                     }
                 }
 #endif
-
+            #if !FW_UPDATE_USE_FS
+                writeFwMetadata();
+            #endif //If we have replaced any of the fw, then the updated metadata should be saved.
                 checksumAllFw();
 
                 //At this point we should have all images verified, if not then we cannot fix without ground uploading a new file(s).
@@ -592,7 +602,11 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 if(check != fwFiles[0].checksum){
                     //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
+                    #if FW_UPDATE_USE_FS
+                    if(copy_to_prog_flash(fwFileNames[0],FIRMWARE_GOLDEN_ADDRESS)){
+                    #else
                     if(copy_raw_to_prog_flash(0,FIRMWARE_GOLDEN_ADDRESS)){
+                    #endif
                         printf("Unrecoverable error: problem copying fw to program flash\n");
                         updateState(FW_STATE_IDLE);
                         break;
@@ -612,7 +626,11 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 checksum_program_flash_area(&check,FIRMWARE_UPDATE_ADDRESS, fwFiles[1].filesize);
                 if(check != fwFiles[1].checksum){
                     //Our program flash copy is bad, copy from the verified data flash, which at this point is verified.
+                    #if FW_UPDATE_USE_FS
+                    if (copy_to_prog_flash(fwFileNames[1],FIRMWARE_UPDATE_ADDRESS)<0){
+                    #else
                     if (copy_raw_to_prog_flash(1,FIRMWARE_UPDATE_ADDRESS)<0){
+                    #endif
                         printf("Unrecoverable error: problem copying fw to program flash\n");
                         updateState(FW_STATE_IDLE);
                         break;
@@ -733,6 +751,79 @@ void listFwFiles(){
 
 }
 
+int writeFwMetadata(){
+
+    #if FW_UPDATE_USE_FS
+    for(int index=0; index< NUM_FIRMWARES_TOTAL+1; index++){
+        lfs_file_t checkFile = {0};
+        char checksumFileName[64]={0};
+
+        sprintf(checksumFileName,"%s.check",fwFileNames[index]);
+        int result_fs = fs_file_open(&checkFile,checksumFileName, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+        if(result_fs <0){
+            printf("Could not open file to store checksum\n ");
+            return -1;
+        }
+        fs_file_write(&checkFile, &fwFiles[index].checksum, sizeof(uint32_t));
+        fs_file_close(&checkFile);
+
+        lfs_file_t designVerFile = {0};
+        char designVerFileName[64]={0};
+        sprintf(designVerFileName,"%s.designver",fwFileNames[index]);
+        result_fs = fs_file_open(&designVerFile,designVerFileName, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+        if(result_fs <0){
+            printf("Could not open file to store design version\n ");
+            return -1;
+        }
+        fs_file_write(&designVerFile, &fwFiles[index].designver, sizeof(uint32_t));
+        fs_file_close(&designVerFile);
+    }
+
+    #else
+    flash_erase(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR);
+    flash_write(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,(uint8_t*)fwFiles,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL);
+    #endif
+    return 0;
+}
+
+int saveFwMetaData(int index){
+
+#if FW_UPDATE_USE_FS
+
+    lfs_file_t checkFile = {0};
+    char checksumFileName[64]={0};
+
+    sprintf(checksumFileName,"%s.check",fwFileNames[index]);
+    int result_fs = fs_file_open(&checkFile,checksumFileName, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+    if(result_fs <0){
+        printf("Could not open file to store checksum\n ");
+        return -1;
+    }
+    fs_file_write(&checkFile, &fwFiles[index].checksum, sizeof(uint32_t));
+    fs_file_close(&checkFile);
+
+    lfs_file_t designVerFile = {0};
+    char designVerFileName[64]={0};
+    sprintf(designVerFileName,"%s.designver",fwFileNames[index]);
+    result_fs = fs_file_open(&designVerFile,designVerFileName, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+    if(result_fs <0){
+        printf("Could not open file to store design version\n ");
+        return -1;
+    }
+    fs_file_write(&designVerFile, &fwFiles[index].designver, sizeof(uint32_t));
+    fs_file_close(&designVerFile);
+
+#else
+            //Todo replace with mram so we can simplify... don't have to read/modify write....
+            Fw_metadata_t fwFiles_loaded[NUM_FIRMWARES_TOTAL] = {0};
+            flash_read(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,(uint8_t*)fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL);
+            memcpy(&fwFiles_loaded[index],&fwFiles[index],sizeof(Fw_metadata_t));
+            flash_erase(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR);
+            flash_write(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,(uint8_t*)fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL);
+#endif
+            return 0;
+}
+
 int updateFwMetaData(Fw_metadata_t* data){
     int res = -1;
 #if FW_UPDATE_USE_FS
@@ -774,11 +865,7 @@ int updateFwMetaData(Fw_metadata_t* data){
         rx_slot_index = data->fileIndex;
 
 
-        //Todo replace with mram so we can simplify... don't have to read/modify write....
-        Fw_metadata_t fwFiles_loaded[NUM_FIRMWARES_TOTAL] = {0};
-        flash_read(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,(uint8_t*)fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL);
-        memcpy(&fwFiles_loaded[data->fileIndex],&fwFiles[data->fileIndex],sizeof(Fw_metadata_t));
-        flash_write(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,(uint8_t*)fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL);
+        saveFwMetaData(data->fileIndex);
 
     }
 #endif
@@ -817,7 +904,7 @@ void setFwDesignVer(uint8_t slot, uint8_t ver){
 
     metadata.designver = ver;
 
-    updateFwMetaData(&metadata);
+    saveFwMetaData(slot);
 
 }
 
@@ -1021,7 +1108,7 @@ void load_fw_metadata(){
 
     //In this case we just store the data on raw memory as continuous bytes.
     Fw_metadata_t fwFiles_loaded[NUM_FIRMWARES_TOTAL] = {0};
-    flash_read(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL); //TODO: This could be good use of mram.
+    flash_read(flash_devices[DATA_FLASH],FW_MGR_METADATA_ADDR,(uint8_t*)fwFiles_loaded,sizeof(Fw_metadata_t)*NUM_FIRMWARES_TOTAL); //TODO: This could be good use of mram.
     
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
         

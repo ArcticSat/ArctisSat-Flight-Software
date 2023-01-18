@@ -127,7 +127,7 @@ int main( void )
 	// Initialization
  	 prvSetupHardware();
 	//Make sure FS is up before all tasks
-//	 filesystem_initialization();
+	 //filesystem_initialization();
 
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
@@ -135,7 +135,7 @@ int main( void )
     status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
     status = xTaskCreate(vCanServerBasic,"CAN Rx",1000,NULL,2,&vCanServer_h);
-////    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
     status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
                             "UART0 Receiver",            // Text name for debugging
