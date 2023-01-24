@@ -26,9 +26,9 @@ TimerHandle_t sunPointingTimer;
 
 // Sun Pointing State Enum
 typedef enum SUN_POINTING_STATES {
-    SAMPLE_SUN_SENSOR_GYROS = 0,
-    SAMPLE_MAGS_CONTROL = 1,
-    COMMAND_TORQ_RODS = 2
+    SAMPLE_SUN_SENSOR_GYROS = SAMPLE_SUN_SENSOR_DUR,
+    SAMPLE_MAGS_CONTROL = SAMPLE_MAGS_CONTROL_DUR,
+    COMMAND_TORQ_RODS = CYCLE_DUR
 }
 
 void SunPointing( void )
