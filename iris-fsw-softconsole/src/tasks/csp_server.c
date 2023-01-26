@@ -78,6 +78,37 @@ void vCSP_Server(void * pvParameters){
 //    	vTaskResume(vFw_Update_Mgr_Task_h);
 //    }
 
+//    telemetryPacket_t cmdpkt = {0};
+//    uint8_t data[2] = {0};
+//    cmdpkt.data = data;
+//    while(1){
+//    	// Polarity
+//    	cmdpkt.telem_id = ADCS_SET_TR_POLARITY_CMD;
+//    	data[0] = 1;
+//    	data[1] = 1;
+//    	HandleAdcsCommand(&cmdpkt);
+//    	vTaskDelay(10);
+//    	// PWM
+//    	cmdpkt.telem_id = ADCS_SET_TR_POLARITY_CMD;
+//    	data[0] = 1;
+//    	data[1] = 1;
+//    	HandleAdcsCommand(&cmdpkt);
+//    	vTaskDelay(10);
+//    	// State on
+//    	cmdpkt.telem_id = ADCS_SET_TR_STATE_CMD;
+//    	data[0] = 1;
+//    	data[1] = 1;
+//    	HandleAdcsCommand(&cmdpkt);
+//    	vTaskDelay(1000);
+//    	// State off
+//    	cmdpkt.telem_id = ADCS_SET_TR_STATE_CMD;
+//    	data[0] = 1;
+//    	data[1] = 0;
+//    	HandleAdcsCommand(&cmdpkt);
+//    	vTaskDelay(1000);
+//    }
+
+
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
 		conn = csp_accept(socket, 1000);

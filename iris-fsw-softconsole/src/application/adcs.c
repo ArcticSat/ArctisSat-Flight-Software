@@ -14,8 +14,9 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 {
 	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
 	uint8_t tx_buf[10];
-	uint8_t rx_buf[164];
+	uint8_t rx_buf[400];
 	telemetryPacket_t tm_pkt = {0};
+	int i;
 	// Perform Task
 	switch(cmd_pkt->telem_id)
 	{
@@ -49,9 +50,12 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 				(TortqueRodState_t) cmd_pkt->data[1]);
 		break;
 	case ADCS_SET_TR_POLARITY_CMD:
+//		error_code = setTorqueRodPolarity(
+//				(TorqueRodId_t) cmd_pkt->data[0],
+//				(TortqueRodPolarity_t) cmd_pkt->data[1]);
 		error_code = setTorqueRodPolarity(
 				(TorqueRodId_t) cmd_pkt->data[0],
-				(TortqueRodPolarity_t) cmd_pkt->data[1]);
+				cmd_pkt->data[1]);
 		break;
 	case ADCS_SET_TR_PWM_CMD:
 		error_code = setTorqueRodPwm(
@@ -87,10 +91,31 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		error_code = getSunSensorMeasurements(rx_buf);
 		// Send telemetry
 		tm_pkt.telem_id = ADCS_MESAUREMENT_SUN_ID;
+		/*
 		tm_pkt.length = ADCS_SUN_SENSOR_DATA_SIZE;
-		tm_pkt.data = rx_buf;
+		tm_pkt.data = &rx_buf[0];
 		// Log telemetry
 		log_telemetry(&tm_pkt);
+		// Send telemetry
+		tm_pkt.data = &rx_buf[164];
+		// Log telemetry
+		vTaskDelay(10);
+		log_telemetry(&tm_pkt);*/
+
+		// Debug
+		tm_pkt.length = 10;
+		// First 30 bytes of SS_X
+		for(i=0; i < 3*10+1; i+=10){
+			tm_pkt.data = &rx_buf[i];
+			log_telemetry(&tm_pkt);
+			vTaskDelay(10);
+		}
+		// First 30 bytes of SS_X
+		for(i=0; i < 3*10+1; i+=10){
+			tm_pkt.data = &rx_buf[164+i];
+			log_telemetry(&tm_pkt);
+			vTaskDelay(10);
+		}
 		break;
 	default:
 		return;

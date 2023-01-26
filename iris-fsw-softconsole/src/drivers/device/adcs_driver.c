@@ -320,7 +320,9 @@ AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements)
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR_PRIMARY;
 	AdcsDriverError_t status;
 	status = adcsSyncSpiCommand(cmd_id);
+	vTaskDelay(20);
 	status = adcsTxRx(NULL,0,&measurements[0],ADCS_SUN_SENSOR_DATA_SIZE);
+	vTaskDelay(20);
 	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
 	return status;
 }
