@@ -11,7 +11,7 @@
 #define SAMPLE_MAGS_CONTROL_DUR 4
 #define CYCLE_DUR 10
 
-// FreeRTOS
+#include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include "timers.h"
 
 // PROTOTYPES:
@@ -25,11 +25,11 @@ void vHandleTimer(TimerHandle_t xTimer);
 TimerHandle_t sunPointingTimer;
 
 // Sun Pointing State Enum
-typedef enum SUN_POINTING_STATES {
+typedef enum  {
     SAMPLE_SUN_SENSOR_GYROS = SAMPLE_SUN_SENSOR_DUR,
     SAMPLE_MAGS_CONTROL = SAMPLE_MAGS_CONTROL_DUR,
     COMMAND_TORQ_RODS = CYCLE_DUR
-}
+}SUN_POINTING_STATES;
 
 void SunPointing( void )
 {
