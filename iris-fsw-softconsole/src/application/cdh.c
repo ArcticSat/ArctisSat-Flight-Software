@@ -347,6 +347,24 @@ void vCanServer(void * pvParameters)
 						log_telemetry(&telemetry);
 						break;
 					}
+					case POWER_GET_BATTERY_SOC_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_GET_BATTERY_SOC_ID;
+						telemetry.length = 4;
+						telemetry.data = can_q[numCanMsgs].data;
+						log_telemetry(&telemetry);
+						break;
+					}
+					case POWER_GET_BATTERY_SOC_ID:{
+						telemetryPacket_t telemetry;
+						// Send telemetry value
+						telemetry.telem_id = POWER_GET_BATTERY_SOC_ID;
+						telemetry.length = 1;
+						telemetry.data = can_q[numCanMsgs].data;
+						log_telemetry(&telemetry);
+						break;
+					}
 					default:{
 						break;
 					}
