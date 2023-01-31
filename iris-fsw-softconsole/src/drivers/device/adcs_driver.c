@@ -16,7 +16,7 @@
 #define SPI_EFFICIENT
 
 #define ADCS_ACK_PREFIX 0x01
-#define MAX_SYNC_CYCLES 10
+#define MAX_SYNC_CYCLES 180
 
 // ADCS Command IDs
 typedef enum
@@ -35,14 +35,20 @@ typedef enum
 	ADCS_CMD_SET_POLARITY_TORQUE_ROD_2,					// 12
 	ADCS_CMD_SET_POLARITY_TORQUE_ROD_3,					// 13
 	ADCS_CMD_SET_PWM_COUNTER_TORQUE_ROD,				// 14
-	ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR_PRIMARY,		// 15
-	ADCS_CMD_GET_MEASUREMENT_GYRO_1,						// 16
-	ADCS_CMD_GET_MEASUREMENT_GYRO_2,						// 17
-	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1,			// 18
-	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2,			// 19
-	ADCS_SPI_PORT_TOGGLE,									// 20
-	ADCS_SYNC_SPI,												// 21
-	NUM_ADCS_COMMANDS,
+	ADCS_SELECT_SS1,											// 15
+	ADCS_SELECT_SS2,											// 16
+	ADCS_SELECT_SS3,											// 17
+	ADCS_SELECT_SS4,											// 18
+	ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR,				// 19
+	ADCS_SET_GYRO_I2C_ADDRESS,								// 20
+	ADCS_GET_GYRO_MEASUREMENT,								// 21
+	ADCS_CMD_GET_MEASUREMENT_GYRO_1,						// 22
+	ADCS_CMD_GET_MEASUREMENT_GYRO_2,						// 23
+	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1,			// 24
+	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2,			// 25
+	ADCS_SPI_PORT_TOGGLE,									// 26
+	ADCS_SYNC_SPI,												// 27
+	NUM_ADCS_COMMANDS,										// 28
 	ADCS_ACK=55,
 	ADCS_SPI_CMD_ERROR = 75,
 } AdcsCommands_t;
@@ -132,10 +138,10 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 AdcsDriverError_t adcsSyncSpi(void)
 {
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
-	uint8_t cmd_id = ADCS_CMD_PING;
+	uint8_t cmd_id = 0xFF;
 	uint8_t cmd_ack = 0;
 	uint8_t cycles = 0;
-	while(cmd_ack != ADCS_SYNC_SPI && cycles != MAX_SYNC_CYCLES)
+	while(cmd_ack != 0xFF && cycles != MAX_SYNC_CYCLES)
 	{
 		AdcsDriverError_t status = adcsTxRx(&cmd_id,1,&cmd_ack,0);
 		cycles++;
@@ -263,6 +269,31 @@ AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t rod_number, uint8_t pwm)
  * @return
  */
 
+AdcsDriverError_t setGyroI2cAddress(uint8_t addr)
+{
+    uint8_t cmd_id = ADCS_SET_GYRO_I2C_ADDRESS;
+    AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
+    // SPI transactions
+    status = adcsSyncSpiCommand(cmd_id); // Command ID
+    vTaskDelay(10);
+	status = adcsTxRx(NULL,0,&addr,1); // Address
+
+    return status;
+}
+
+AdcsDriverError_t getGyroMeasurementsGeneric(uint8_t * gyroMeasurements)
+{
+    uint8_t cmd_id = ADCS_GET_GYRO_MEASUREMENT;
+    AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
+    // SPI transactions
+    status = adcsSyncSpiCommand(cmd_id);
+	vTaskDelay(100);
+    // Get measurements
+	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_DATA_SIZE);
+
+	return status;
+}
+
 AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements)
 {
     // Get command ID
@@ -315,15 +346,41 @@ AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumbe
 	return status;
 }
 
+
+AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
+{
+	uint8_t cmd_id;
+	AdcsDriverError_t status;
+	switch(sunSensor)
+	{
+		case SUN_SENSOR_1:
+			cmd_id = ADCS_SELECT_SS1;
+			break;
+		case SUN_SENSOR_2:
+			cmd_id = ADCS_SELECT_SS2;
+			break;
+		case SUN_SENSOR_3:
+			cmd_id = ADCS_SELECT_SS3;
+			break;
+		case SUN_SENSOR_4:
+			cmd_id = ADCS_SELECT_SS4;
+			break;
+		default:
+			return ADCS_ERROR_BAD_ID;
+	}
+	status = adcsSyncSpiCommand(cmd_id);
+	return status;
+}
+
 AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements)
 {
-	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR_PRIMARY;
+	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
 	AdcsDriverError_t status;
 	status = adcsSyncSpiCommand(cmd_id);
 	vTaskDelay(20);
 	status = adcsTxRx(NULL,0,&measurements[0],ADCS_SUN_SENSOR_DATA_SIZE);
-	vTaskDelay(20);
-	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
+//	vTaskDelay(20);
+//	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
 	return status;
 }
 

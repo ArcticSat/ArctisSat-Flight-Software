@@ -62,6 +62,19 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 				(TorqueRodId_t) cmd_pkt->data[0],
 				cmd_pkt->data[1]);
 		break;
+	case ADCS_SET_GYRO_I2C_ADDRESS_CMD:
+		error_code = setGyroI2cAddress(cmd_pkt->data[0]);
+		break;
+	case ADCS_GET_MEASUREMENT_GYRO_GENERIC_CMD:
+		// Get reading
+		error_code = getGyroMeasurementsGeneric(rx_buf);
+		// Send telemetry
+		tm_pkt.telem_id = ADCS_MESAUREMENT_GYRO_ID;
+		tm_pkt.length = ADCS_GYRO_DATA_SIZE;
+		tm_pkt.data = rx_buf;
+		// Log telemetry
+		log_telemetry(&tm_pkt);
+		break;
 	case ADCS_GET_MEASUREMENT_GYRO_CMD:
 		// Get reading
 		error_code = getGyroMeasurements(
@@ -85,6 +98,9 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		tm_pkt.data = rx_buf;
 		// Log telemetry
 		log_telemetry(&tm_pkt);
+		break;
+	case ADCS_SUN_SENSOR_SELECT_CMD:
+		sunSensorSelect((enumSunSensor) cmd_pkt->data[0]);
 		break;
 	case ADCS_GET_MEASUREMENT_SUN_CMD:
 		// Get reading
@@ -110,12 +126,12 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 			log_telemetry(&tm_pkt);
 			vTaskDelay(10);
 		}
-		// First 30 bytes of SS_X
-		for(i=0; i < 3*10+1; i+=10){
-			tm_pkt.data = &rx_buf[164+i];
-			log_telemetry(&tm_pkt);
-			vTaskDelay(10);
-		}
+//		// First 30 bytes of SS_X
+//		for(i=0; i < 3*10+1; i+=10){
+//			tm_pkt.data = &rx_buf[164+i];
+//			log_telemetry(&tm_pkt);
+//			vTaskDelay(10);
+//		}
 		break;
 	default:
 		return;

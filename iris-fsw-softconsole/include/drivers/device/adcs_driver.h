@@ -72,6 +72,14 @@ typedef enum
 	MAGNETOMETER_2
 } MagnetometerId_t;
 
+typedef enum
+{
+	SUN_SENSOR_1=1,
+	SUN_SENSOR_2,		//2
+	SUN_SENSOR_3,		//3
+	SUN_SENSOR_4,		//4
+} enumSunSensor;
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,8 +97,11 @@ AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t 
 AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
 AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t cmd_id, uint8_t pwm);
 // Sensor Polling commands
+AdcsDriverError_t setGyroI2cAddress(uint8_t addr);
+AdcsDriverError_t getGyroMeasurementsGeneric(uint8_t * gyroMeasurements);
 AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
 AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
+AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor);
 AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements);
 
 
