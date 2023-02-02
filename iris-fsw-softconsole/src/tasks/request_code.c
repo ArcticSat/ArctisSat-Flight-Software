@@ -55,11 +55,7 @@ void handle_request_with_param(TaskId_t req, uint8_t * params, Calendar_t time)
 	cmd_pkt.timestamp = time;
 	cmd_pkt.data = params;
 	// Dispatch command
-	if(cmd_pkt.telem_id < CDH_COMMANDS_END)
-	{
-		HandleCdhCommand(&cmd_pkt);
-	}
-	else if(cmd_pkt.telem_id < POWER_COMMANDS_END)
+	if(cmd_pkt.telem_id < POWER_COMMANDS_END)
 	{
 		HandlePowerCommand(&cmd_pkt);
 	}
@@ -70,6 +66,10 @@ void handle_request_with_param(TaskId_t req, uint8_t * params, Calendar_t time)
 	else if(cmd_pkt.telem_id < ADCS_COMMANDS_END)
 	{
 		HandleAdcsCommand(&cmd_pkt);
+	}
+	else if(cmd_pkt.telem_id < CDH_COMMANDS_END)
+	{
+		HandleCdhCommand(&cmd_pkt);
 	}
 	else
 	{

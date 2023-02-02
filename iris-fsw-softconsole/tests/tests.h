@@ -37,6 +37,7 @@ void vTestMRAM(void *pvParameters);
 
 //FreeRTOS Test task for external flash memory.
 void vTestFlash(void *pvParameters);
+void vTestFlashFull(void *pvParameters);
 
 //FreeRTOS Test task for ADCS driver.
 void vTestAdcsDriver(void * pvParameters);

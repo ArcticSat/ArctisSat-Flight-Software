@@ -71,41 +71,14 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
+	//Make sure FS is up before all tasks
+	filesystem_initialization();
+
     //Start up any tasks that depend on CSP, FS.
 //    vTaskResume(vCanServer_h);
     vTaskResume(vTTTScheduler_h);
 //    if(get_fs_status() == FS_OK){
 //    	vTaskResume(vFw_Update_Mgr_Task_h);
-//    }
-
-//    telemetryPacket_t cmdpkt = {0};
-//    uint8_t data[2] = {0};
-//    cmdpkt.data = data;
-//    while(1){
-//    	// Polarity
-//    	cmdpkt.telem_id = ADCS_SET_TR_POLARITY_CMD;
-//    	data[0] = 1;
-//    	data[1] = 1;
-//    	HandleAdcsCommand(&cmdpkt);
-//    	vTaskDelay(10);
-//    	// PWM
-//    	cmdpkt.telem_id = ADCS_SET_TR_POLARITY_CMD;
-//    	data[0] = 1;
-//    	data[1] = 1;
-//    	HandleAdcsCommand(&cmdpkt);
-//    	vTaskDelay(10);
-//    	// State on
-//    	cmdpkt.telem_id = ADCS_SET_TR_STATE_CMD;
-//    	data[0] = 1;
-//    	data[1] = 1;
-//    	HandleAdcsCommand(&cmdpkt);
-//    	vTaskDelay(1000);
-//    	// State off
-//    	cmdpkt.telem_id = ADCS_SET_TR_STATE_CMD;
-//    	data[0] = 1;
-//    	data[1] = 0;
-//    	HandleAdcsCommand(&cmdpkt);
-//    	vTaskDelay(1000);
 //    }
 
 
@@ -213,6 +186,7 @@ uint8_t configure_csp(){
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
     char* canRoute = "0/0 CAN";
+
 //    char* gndRoute = "9/5 KISS";
 
    csp_rtable_load(canRoute);
