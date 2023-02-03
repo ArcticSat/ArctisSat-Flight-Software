@@ -560,7 +560,7 @@ void vTestingTask(void * pvParams){
         conn = csp_connect(2,PAYLOAD_CSP_ADDRESS,CSP_CMD_PORT,1000,0);    //Create a connection. This tells CSP where to send the data (address and destination port).
         outPacket = csp_buffer_get(sizeof(Calendar_t)+2);
 //        uint8_t testbuff[20];
-        payloadTelemetry_t cmd = PAYLOAD_BOARD_TEMP_ID;
+        TelemetryId_t cmd = PAYLOAD_BOARD_TEMP_ID;
         uint8_t length = 0;///cmd so no data.
 
 

@@ -157,7 +157,7 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
           if(q_buf.id == POW_RXID)
           {
 //        	  handlePowTelemetry(q_buf.data);
-        	  BaseType_t res1 = xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
+//        	  BaseType_t res1 = xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
         	  if(numCanMsgs < 10){
         		  can_q[numCanMsgs++] = q_buf;
         		  numCanMsgs %= 10;
