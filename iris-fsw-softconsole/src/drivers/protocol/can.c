@@ -154,7 +154,12 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
           }
 
 //          xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
-          if(q_buf.id == POW_RXID)
+
+          if(q_buf.id == POW_TXID)
+          {
+
+          }
+          else if(q_buf.id == POW_RXID)
           {
 //        	  handlePowTelemetry(q_buf.data);
 //        	  BaseType_t res1 = xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);

@@ -127,6 +127,7 @@ void vCSP_Server(void * pvParameters){
 //    vTaskResume(vTTTScheduler_h);
   	  CANMessage_t cmd = {0};
   	cmd.id = POW_TXID;
+  	int i;
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -151,26 +152,28 @@ void vCSP_Server(void * pvParameters){
                     telemetryPacket_t t ;
                     unpackTelemetry(packet->data, &t);
 
+                    memcpy(cmd.data,0,8);
+
                     switch(t.telem_id){
 
                     case POWER_READ_TEMP_CMD:{ // Read temperature value command
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_READ_TEMP_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_READ_SOLAR_CURRENT_CMD:{ // Read solar current command
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_READ_SOLAR_CURRENT_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_READ_LOAD_CURRENT_CMD:{ // Read solar current command
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_READ_LOAD_CURRENT_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
@@ -203,42 +206,61 @@ void vCSP_Server(void * pvParameters){
 					case POWER_SET_LOAD_OFF_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_SET_LOAD_ON_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_SET_LOAD_ON_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_SET_SOLAR_OFF_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_SET_SOLAR_OFF_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_SET_SOLAR_ON_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_SET_SOLAR_ON_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_SET_POW_MODE_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_SET_POW_MODE_CMD;
-						cmd.data[1] = packet->data[0];
+						cmd.data[1] = t.data[0];
 						CAN_transmit_message(&cmd);
 						break;
 					}
 					case POWER_AIT_SET_BATTERY_SOC_CMD:{
+						float soc;
+						memcpy(&soc,t.data,sizeof(float));
 						cmd.dlc = 5;
 						cmd.data[0] = POWER_AIT_SET_BATTERY_SOC_CMD;
-						cmd.data[1] = packet->data[0];
+						memcpy(&cmd.data[1],&t.data[0],sizeof(float));
+						CAN_transmit_message(&cmd);
+						break;
+					}
+					case POWER_FRAM_LOG_OPMODE_CMD:{
+						cmd.dlc = 2;
+						cmd.data[0] = POWER_FRAM_LOG_OPMODE_CMD;
+						cmd.data[1] = t.data[0];
+						CAN_transmit_message(&cmd);
+						break;
+					}
+					case POWER_FRAM_LOG_SOC_CMD:{
+						float soc;
+						memcpy(&soc,t.data,sizeof(float));
+						cmd.dlc = 5;
+						cmd.data[0] = POWER_FRAM_LOG_SOC_CMD;
+						memcpy(&cmd.data[1],t.data,sizeof(float));
+//						memcpy(&cmd.data[1],&t.data[0],sizeof(float));
 						CAN_transmit_message(&cmd);
 						break;
 					}
@@ -593,7 +615,7 @@ uint8_t configure_csp(){
 
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
-    char* canRoute = "0/0 CAN";
+    char* canRoute = "0/2 CAN";
     char* gndRoute = "9/5 KISS";
 
    csp_rtable_load(canRoute);
