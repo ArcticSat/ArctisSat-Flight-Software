@@ -190,9 +190,9 @@ void vCSP_Server(void * pvParameters){
 						break;
 					}
 					case POWER_GET_SA_CHARGE_STATE_CMD:{ // Read solar current command
-//						cmd.dlc = 1;
-//						cmd.data[0] = POWER_GET_ECLIPSE_CMD;
-//						CAN_transmit_message(&cmd);
+						cmd.dlc = 1;
+						cmd.data[0] = POWER_GET_SA_CHARGE_STATE_CMD;
+						CAN_transmit_message(&cmd);
 						break;
 					}
 			//		case POWER_GET_BOOT_COUNT:{ // Read solar current command
@@ -244,6 +244,18 @@ void vCSP_Server(void * pvParameters){
 						cmd.dlc = 5;
 						cmd.data[0] = POWER_AIT_SET_BATTERY_SOC_CMD;
 						memcpy(&cmd.data[1],&t.data[0],sizeof(float));
+						CAN_transmit_message(&cmd);
+						break;
+					}
+					case POWER_FRAM_GET_OPMODE_CMD: {
+						cmd.dlc = 1;
+						cmd.data[0] = POWER_FRAM_GET_OPMODE_CMD;
+						CAN_transmit_message(&cmd);
+						break;
+					}
+					case POWER_FRAM_GET_SOC_CMD: {
+						cmd.dlc = 1;
+						cmd.data[0] = POWER_FRAM_GET_SOC_CMD;
 						CAN_transmit_message(&cmd);
 						break;
 					}

@@ -79,7 +79,7 @@
 
 //#define SERVER
 //#define CLIENT
-//#define CAN_SERVER
+#define CAN_SERVER
 #define CSP_SERVER
 
 
@@ -222,12 +222,18 @@ int main( void )
 #endif
 
 #ifdef CAN_SERVER
-    status = xTaskCreate(vTestCanServer,
+    status = xTaskCreate(vCanServer,
                          "Test CAN Rx",
-						 1000,
+						 500,
                          NULL,
                          2,
                          &vTestCanServer_h);
+//    status = xTaskCreate(vTestCanServer,
+//                         "Test CAN Rx",
+//						 1000,
+//                         NULL,
+//                         2,
+//                         &vTestCanServer_h);
 //    status = xTaskCreate(vTestCANRx,
 //                         "Test CAN Rx",
 //                         500,
@@ -331,7 +337,7 @@ static void prvSetupHardware( void )
 //
 //    init_WD();
     init_spi();
-//    init_rtc();
+    init_rtc();
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
@@ -345,94 +351,7 @@ static void prvSetupHardware( void )
 
 
 /*-----------------------------------------------------------*/
-extern QueueHandle_t can_rx_queue;
-uint8_t numCanMsgs = 0;
-CANMessage_t can_q[10] = {0};
-uint8_t telem_id = 0;
-static void vTestCanServer(void * pvParameters)
-{
-	int messages_processed = 0;
-	CANMessage_t rx_msg;
-	while(1)
-	{
-//		BaseType_t q_rec = xQueueReceive(can_rx_queue, &rx_msg, portMAX_DELAY);
-//		UBaseType_t numMsgs = uxQueueMessagesWaitingFromISR(can_rx_queue);
-//		if (q_rec == pdTRUE)
-//		{
-//			messages_processed++;
-//			// Ground output to terminal
-//			telemetryPacket_t telemetry={0};
-//			Calendar_t ts = {0};
-//			// Send telemetry value
-//			telemetry.telem_id = POWER_READ_TEMP_ID;
-//			telemetry.timestamp = ts;
-//			telemetry.length = 4;
-//			telemetry.data = rx_msg.data;
-//			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-//
-//		}
 
-		if(numCanMsgs > 0)
-		{
-			numCanMsgs--;
-			if(numCanMsgs < 0) continue;
-			// Check if msg is telem_id
-			uint8_t telem_mask = 0;
-			int i;
-			for(i=0; i < 3; i++) telem_mask |= can_q[numCanMsgs].data[i];
-			if(telem_mask == 0)
-			{
-				telem_id = can_q[numCanMsgs].data[3];
-			}
-			else
-			{
-				switch(telem_id)
-				{
-					case POWER_READ_TEMP_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_TEMP_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_READ_SOLAR_CURRENT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_READ_LOAD_CURRENT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-					case POWER_READ_MSB_VOLTAGE_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
-						break;
-					}
-				}
-			}
-
-		}
-
-		vTaskDelay(1000);
-
-	}
-}
 static void vTestCspServer(void * pvParameters){
 
 	struct csp_can_config can_conf = {0};
