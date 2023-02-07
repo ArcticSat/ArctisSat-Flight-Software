@@ -19,6 +19,8 @@
 
 #include "drivers_config/sys_config/sys_config_mss_clocks.h"
 
+#include "tasks/telemetry.h"
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -46,6 +48,21 @@ mss_can_instance_t g_can0;  // MSS CAN object instance.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+uint8_t data_buf[256];
+
+void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
+{
+	memcpy(data_buf,0,256);
+	memcpy(&output->telem_id,&can_msg->data[0],1);
+	memcpy(&output->length,&can_msg->dlc,1);
+	output->length -= 1;
+//	memcpy(&output->data[0],&can_msg->data[1],output->length);
+	memcpy(data_buf,&can_msg->data[1],output->length);
+	output->data = data_buf;
+	MSS_RTC_get_calendar_count(&output->timestamp);
+}
+
 int init_CAN(CANBaudRate baudrate, QueueHandle_t *csp_rx_queue_handle)
 {
     int rc = 1;
@@ -132,6 +149,7 @@ int CAN_transmit_message(CANMessage_t * message)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 extern uint8_t numCanMsgs;
 extern CANMessage_t can_q[10];
+telemetryPacket_t tmpkt1 = {0};
 // Interrupt handler for the CAN interrupt. Received CAN messages are placed into a Queue.
 __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 {
@@ -154,27 +172,14 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
           }
 
 //          xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
-          if(q_buf.id == POW_RXID)
+
+          if(q_buf.id == POW_TXID)
           {
-//        	  handlePowTelemetry(q_buf.data);
+        	  continue;
+          }
+          else if(q_buf.id == POW_RXID)
+          {
         	  BaseType_t res1 = xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
-        	  if(numCanMsgs < 10){
-        		  can_q[numCanMsgs++] = q_buf;
-        		  numCanMsgs %= 10;
-        	  }
-//        	  UBaseType_t numMsgs = uxQueueMessagesWaitingFromISR(can_rx_queue);
-//        	  CANMessage_t buf = {0};
-//        	  int ii = 0;
-//        	  // Ground output to terminal
-//			telemetryPacket_t telemetry={0};
-////			Calendar_t ts = {0};
-//			// Send telemetry value
-////			telemetry.telem_id = POWER_READ_TEMP_ID;
-//			telemetry.telem_id = 13;
-////			telemetry.timestamp = ts;
-//			telemetry.length = 4;
-//			telemetry.data = q_buf.data;
-//			sendTelemetryAddr(&telemetry, GROUND_CSP_ADDRESS);
           }
           else
           {

@@ -72,10 +72,10 @@ void vCSP_Server(void * pvParameters){
     csp_listen(socket,4);
 
 	//Make sure FS is up before all tasks
-	filesystem_initialization();
+//	filesystem_initialization();
 
     //Start up any tasks that depend on CSP, FS.
-//    vTaskResume(vCanServer_h);
+    vTaskResume(vCanServer_h);
     vTaskResume(vTTTScheduler_h);
 //    if(get_fs_status() == FS_OK){
 //    	vTaskResume(vFw_Update_Mgr_Task_h);
