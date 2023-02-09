@@ -17,8 +17,8 @@
 #include "drivers/device/rtc/rtc_common.h"
 #include "tasks/telemetry.h"
 
-#define POW_RXID 0x721
-#define POW_TXID 0x824
+#define CDH_CAN_ID 		0x721
+#define POWER_CAN_ID 	0x824
 
 void handlePowTelemetry(uint8_t * tlm_data);
 

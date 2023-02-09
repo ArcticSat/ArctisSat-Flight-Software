@@ -126,7 +126,7 @@ void vCSP_Server(void * pvParameters){
 //    vTaskResume(vFw_Update_Mgr_Task_h);
 //    vTaskResume(vTTTScheduler_h);
   	  CANMessage_t cmd = {0};
-  	cmd.id = POW_TXID;
+  	cmd.id = POWER_CAN_ID;
   	int i;
 
     //TODO: Check return of csp_bind and listen, then handle errors.

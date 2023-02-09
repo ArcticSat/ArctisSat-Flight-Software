@@ -189,11 +189,11 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 
 //          xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
 
-          if(q_buf.id == POW_TXID)
+          if(q_buf.id == POWER_CAN_ID)
           {
         	  continue;
           }
-          else if(q_buf.id == POW_RXID)
+          else if(q_buf.id == CDH_CAN_ID)
           {
         	  BaseType_t res1 = xQueueSendToBackFromISR(can_rx_queue, &q_buf, NULL);
         	  continue;
