@@ -21,19 +21,26 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define FS_READ_SIZE		1
-/*** The following three parameters are verified to work for (at least)
+
+
+/*** The following four parameters are verified to work for (at least)
  * the following devices:
  * - AT25SF_DATA_FLASH
  * - W25Q_PROGRAM_FLASH
  */
-#define FS_PROG_SIZE		256
-#define FS_BLOCK_SIZE		2 * 2048
-#define FS_CACHE_SIZE		256
-//#define FS_PROG_SIZE		2048
-//#define FS_BLOCK_SIZE		64 * 2048
-//#define FS_CACHE_SIZE		2048
-#define FS_LOOKAHEAD_SIZE	2048
+//#define FS_READ_SIZE      1
+//#define FS_PROG_SIZE		256
+//#define FS_BLOCK_SIZE		(2 * 2048)
+//#define FS_CACHE_SIZE		256
+//#define FS_LOOKAHEAD_SIZE   2048  //Should probably be much smaller...
+
+//The following parameters seems to work for the W25N.
+#define FS_READ_SIZE        512
+#define FS_PROG_SIZE		512
+#define FS_BLOCK_SIZE		(64 * 2048) //Must be in brackets since we divide by this in the code!
+#define FS_CACHE_SIZE		512
+
+#define FS_LOOKAHEAD_SIZE	512
 #define FS_BLOCK_CYCLES		500
 
 #define FS_MAX_OPEN_FILES	3
@@ -111,11 +118,11 @@ static struct lfs_config config = {	.read  = fs_read,
 											// block device configuration
 											.read_size = FS_READ_SIZE,
 											.prog_size = FS_PROG_SIZE,
-											.block_size = 4096,		//Erase size.
+											.block_size = FS_BLOCK_SIZE,		//Erase size.
 
-											.cache_size = 256, 		//Must be a multiple of the read and program sizes, and a factor of the block size
-											.lookahead_size = 2048, //The lookahead buffer is stored as a compact bitmap, so each byte of RAM can track 8 blocks. Must be a multiple of 8.
-											.block_cycles = 500,
+											.cache_size = FS_CACHE_SIZE, 		//Must be a multiple of the read and program sizes, and a factor of the block size
+											.lookahead_size = FS_LOOKAHEAD_SIZE, //The lookahead buffer is stored as a compact bitmap, so each byte of RAM can track 8 blocks. Must be a multiple of 8.
+											.block_cycles = FS_BLOCK_CYCLES,
 
 											.lookahead_buffer = fs_lookahead_buffer,
 											.read_buffer = fs_read_buffer,
