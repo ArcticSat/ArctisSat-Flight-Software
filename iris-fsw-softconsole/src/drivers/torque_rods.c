@@ -1,4 +1,4 @@
-#include "torque_rods.h"
+#include "drivers/torque_rods.h"
 
 void dipoleToPWM(float dipole, uint8_t * pwm, uint8_t * polarity)
 {
