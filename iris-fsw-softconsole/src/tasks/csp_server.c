@@ -195,14 +195,12 @@ void vCSP_Server(void * pvParameters){
 						CAN_transmit_message(&cmd);
 						break;
 					}
-			//		case POWER_GET_BOOT_COUNT:{ // Read solar current command
-			//			CANMessage_t cmd = {0};
-			//			cmd.id = POW_TXID;
-			//			cmd.dlc = 1;
-			//			cmd.data[0] = POWER_GET_BOOT_COUNT_CMD;
-			//			CAN_transmit_message(&cmd);
-			//			break;
-			//		}
+					case POWER_GET_BOOT_COUNT_CMD:{ // Read solar current command
+						cmd.dlc = 1;
+						cmd.data[0] = POWER_GET_BOOT_COUNT_CMD;
+						CAN_transmit_message(&cmd);
+						break;
+					}
 					case POWER_SET_LOAD_OFF_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
@@ -259,6 +257,12 @@ void vCSP_Server(void * pvParameters){
 						CAN_transmit_message(&cmd);
 						break;
 					}
+					case POWER_FRAM_GET_BOOT_COUNT_CMD: {
+						cmd.dlc = 1;
+						cmd.data[0] = POWER_FRAM_GET_BOOT_COUNT_CMD;
+						CAN_transmit_message(&cmd);
+						break;
+					}
 					case POWER_FRAM_LOG_OPMODE_CMD:{
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_FRAM_LOG_OPMODE_CMD;
@@ -273,6 +277,15 @@ void vCSP_Server(void * pvParameters){
 						cmd.data[0] = POWER_FRAM_LOG_SOC_CMD;
 						memcpy(&cmd.data[1],t.data,sizeof(float));
 //						memcpy(&cmd.data[1],&t.data[0],sizeof(float));
+						CAN_transmit_message(&cmd);
+						break;
+					}
+					case POWER_FRAM_LOG_BOOT_COUNT_CMD:{
+						uint16_t count;
+						memcpy(&count,t.data,sizeof(count));
+						cmd.dlc = 3;
+						cmd.data[0] = POWER_FRAM_LOG_BOOT_COUNT_CMD;
+						memcpy(&cmd.data[1],t.data,sizeof(count));
 						CAN_transmit_message(&cmd);
 						break;
 					}
