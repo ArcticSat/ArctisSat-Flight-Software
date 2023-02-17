@@ -22,9 +22,17 @@
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define FS_READ_SIZE		1
+/*** The following three parameters are verified to work for (at least)
+ * the following devices:
+ * - AT25SF_DATA_FLASH
+ * - W25Q_PROGRAM_FLASH
+ */
 #define FS_PROG_SIZE		256
-#define FS_BLOCK_SIZE		4096
+#define FS_BLOCK_SIZE		2 * 2048
 #define FS_CACHE_SIZE		256
+//#define FS_PROG_SIZE		2048
+//#define FS_BLOCK_SIZE		64 * 2048
+//#define FS_CACHE_SIZE		2048
 #define FS_LOOKAHEAD_SIZE	2048
 #define FS_BLOCK_CYCLES		500
 

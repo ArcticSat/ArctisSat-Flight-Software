@@ -81,6 +81,87 @@ void vTestMRAM(void *pvParameters)
         vTaskSuspend(NULL);}
 }
 
+void vTestFlashFull(void *pvParameters)
+{
+
+	// Init
+	FlashDev_t * device = (FlashDev_t *) pvParameters;
+
+	FlashStatus_t result = flash_device_init(device);
+
+	if(result != FLASH_OK){
+		while(1);
+	}
+
+	uint8_t data_tx[device->page_size];
+	uint8_t data_rx[device->page_size];
+	int erase_errors=0;
+	int write_error=0;
+
+	for(int i=0; i< device->page_size;i++){
+		data_tx[i]=0;
+	}
+
+	// Erase
+	FlashStatus_t res=flash_erase_device(device);
+
+    //Verify that the erase device works properly.
+    //All addresses should have 0xFF as the data.
+    for(int j=0; j< device->device_size;j+=device->page_size){
+
+        flash_read(device,j, data_rx, device->page_size);
+
+        for(int i=0;i<device->page_size;i++){
+            if(data_rx[i] != 0xFF) {
+            	erase_errors++;}
+        }
+        memset(data_rx,0,256);
+    }
+
+    //Now verify that writing is working:
+    //Write to all the addresses on page of data.
+    for(int j=0; j<device->device_size;j+=device->page_size){
+		//write
+		res =flash_write(device,j, data_tx, device->page_size);
+		if(res != FLASH_OK) while(1){}
+
+		//Read
+		flash_read(device,j, data_rx, device->page_size);
+
+		//Verify
+		for(int i=0;i<device->page_size;i++){
+
+			if(data_rx[i] != data_tx[i]){
+				write_error++;
+			}
+		}
+
+		memset(data_rx,0,256);
+	}
+
+    for(int j=0; j< device->device_size;j+=device->erase_size){
+
+        flash_erase(device,j);
+    }
+
+
+    //Verify that the erase device works properly.
+    //All addresses should have 0xFF as the data.
+    for(int j=0; j< device->device_size;j+=device->page_size){
+
+        flash_read(device,j, data_rx, device->page_size);
+
+        for(int i=0;i<device->page_size;i++){
+            if(data_rx[i] != 0xFF){
+            	erase_errors++;
+            }
+        }
+        memset(data_rx,0,256);
+    }
+
+    	while(1){};
+}
+
 void vTestFlash(void *pvParameters)
 {
 

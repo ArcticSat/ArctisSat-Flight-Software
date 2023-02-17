@@ -126,23 +126,21 @@ int main( void )
 {
 	// Initialization
  	 prvSetupHardware();
-	//Make sure FS is up before all tasks
-//	 filesystem_initialization();
 
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
 	BaseType_t status;
     status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-//    status = xTaskCreate(vCanServerBasic,"CAN Rx",1000,NULL,2,&vCanServer_h);
-//	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
 ////    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 //    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vTTTScheduler_h);
-//    vTaskSuspend(vCanServer_h);
+    vTaskSuspend(vCanServer_h);
     // Start FreeRTOS Tasks
+//    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     vTaskStartScheduler();
@@ -166,7 +164,7 @@ int main( void )
 //    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
 //    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
 //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-//	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+//	status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
 //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);

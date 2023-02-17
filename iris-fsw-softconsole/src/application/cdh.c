@@ -289,70 +289,19 @@ void vCanServerBasic(void * pvParameters)
 	}
 }
 
+
 void vCanServer(void * pvParameters)
 {
-	int messages_processed = 0;
-	CANMessage_t rx_msg;
+	CANMessage_t rxmsg = {0};
+	telemetryPacket_t tmpkt = {0};
 	while(1)
 	{
-		if(numCanMsgs > 0)
+		if( xQueueReceive(can_rx_queue,&rxmsg,pdMS_TO_TICKS(10000)) )
 		{
-			numCanMsgs--;
-			if(numCanMsgs < 0) continue;
-			// Check if msg is telem_id
-			uint8_t telem_mask = 0;
-			int i;
-			for(i=0; i < 3; i++) telem_mask |= can_q[numCanMsgs].data[i];
-			if(telem_mask == 0)
-			{
-				telem_id = can_q[numCanMsgs].data[3];
-			}
-			else
-			{
-				switch(telem_id)
-				{
-					case POWER_READ_TEMP_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_TEMP_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						log_telemetry(&telemetry);
-						break;
-					}
-					case POWER_READ_SOLAR_CURRENT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_SOLAR_CURRENT_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						log_telemetry(&telemetry);
-						break;
-					}
-					case POWER_READ_LOAD_CURRENT_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_LOAD_CURRENT_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						log_telemetry(&telemetry);
-						break;
-					}
-					case POWER_READ_MSB_VOLTAGE_ID:{
-						telemetryPacket_t telemetry;
-						// Send telemetry value
-						telemetry.telem_id = POWER_READ_MSB_VOLTAGE_ID;
-						telemetry.length = 4;
-						telemetry.data = can_q[numCanMsgs].data;
-						log_telemetry(&telemetry);
-						break;
-					}
-					default:{
-						break;
-					}
-				}
-			}
+		 /* rxmsg now contains a copy of xMessage. */
+			unpackRawCanTelemetry(&rxmsg, &tmpkt);
+			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 		}
-		vTaskDelay(500);
+
 	}
 }
