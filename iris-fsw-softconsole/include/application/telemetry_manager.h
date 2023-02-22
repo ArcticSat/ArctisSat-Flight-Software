@@ -10,7 +10,7 @@
 
 #include "tasks/telemetry.h"
 
-//#define TM_VERBOSITY
+#define TM_VERBOSITY
 #define EVENT_DATA_SIZE 4
 
 // Telemetry channels
