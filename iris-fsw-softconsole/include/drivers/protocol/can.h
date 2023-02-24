@@ -67,6 +67,7 @@ extern QueueHandle_t  csp_rx_queue; // Global queue containing received CAN mess
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+void setTmVerbosity(bool v);
 void vCanServer(void * pvParameters);
 // Description:
 //  Initialize CAN and the rx queues. Other CAN functions or macros shouldn't be used until this function has been called.

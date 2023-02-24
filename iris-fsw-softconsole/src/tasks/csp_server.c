@@ -156,6 +156,10 @@ void vCSP_Server(void * pvParameters){
 
                     switch(t.telem_id){
 
+                    case GND_TM_VERBOSITY_CMD:{
+                    	setTmVerbosity(t.data[0]);
+                    }
+
                     case POWER_READ_TEMP_CMD:{ // Read temperature value command
 						cmd.dlc = 2;
 						cmd.data[0] = POWER_READ_TEMP_CMD;

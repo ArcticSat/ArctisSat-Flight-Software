@@ -45,6 +45,8 @@ QueueHandle_t can_rx_queue;
 QueueHandle_t csp_rx_queue;
 mss_can_instance_t g_can0;  // MSS CAN object instance.
 
+uint8_t tm_verbosity = true;
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -63,6 +65,11 @@ void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
 	MSS_RTC_get_calendar_count(&output->timestamp);
 }
 
+void setTmVerbosity(bool v)
+{
+	tm_verbosity = v;
+}
+
 void vCanServer(void * pvParameters)
 {
 	CANMessage_t rxmsg = {0};
@@ -72,8 +79,11 @@ void vCanServer(void * pvParameters)
 		if( xQueueReceive(can_rx_queue,&rxmsg,pdMS_TO_TICKS(10000)) )
 		{
 		 /* rxmsg now contains a copy of xMessage. */
-			unpackRawCanTelemetry(&rxmsg, &tmpkt);
-			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			if(tm_verbosity)
+			{
+				unpackRawCanTelemetry(&rxmsg, &tmpkt);
+				sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			}
 		}
 
 	}
