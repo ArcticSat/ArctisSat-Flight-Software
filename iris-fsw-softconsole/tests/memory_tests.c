@@ -81,6 +81,34 @@ void vTestMRAM(void *pvParameters)
         vTaskSuspend(NULL);}
 }
 
+void vTestFlashBB(void *pvParameters){
+    //For the W25N only.For fresh chips only. Any writing or erasing could destroy the bb markers.
+    //Finds the factory bad blocks, up to 20 bad blocks may be present from the factory.
+
+    // Init
+    FlashDev_t * device = (FlashDev_t *) pvParameters;
+
+    //FlashStatus_t result = flash_device_init(device);
+
+    FlashStatus_t result=FLASH_OK;
+    uint8_t data_rx[device->page_size];
+    memset(data_rx,0,device->page_size);
+    int erase_errors=0;
+
+    //Note we are scanning the *blocks* not pages, since the bb markers will be at byte 0 page 0 of each *block*.
+    //This makes it much faster (less than 5 min).
+    for(int j=0; j< device->device_size;j+=device->erase_size){
+
+        result = flash_read(device,j, data_rx, device->page_size);
+        if(data_rx[0] != 0xFF ) {//Just check first location. Only works for fresh chips. We can try checking the first byte spare area for used chips, since our code should not modify that yet??
+                erase_errors++;
+        }
+
+        memset(data_rx,0,device->page_size);
+    }
+    while(1){};
+}
+
 void vTestFlashFull(void *pvParameters)
 {
 
