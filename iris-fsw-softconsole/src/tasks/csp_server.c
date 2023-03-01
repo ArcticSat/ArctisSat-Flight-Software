@@ -18,7 +18,8 @@
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
 //#include "tasks/fw_update_mgr.h"
-#include "application/telemetry_manager.h"
+
+#include "application/cdh.h"
 //
 #include "drivers/filesystem_driver.h"
 //#include "drivers/software_update_driver.h"
@@ -77,9 +78,9 @@ void vCSP_Server(void * pvParameters){
     //Start up any tasks that depend on CSP, FS.
     vTaskResume(vCanServer_h);
     vTaskResume(vTTTScheduler_h);
-//    if(get_fs_status() == FS_OK){
-//    	vTaskResume(vFw_Update_Mgr_Task_h);
-//    }
+    if(get_fs_status() == FS_OK){
+    	vTaskResume(vFw_Update_Mgr_Task_h);
+    }
 
 
     //TODO: Check return of csp_bind and listen, then handle errors.
@@ -96,63 +97,59 @@ void vCSP_Server(void * pvParameters){
 				case CSP_CMD_PORT:{
 					telemetryPacket_t cmd_pkt;
 					unpackTelemetry(packet->data, &cmd_pkt);
-					switch(cmd_pkt.telem_id)
-					{
-						case CDH_SET_TIME_CMD:{
-							//They send us a Calendar_t
-							Calendar_t *newTime = (Calendar_t *) cmd_pkt.data;
-							int err = time_valid(newTime);
-							if(err == TIME_SUCCESS){
-								  //Uncomment for cdh with rtc installed.
-				//                            ds1393_write_time(newTime);
-				//                            resync_rtc();
-								MSS_RTC_set_calendar_count(newTime);//This is just for testing without actual external rtc. Comment out if using the CDH EM board.
-							}else{
-								// TBC: Log error...
-							}
-							break;
-						}
-						case CDH_GET_TIME_CMD:{
-							//They send us a Calendar_t
-							Calendar_t currTime;
-							MSS_RTC_get_calendar_count(&currTime);
-							telemetryPacket_t telem;
-							telem.telem_id = CDH_TIME_ID;
-							telem.timestamp = currTime;
-							telem.length =0;//No data, since the data is in the timestamp.
-							telem.data = NULL;
-							sendTelemetry_direct(&telem, conn); // TBC: send direct?
-							break;
-						}
-						case GND_TELEMETRY_REQUEST_CMD:{
-							TelemetryChannel_t channel_id;
-							channel_id = (TelemetryChannel_t) cmd_pkt.data[0];
-							get_telemetry(channel_id);
-							break;
-						}
-						default:{
-							schedule_command(&cmd_pkt);
-							break;
-						}
-					} // switch(cmd_pkt.telem_id)
+
+					if(handleCdhImmediateCommand(&cmd_pkt, conn) < 0)
+					    schedule_command(&cmd_pkt);
+
+					csp_buffer_free(packet);
 					break;
 				} // case CSP_CMD_PORT
-				case CSP_TELEM_PORT:
-					default:{
+				case CSP_TELEM_PORT:{
+				    csp_buffer_free(packet);
+				    break;
+				}
+				default:{
 						csp_service_handler(conn,packet);
 						break;
 					}
 				} // case CSP_TELEM_PORT
 				//Should buffer free be here? Example doesn't call this after csp_service handler.
-				csp_buffer_free(packet);
+
 				csp_close(conn);
 		} // if(conn)
 	} // while(1)
 } // End of vCSP_Server
 
+void csp_debug_hook(csp_debug_level_t level, const char *format, va_list args){
+    //Only for debug purpose! We must be careful because this function
+    // is called when there is a problem with csp, but then we go and use csp to log the error...
+    //Can lead to stack overflow if the error being logged is critical, like running out of connections or buffer.
+    //Main point is to get an idea of less critical error or warning and to avoid the csp_sys_set_color() call in the default debug handler.
+    //We should instead log the csp errors to a file and can hopefully then recover csp and download the file to learn more.
+    char str[256];
+
+       if(0 < vsnprintf(str,255,format,args)) // build string
+       {
+           telemetryPacket_t t;
+           Calendar_t now = {0}; //Set to zero, since payload does not keep track of time. CDH will timestamp on receipt.
+
+   //      t.telem_id = PAYLOAD_ERROR_ID;
+           t.telem_id = CDH_MSG_ID;
+           t.timestamp = now;
+           t.length = strlen(str) + 1;
+           t.data = (uint8_t*)str;
+
+           sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
+       }
+
+
+}
+
 uint8_t configure_csp(){
 
+    //csp_debug_hook_set(&csp_debug_hook);
     csp_debug_set_level(CSP_ERROR, false);
+    csp_debug_set_level(CSP_WARN, false);
     uint8_t result = 1; //Sucess
     // CAN parameters are not actually used. Need to decide where we are doing
     // CAN init. Right now the csp driver does this, but uses hard coded params.
@@ -205,3 +202,6 @@ uint8_t configure_csp(){
 
     return result;
 }
+
+
+
