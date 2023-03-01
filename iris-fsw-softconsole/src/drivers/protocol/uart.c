@@ -106,7 +106,7 @@ void vTaskUARTBridge(void *pvParameters)
 
 
 		/* Echo back all data to the terminal */
-		prvUARTSend(&g_mss_uart0, (const uint8_t *) copied_buffer, uxBytesRead);
+		//prvUARTSend(&g_mss_uart0, (const uint8_t *) copied_buffer, uxBytesRead);
 
 		/* Do any special processing based on the origin on the data */
 		if(my_uart == &g_mss_uart0)
