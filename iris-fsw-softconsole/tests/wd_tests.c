@@ -13,6 +13,7 @@
 #include "drivers/mss_gpio/mss_gpio.h"
 #include "drivers/device/watchdog.h"
 #include "drivers/mss_gpio/mss_gpio.h"
+#include "tasks/telemetry.h"
 
 void vTestWD(void *pvParameters)
 {
@@ -26,6 +27,7 @@ void vTestWD(void *pvParameters)
     if (timeout_occured_WD())
     {
         clear_timeout_WD();
+        printf("Last Reboot Due to WD Expiry!");
         // TODO - Log event!
     }
     else
