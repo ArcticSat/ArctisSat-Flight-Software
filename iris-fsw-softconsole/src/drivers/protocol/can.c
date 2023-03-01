@@ -183,7 +183,9 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
           }
           else
           {
-              BaseType_t res = xQueueSendToBackFromISR(csp_rx_queue, &q_buf,NULL);
+              if(csp_rx_queue){//If we receive any csp message before csp has been started, we musn't try to write to queue.
+                  BaseType_t res = xQueueSendToBackFromISR(csp_rx_queue, &q_buf,NULL);
+              }
           }
           //NOTE: The queue (and CSP) use an internal can_frame_t but we are sending a CANMessage_t.
           // Make sure these are the same otherwise CSP will interpret the messages wrong.
