@@ -17,17 +17,17 @@
 #include "application/adcs.h"
 
 // Enums
-typedef enum
-{
-    LS_HTR,
-    LS_ADCS,
-    LS_COMS,
-    LS_CDH,
-    LS_PLD,
-    LS_DPL_A,
-    LS_DPL_S,
-    NUM_LOAD_SWITCHES
-} LoadSwitchNumbers_t;
+//typedef enum
+//{
+//    LS_HTR,
+//    LS_ADCS,
+//    LS_COMS,
+//    LS_CDH,
+//    LS_PLD,
+//    LS_DPL_A,
+//    LS_DPL_S,
+//    NUM_LOAD_SWITCHES
+//} LoadSwitchNumbers_t;
 
 // Functions
 void HandleTm(csp_conn_t * conn, csp_packet_t * packet);
