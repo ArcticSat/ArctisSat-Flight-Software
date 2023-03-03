@@ -74,6 +74,7 @@
 #include "tasks/fw_update_mgr.h"
 #include "drivers/device/adc/AD7928.h"
 #include "application/cdh.h"
+#include "application/detumbling.h"
 
 
 
@@ -93,6 +94,7 @@ TaskHandle_t vFw_Update_Mgr_Task_h;
 TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
+TaskHandle_t vDetumbleDriver_h;
 //Debug Only:
 TaskHandle_t vTaskSpinLEDs_h;
 
@@ -135,10 +137,12 @@ int main( void )
 	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
 ////    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 //    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+	status = xTaskCreate(vDetumbleDriver,"detumbling",400,NULL,1,&vDetumbleDriver_h);
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vTTTScheduler_h);
     vTaskSuspend(vCanServer_h);
+    vTaskSuspend(vDetumbleDriver_h);
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
