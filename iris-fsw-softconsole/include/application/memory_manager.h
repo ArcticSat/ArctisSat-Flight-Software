@@ -62,7 +62,7 @@ void log_event(telemetryPacket_t * pkt);
 int InitSpacecraftStatus(void);
 int CommitSpacecraftStatus(void);
 // Deployment status
-int setDeploymentStartupState(uint8_t state);
+int getDeploymentStartupState(uint8_t * state);
 int setDeploymentStartupState(uint8_t state);
 // Detumbling status
 int getDetumblingStartupState(uint8_t * state);
