@@ -228,6 +228,74 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 			systemcontrol->AIRCR = (0x05FA << 16)|SCB_AIRCR_SYSRESETREQ_Msk;
 			break;
 		}
+		case CDH_GET_DEPLOYMENT_STARTUP_STATE_CMD:{
+			// Get deployment state
+			int result;
+			uint8_t state;
+			result = getDeploymentStartupState(&state);
+			// Format data
+			uint8_t buf[3] = {0};
+			memcpy(buf,&result,sizeof(result));
+			memcpy(&buf[2],&state,sizeof(state));
+			// Send telemetry packet
+			telemetryPacket_t tmpkt = {0};
+			tmpkt.telem_id = CDH_DEPLOYMENT_STARTUP_STATE_ID;
+			tmpkt.length = 3;
+			tmpkt.data = buf;
+			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			break;
+		}
+		case CDH_SET_DEPLOYMENT_STARTUP_STATE_CMD:{
+			// Set deployment state
+			int result;
+			uint8_t state = cmd_pkt->data[0];
+			result = setDeploymentStartupState(state);
+			// Format data
+			uint8_t buf[3] = {0};
+			memcpy(buf,&result,sizeof(result));
+			memcpy(&buf[2],&state,sizeof(state));
+			// Send telemetry packet
+			telemetryPacket_t tmpkt = {0};
+			tmpkt.telem_id = CDH_DEPLOYMENT_STARTUP_STATE_ID;
+			tmpkt.length = 3;
+			tmpkt.data = buf;
+			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			break;
+		}
+		case CDH_GET_DETUMBLING_STARTUP_STATE_CMD:{
+			// Get detumbling state
+			int result;
+			uint8_t state;
+			result = getDetumblingStartupState(&state);
+			// Format data
+			uint8_t buf[3] = {0};
+			memcpy(buf,&result,sizeof(result));
+			memcpy(&buf[2],&state,sizeof(state));
+			// Send telemetry packet
+			telemetryPacket_t tmpkt = {0};
+			tmpkt.telem_id = CDH_DETUMBLING_STARTUP_STATE_ID;
+			tmpkt.length = 3;
+			tmpkt.data = buf;
+			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			break;
+		}
+		case CDH_SET_DETUMBLING_STARTUP_STATE_CMD:{
+			// Set detumbling state
+			int result;
+			uint8_t state = cmd_pkt->data[0];
+			result = setDetumblingStartupState(state);
+			// Format data
+			uint8_t buf[3] = {0};
+			memcpy(buf,&result,sizeof(result));
+			memcpy(&buf[2],&state,sizeof(state));
+			// Send telemetry packet
+			telemetryPacket_t tmpkt = {0};
+			tmpkt.telem_id = CDH_DETUMBLING_STARTUP_STATE_ID;
+			tmpkt.length = 3;
+			tmpkt.data = buf;
+			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			break;
+		}
 		default:{
 			break;
 		}

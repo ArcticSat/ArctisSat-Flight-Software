@@ -14,8 +14,6 @@
 //------------------------------------------------------------------------------
 // INCLUDES
 //------------------------------------------------------------------------------
-#include "application/memory_manager.h"
-#include "application/sc_deployment.h"
 #include "tasks/csp_server.h"
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
@@ -25,12 +23,13 @@
 #include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/device/rtc/rtc_time.h"
 //#include "drivers/device/memory/flash_common.h"
+#include "application/application.h"
 
 #include "csp/csp.h"
 #include "csp/interfaces/csp_if_can.h"
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
-#include "taskhandles.h"
+//#include "taskhandles.h"
 //#include "version.h"
 
 #include "FreeRTOS.h"
@@ -74,36 +73,8 @@ void vCSP_Server(void * pvParameters){
 	//Make sure FS is up before all tasks
 	filesystem_initialization();
 
-	// Initialize the spacecraft's status
-	int result_fs;
-	result_fs = InitSpacecraftStatus();
-
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-		InitiateSpacecraftDeployment();
-	}
-
-    // Start up any tasks that depend on CSP, FS.
-	uint8_t detumble_state;
-	result_fs = getDetumblingStartupState(&detumble_state);
-	if(result_fs == FS_OK && detumble_state == DETUMBLING_NOT_COMPLETE)
-	{
-		// Detumble mode
-		vTaskResume(vDetumbleDriver_h);
-	}
-	else
-	{
-		// Normal operations
-		vTaskResume(vCanServer_h);
-		vTaskResume(vTTTScheduler_h);
-	//    if(get_fs_status() == FS_OK){
-	//    	vTaskResume(vFw_Update_Mgr_Task_h);
-	//    }
-	}
-
+	// Initialize Mission-level Operations (requires FS init)
+	InitMissionOperations();
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -148,9 +119,6 @@ void vCSP_Server(void * pvParameters){
 							break;
 						}
 						case GND_TELEMETRY_REQUEST_CMD:{
-							TelemetryChannel_t channel_id;
-							channel_id = (TelemetryChannel_t) cmd_pkt.data[0];
-							get_telemetry(channel_id);
 							break;
 						}
 						default:{

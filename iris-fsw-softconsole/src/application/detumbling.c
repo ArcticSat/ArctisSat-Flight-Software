@@ -10,7 +10,9 @@
  * commit:	50c518598bcae95030d0def297654fe115ae8721
  * ***/
 
-/*** TODO: check all warnings ***/
+/***
+ * TODO: check all warnings
+ * ***/
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
@@ -20,6 +22,10 @@
 #include "drivers/device/adcs_driver.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "application/memory_manager.h"
+#include "application/application.h"
+#ifdef DEBUG_DETUMBLING
+#include "tasks/telemetry.h"
+#endif
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -66,14 +72,7 @@ uint16_t detumbling_cycles = 0;
 
 bool detumblingComplete(void)
 {
-	// TODO: implement proper logic
-    /*** BELOW LINE(s) ONLY FOR TESTING PURPOSES ***/
-    return detumbling_cycles > MAX_DETUMBLE_TIME_SECONDS;
-    /*** ABOVE LINE(s) ONLY FOR TESTING PURPOSES ***/
-
-
-    /*** BELOW LINE(s) COMMENTED ONLY FOR TESTING PURPOSES ***/
-    /*
+//    return detumbling_cycles > MAX_DETUMBLE_TIME_SECONDS;
     if(detumbling_cycles > MAX_DETUMBLE_TIME_SECONDS)
         return true;
     int i;
@@ -82,8 +81,6 @@ bool detumblingComplete(void)
             return false;
     }
     return true;
-    */
-    /*** ABOVE LINE(s) COMMENTED ONLY FOR TESTING PURPOSES ***/
 }
 
 void collectMagData(void)
@@ -165,6 +162,22 @@ void calculateExecuteDipole(void)
         setTorqueRodState(TORQUE_ROD_3,TR_STATE_ON);
 
         // TODO: send some telemetry
+#ifdef DEBUG_DETUMBLING
+        /*** Format data ***/
+        int len = sizeof(dipole);
+        uint8_t data[20] = {0};
+        // Dipoles
+        memcpy(data,dipole,3*sizeof(float));
+        // Polarities
+        memcpy(&data[6],polarity,3*sizeof(uint8_t));
+        // PWMs
+        memcpy(&data[9],pwm,3*sizeof(uint8_t));
+        /*** Send packet ***/
+		telemetryPacket_t tmpkt = {0};
+		tmpkt.telem_id = CDH_DETUMBLING_TM_ID;
+
+#endif
+
 
         while(pvTimerGetTimerID(detumbleTimer) == CALC_EXEC_DIPOLE); // wait after calc
     }
@@ -180,10 +193,11 @@ void detumbleWait(void)
     if(detumblingComplete())
     {
     	// TODO: exit detumbling
-//        InitNormalOps();
+        InitNormalOps();
         while(1);
     }
     detumbling_cycles++;
+
     // Wait
     while(pvTimerGetTimerID(detumbleTimer) == DETUMBLE_WAIT); // wait
 }
