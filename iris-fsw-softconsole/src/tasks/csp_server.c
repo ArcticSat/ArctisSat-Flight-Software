@@ -14,12 +14,12 @@
 //------------------------------------------------------------------------------
 // INCLUDES
 //------------------------------------------------------------------------------
+#include "application/memory_manager.h"
+#include "application/sc_deployment.h"
 #include "tasks/csp_server.h"
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
 //#include "tasks/fw_update_mgr.h"
-#include "application/telemetry_manager.h"
-//
 #include "drivers/filesystem_driver.h"
 //#include "drivers/software_update_driver.h"
 #include "drivers/device/rtc/rtc_ds1393.h"
@@ -74,12 +74,35 @@ void vCSP_Server(void * pvParameters){
 	//Make sure FS is up before all tasks
 	filesystem_initialization();
 
-    //Start up any tasks that depend on CSP, FS.
-    vTaskResume(vCanServer_h);
-    vTaskResume(vTTTScheduler_h);
-//    if(get_fs_status() == FS_OK){
-//    	vTaskResume(vFw_Update_Mgr_Task_h);
-//    }
+	// Initialize the spacecraft's status
+	int result_fs;
+	result_fs = InitSpacecraftStatus();
+
+	// Check deployment state
+	uint8_t deployment_state;
+	getDeploymentStartupState(&deployment_state);
+	if(deployment_state == DPL_STATE_STOWED)
+	{
+		InitiateSpacecraftDeployment();
+	}
+
+    // Start up any tasks that depend on CSP, FS.
+	uint8_t detumble_state;
+	result_fs = getDetumblingStartupState(&detumble_state);
+	if(result_fs == FS_OK && detumble_state == DETUMBLING_NOT_COMPLETE)
+	{
+		// Detumble mode
+		vTaskResume(vDetumbleDriver_h);
+	}
+	else
+	{
+		// Normal operations
+		vTaskResume(vCanServer_h);
+		vTaskResume(vTTTScheduler_h);
+	//    if(get_fs_status() == FS_OK){
+	//    	vTaskResume(vFw_Update_Mgr_Task_h);
+	//    }
+	}
 
 
     //TODO: Check return of csp_bind and listen, then handle errors.

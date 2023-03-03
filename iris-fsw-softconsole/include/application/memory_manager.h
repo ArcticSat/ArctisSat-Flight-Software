@@ -1,37 +1,50 @@
 /*
- * detumbling.h
+ * telemetry_manager.h
  *
- *  Created on: Mar. 3, 2023
- *      Author: Jayden McKoy
+ *  Created on: Dec. 2, 2022
+ *      Author: jpmckoy
  */
 
-#ifndef INCLUDE_APPLICATION_DETUMBLING_H_
-#define INCLUDE_APPLICATION_DETUMBLING_H_
+#ifndef INCLUDE_APPLICATION_MEMORY_MANAGER_H_
+#define INCLUDE_APPLICATION_MEMORY_MANAGER_H_
+
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-#include "timers.h"
+#include "tasks/telemetry.h"
+#include "application/detumbling.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+#define TM_VERBOSITY
+#define EVENT_DATA_SIZE 4
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-typedef enum
-{
-	DETUMBLING_NOT_COMPLETE,
-	DETUMBLING_COMPLETE
-} eDetumbleState;
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Telemetry channels
+typedef enum {
+	SC_STATUS,
+	EVENT_LOG,
+	CDH_CHANNEL,
+	POWER_TLM_CHANNEL,
+	PAYLOAD_TLM_CHANNEL,
+	ADCS_TLM_CHANNEL,
+	NUM_TLM_CHANNELS,
+} TelemetryChannel_t;
 
+// Event IDs
+typedef enum
+{
+	TASK_ERROR,
+	TASK_SUCCESS
+} EventId_t;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // GLOBALS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -40,6 +53,19 @@ typedef enum
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-void vDetumbleDriver(void);
+void init_memory_manager(void);
+void set_telemetry_verbose(bool verbose);
+void log_telemetry(telemetryPacket_t * pkt);
+void get_telemetry(TelemetryChannel_t channel_id);
+void log_event(telemetryPacket_t * pkt);
+/*** Spacecraft status utilities ***/
+int InitSpacecraftStatus(void);
+int CommitSpacecraftStatus(void);
+// Deployment status
+int setDeploymentStartupState(uint8_t state);
+int setDeploymentStartupState(uint8_t state);
+// Detumbling status
+int getDetumblingStartupState(uint8_t * state);
+int setDetumblingStartupState(uint8_t state);
 
-#endif /* INCLUDE_APPLICATION_DETUMBLING_H_ */
+#endif /* INCLUDE_APPLICATION_MEMORY_MANAGER_H_ */

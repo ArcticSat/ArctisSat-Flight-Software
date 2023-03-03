@@ -19,6 +19,7 @@
 #include "main.h"
 #include "drivers/device/adcs_driver.h"
 #include "drivers/subsystems/eps_driver.h"
+#include "application/memory_manager.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -211,6 +212,7 @@ void vDetumbleDriver(void)
     {
     	// TODO: error handling
 //        InitNormalOps();
+    	setDetumblingStartupState(DETUMBLING_COMPLETE);
         while(1);
     }
     else
