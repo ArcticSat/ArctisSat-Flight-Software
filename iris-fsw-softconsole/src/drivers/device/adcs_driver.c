@@ -12,46 +12,12 @@
 
 #include "drivers/device/adcs_driver.h"
 #include "board_definitions.h"
+#include <stdlib.h>
 
 #define SPI_EFFICIENT
 
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
-
-// ADCS Command IDs
-typedef enum
-{
-	ADCS_CMD_PING = 1,
-	ADCS_CMD_SET_PWM_TORQUE_ROD_1,						// 2
-	ADCS_CMD_SET_PWM_TORQUE_ROD_2,						// 3
-	ADCS_CMD_SET_PWM_TORQUE_ROD_3,						// 4
-	ADCS_CMD_SET_ON_TORQUE_ROD_1,							// 5
-	ADCS_CMD_SET_ON_TORQUE_ROD_2,							// 6
-	ADCS_CMD_SET_ON_TORQUE_ROD_3,							// 7
-	ADCS_CMD_SET_OFF_TORQUE_ROD_1,						// 8
-	ADCS_CMD_SET_OFF_TORQUE_ROD_2,						// 9
-	ADCS_CMD_SET_OFF_TORQUE_ROD_3,						// 10
-	ADCS_CMD_SET_POLARITY_TORQUE_ROD_1,					// 11
-	ADCS_CMD_SET_POLARITY_TORQUE_ROD_2,					// 12
-	ADCS_CMD_SET_POLARITY_TORQUE_ROD_3,					// 13
-	ADCS_CMD_SET_PWM_COUNTER_TORQUE_ROD,				// 14
-	ADCS_SELECT_SS1,											// 15
-	ADCS_SELECT_SS2,											// 16
-	ADCS_SELECT_SS3,											// 17
-	ADCS_SELECT_SS4,											// 18
-	ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR,				// 19
-	ADCS_SET_GYRO_I2C_ADDRESS,								// 20
-	ADCS_GET_GYRO_MEASUREMENT,								// 21
-	ADCS_CMD_GET_MEASUREMENT_GYRO_1,						// 22
-	ADCS_CMD_GET_MEASUREMENT_GYRO_2,						// 23
-	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1,			// 24
-	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2,			// 25
-	ADCS_SPI_PORT_TOGGLE,									// 26
-	ADCS_SYNC_SPI,												// 27
-	NUM_ADCS_COMMANDS,										// 28
-	ADCS_ACK=55,
-	ADCS_SPI_CMD_ERROR = 75,
-} AdcsCommands_t;
 
 /*
  * Utilities
@@ -384,5 +350,21 @@ AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements)
 	return status;
 }
 
+float dipoleToVoltage(float dipole)
+{
+	// TODO: check abs()
+    if(abs(dipole) > MAX_DIPOLE) {
+        return MAX_VOLTAGE * ((dipole >= 0) ? 1 : -1); //convert to proper sign with ternary
+    }
 
+    float reqVoltage = 0.0;
+    reqVoltage = dipole / DIPOLE_SLOPE;
+
+    if(abs(reqVoltage) > MAX_VOLTAGE) {
+        return MAX_VOLTAGE * ((reqVoltage >= 0) ? 1 : -1);
+    } else {
+        return reqVoltage;
+    }
+
+}
 

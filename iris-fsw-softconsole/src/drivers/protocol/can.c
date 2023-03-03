@@ -147,9 +147,10 @@ int CAN_transmit_message(CANMessage_t * message)
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-extern uint8_t numCanMsgs;
-extern CANMessage_t can_q[10];
-telemetryPacket_t tmpkt1 = {0};
+// TODO: remove below three lines
+//extern uint8_t numCanMsgs;
+//extern CANMessage_t can_q[10];
+//telemetryPacket_t tmpkt1 = {0};
 // Interrupt handler for the CAN interrupt. Received CAN messages are placed into a Queue.
 __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 {
