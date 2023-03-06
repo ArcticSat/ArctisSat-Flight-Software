@@ -104,6 +104,7 @@ extern TaskHandle_t xUART0RxTaskToNotify;
  */
 static void prvSetupHardware( void );
 
+static void vTestRtosTime(void * pvParameters);
 static void vTestCanServer(void * pvParameters);
 
 static void vTestCspServer(void * pvParameters);
@@ -142,8 +143,15 @@ int main( void )
                             "LED Spinner",               // Text name for debugging
                             150,                        // Size of the stack allocated for this task
                             NULL,                        // Task parameter is not used
-                            1,                           // Task runs at priority 1
+                            2,                           // Task runs at priority 1
                             NULL);                       // Task handle is not used
+
+//    status = xTaskCreate(    vTestRtosTime,              // The task function that spins the LEDs
+//                            "RTOS time",               // Text name for debugging
+//                            150,                        // Size of the stack allocated for this task
+//                            NULL,                        // Task parameter is not used
+//                            1,                           // Task runs at priority 1
+//                            NULL);                       // Task handle is not used
 
     // Create UART0 RX Task
     status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
@@ -350,6 +358,32 @@ static void prvSetupHardware( void )
 
 
 
+/*-----------------------------------------------------------*/
+
+static void vTestRtosTime(void * pvParameters)
+{
+	TickType_t t1, t2;
+	t1 = xTaskGetTickCount();
+	/*** Set GPIO high ***/
+	taskENTER_CRITICAL();
+	{
+		MSS_GPIO_set_output( MSS_GPIO_13, 1 );
+		MSS_GPIO_set_output( MSS_GPIO_17, 1 );
+	}
+	taskEXIT_CRITICAL();
+	/*** Set GPIO high ***/
+	vTaskDelay(100);
+	t2 = xTaskGetTickCount();
+	/*** Set GPIO low ***/
+	taskENTER_CRITICAL();
+	{
+		MSS_GPIO_set_output( MSS_GPIO_13, 0 );
+		MSS_GPIO_set_output( MSS_GPIO_17, 0 );
+	}
+	taskEXIT_CRITICAL();
+	/*** Set GPIO low ***/
+	vTaskDelay(1000);
+}
 /*-----------------------------------------------------------*/
 
 static void vTestCspServer(void * pvParameters){
