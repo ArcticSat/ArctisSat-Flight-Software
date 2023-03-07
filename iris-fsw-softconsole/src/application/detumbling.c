@@ -59,6 +59,7 @@ TimerHandle_t detumbleTimer;
 // collectMagData
 volatile int magData[NUM_MAG_SAMPLES][3] = {0};
 // calculateExecuteDipole
+float dipole[3];
 int diffs[NUM_MAG_FINITE_DIFFERENCES][3] = {0};
 volatile const float gain = -1.0;
 volatile uint8_t polarity[3] = {0};
@@ -110,7 +111,6 @@ void collectMagData(void)
 
 void calculateExecuteDipole(void)
 {
-    float dipole[3];
     int totalMeasurements = 0;
     int i, j;
     float voltage = 0.0;
@@ -193,7 +193,7 @@ void detumbleWait(void)
     if(detumblingComplete())
     {
     	// TODO: exit detumbling
-        InitNormalOps();
+        InitNormalOperations();
         while(1);
     }
     detumbling_cycles++;
