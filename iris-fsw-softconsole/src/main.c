@@ -79,8 +79,8 @@
 
 //#define SERVER
 //#define CLIENT
-#define CAN_SERVER
-#define CSP_SERVER
+//#define CAN_SERVER
+//#define CSP_SERVER
 
 
 /* External variables */
@@ -139,27 +139,27 @@ int main( void )
 //            //What to do here? try again? can cdh work without fs?
 //        }
     // Create LED spinning task
-    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
-                            "LED Spinner",               // Text name for debugging
-                            150,                        // Size of the stack allocated for this task
-                            NULL,                        // Task parameter is not used
-                            2,                           // Task runs at priority 1
-                            NULL);                       // Task handle is not used
-
-//    status = xTaskCreate(    vTestRtosTime,              // The task function that spins the LEDs
-//                            "RTOS time",               // Text name for debugging
+//    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
+//                            "LED Spinner",               // Text name for debugging
 //                            150,                        // Size of the stack allocated for this task
 //                            NULL,                        // Task parameter is not used
-//                            1,                           // Task runs at priority 1
+//                            2,                           // Task runs at priority 1
 //                            NULL);                       // Task handle is not used
 
+    status = xTaskCreate(    vTestRtosTime,              // The task function that spins the LEDs
+                            "RTOS time",               // Text name for debugging
+                            400,                        // Size of the stack allocated for this task
+                            NULL,                        // Task parameter is not used
+                            1,                           // Task runs at priority 1
+                            NULL);                       // Task handle is not used
+
     // Create UART0 RX Task
-    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
-                            "UART0 Receiver",            // Text name for debugging
-                            1200,                        // Size of the stack allocated for this task
-                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-                            3,                           // Task runs at priority 2
-                            &xUART0RxTaskToNotify);      // Task handle for task notification
+//    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
+//                            "UART0 Receiver",            // Text name for debugging
+//                            1200,                        // Size of the stack allocated for this task
+//                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
+//                            3,                           // Task runs at priority 2
+//                            &xUART0RxTaskToNotify);      // Task handle for task notification
 //    status = xTaskCreate(vTTT_Scheduler,
 //                         "TTT",
 //                         1000,
@@ -362,27 +362,36 @@ static void prvSetupHardware( void )
 
 static void vTestRtosTime(void * pvParameters)
 {
-	TickType_t t1, t2;
-	t1 = xTaskGetTickCount();
-	/*** Set GPIO high ***/
-	taskENTER_CRITICAL();
+	TickType_t t1,t2,t3;
+	mss_gpio_id_t pin = MSS_GPIO_8;
+
+    MSS_GPIO_config(pin,MSS_GPIO_OUTPUT_MODE);
+	MSS_GPIO_set_output(pin,0);
+	while(1)
 	{
-		MSS_GPIO_set_output( MSS_GPIO_13, 1 );
-		MSS_GPIO_set_output( MSS_GPIO_17, 1 );
+		t1 = xTaskGetTickCount();
+		/*** Set GPIO high ***/
+		taskENTER_CRITICAL();
+		{
+			MSS_GPIO_set_output(pin,1);
+		}
+		taskEXIT_CRITICAL();
+		/*** Set GPIO high ***/
+		vTaskDelay(100);
+		t2 = xTaskGetTickCount();
+		/*** Set GPIO low ***/
+		taskENTER_CRITICAL();
+		{
+			MSS_GPIO_set_output(pin,0);
+		}
+		taskEXIT_CRITICAL();
+		/*** Set GPIO low ***/
+		vTaskDelay(200);
+
+		// Calculate
+		t3 = t2 - t1;
+		int x = 7;
 	}
-	taskEXIT_CRITICAL();
-	/*** Set GPIO high ***/
-	vTaskDelay(100);
-	t2 = xTaskGetTickCount();
-	/*** Set GPIO low ***/
-	taskENTER_CRITICAL();
-	{
-		MSS_GPIO_set_output( MSS_GPIO_13, 0 );
-		MSS_GPIO_set_output( MSS_GPIO_17, 0 );
-	}
-	taskEXIT_CRITICAL();
-	/*** Set GPIO low ***/
-	vTaskDelay(1000);
 }
 /*-----------------------------------------------------------*/
 

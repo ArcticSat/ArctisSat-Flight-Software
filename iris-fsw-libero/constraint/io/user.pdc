@@ -2,11 +2,11 @@
 
 # User I/O Constraints file 
 
-# Version: 2021.3 2021.3.0.10
+# Version: 2022.2 2022.2.0.10
 
 # Family: SmartFusion2 , Die: M2S010 , Package: 144 TQ
 
-# Date generated: Sat Aug 13 15:56:53 2022 
+# Date generated: Mon Mar  6 19:33:04 2023 
 
 
 # 
@@ -56,14 +56,12 @@ set_io ADCS_SPI_SCK    \
 set_io CAN_RX_F2M     \
     -pinname 4        \
     -fixed yes        \
-    -iostd LVCMOS33   \
     -DIRECTION INPUT
 
 
 set_io CAN_TX_M2F      \
     -pinname 3         \
     -fixed yes         \
-    -iostd LVCMOS33    \
     -DIRECTION OUTPUT
 
 
@@ -150,6 +148,26 @@ set_io GPIO_1_M2F      \
     -pinname 128       \
     -fixed yes         \
     -iostd LVCMOS25    \
+    -DIRECTION OUTPUT
+
+
+set_io GPIO_3_M2F      \
+    -pinname 23        \
+    -fixed yes         \
+    -iostd LVCMOS25    \
+    -DIRECTION OUTPUT
+
+
+set_io GPIO_5_M2F      \
+    -pinname 24        \
+    -fixed yes         \
+    -iostd LVCMOS25    \
+    -DIRECTION OUTPUT
+
+
+set_io GPIO_8_M2F      \
+    -pinname 93        \
+    -fixed yes         \
     -DIRECTION OUTPUT
 
 
@@ -282,16 +300,6 @@ set_io WDSEL           \
 # The I/Os in this section are unplaced or placed but are not locked
 # the other listed attributes have been applied
 # 
-
-set_io GPIO_3_M2F      \
-    -iostd LVCMOS25    \
-    -DIRECTION OUTPUT
-
-
-set_io GPIO_5_M2F      \
-    -iostd LVCMOS25    \
-    -DIRECTION OUTPUT
-
 
 
 #
