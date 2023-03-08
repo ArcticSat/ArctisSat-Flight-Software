@@ -102,6 +102,9 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 }
 #endif
 
+
+
+
 /*
  * ADCS Utility Commands
  * @return
@@ -281,7 +284,7 @@ AdcsDriverError_t setGyroI2cAddress(uint8_t addr)
     return status;
 }
 
-AdcsDriverError_t getGyroMeasurementsGeneric(uint8_t * gyroMeasurements)
+AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements)
 {
     uint8_t cmd_id = ADCS_GET_GYRO_MEASUREMENT;
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
@@ -289,12 +292,12 @@ AdcsDriverError_t getGyroMeasurementsGeneric(uint8_t * gyroMeasurements)
     status = adcsSyncSpiCommand(cmd_id);
 	vTaskDelay(100);
     // Get measurements
-	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_DATA_SIZE);
+	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
 
 	return status;
 }
 
-AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements)
+AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeasurements)
 {
     // Get command ID
     uint8_t cmd_id = -1;
@@ -315,12 +318,12 @@ AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasure
     status = adcsSyncSpiCommand(cmd_id);
 	vTaskDelay(100);
     // Get measurements
-	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_DATA_SIZE);
+	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
 
 	return status;
 }
 
-AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements)
+AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements)
 {
     // Get command ID
     uint8_t cmd_id = -1;
@@ -341,7 +344,7 @@ AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumbe
     status = adcsSyncSpiCommand(cmd_id);
 	vTaskDelay(10);
     // Get measurements
-	status = adcsTxRx(NULL,0,magnetometerMeasurements,ADCS_MAGNETORQUER_DATA_SIZE);
+	status = adcsTxRx(NULL,0,magnetometerMeasurements,ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES);
 
 	return status;
 }
@@ -372,7 +375,7 @@ AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 	return status;
 }
 
-AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements)
+AdcsDriverError_t getSunSensorMeasurementsRaw(uint8_t * measurements)
 {
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
 	AdcsDriverError_t status;
@@ -384,5 +387,124 @@ AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements)
 	return status;
 }
 
+/*** Raw sensor data conversion ***/
+// Gyro
+float a3g4250d_from_fs245dps_to_mdps(int16_t lsb)
+{
+	return ((float)lsb * 8.75f);
+}
 
+// Mag
+float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw)
+{
+	uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
+	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
+	return magnetic_field;
+}
+
+// Sun
+uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec )
+{
+    uint8_t FirstPxlPosition=0,i=0,j=0,ROMask[4] = {0x80,0x80,0xF0,0xFF},ROShift[4] = {1,2,4,8},offset[3] = {1,0,0},RODiv[4] = {1,2,15,255},rxSize[4] = {18,36,72,144},Temp = ROMask[selec];
+    float FirstPxlFrac=0;
+    uint16_t AngFrac=0;
+
+    while(RXBuff[i] == 0)       //Skips the unilluminated pixels
+    {
+        i++;
+    }
+    while(!(RXBuff[i] & Temp))  //Honestly don't remember why I had this
+    {
+        Temp = Temp >> ROShift[selec];
+        j++;
+        if(j>=ROShift[3-selec])
+            break;
+    }
+    switch (selec)      // This depends on the readout mode which is specified with "selec". The code does some binary operations which I do not recall how I wrote, but it should work.
+    {                   // As far as I recall, this code essentially breaks down the gathered raw data to find the first pixel with light, and figures out the fraction.
+        case 0:
+            FirstPxlPosition = (i*ROShift[3-selec]) + j+1;      // FirstPxlPosition is the position of the first fully illuminated pixel
+            FirstPxlFrac = 0;                                   // Fraction of the partially illuminated pixel which should be before the fully illuminated pixel. These then get added up in the final step
+            break;
+        case 1:
+            FirstPxlPosition = (i*ROShift[3-selec]) + j+1;
+            FirstPxlFrac= (float)((RXBuff[i] & (0xC0>>(ROShift[selec]*(j-1)))) >> ((4-j)*ROShift[selec]))/(float)RODiv[selec];
+            break;
+        case 2:
+            FirstPxlPosition = (i*ROShift[3-selec]) + j+2;
+            FirstPxlFrac= (float)((RXBuff[i] & (0xF0>>(ROShift[selec]*j))) >> ((1-j)*ROShift[selec]))/(float)RODiv[selec];
+            break;
+        case 3:
+            FirstPxlPosition = (i*ROShift[3-selec]) + j+2;
+            FirstPxlFrac = (float)RXBuff[i]/(float)RODiv[selec];
+            break;
+    }
+    AngFrac = 1000*(90-(atan(MASK_HEIGHT/((REF_PIXEL-(FirstPxlPosition-FirstPxlFrac))*PIXEL_LENGTH))*180/M_PI)); // This step uses simple trigonometry to calculate the angle using the incidence length.
+    return AngFrac;
+}
+
+/*** Application-level sensor polling ***/
+// Gyro
+AdcsDriverError_t getGyroscopeDataRadians(GyroId_t gyroNumber, float * gyroData)
+{
+	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
+	uint8_t buf8[ADCS_GYRO_RAW_DATA_SIZE_BYTES] = {0};
+	// Get raw data
+	status = getGyroMeasurementsRaw(gyroNumber,buf8);
+	if(status != ADCS_DRIVER_NO_ERROR) return status;
+	// Format raw data
+	uint16_t buf16[3] = {0};
+	buf16[0] |= (  uint16_t) buf8[0];			// X_LSB
+	buf16[0] |= (((uint16_t) buf8[1]) << 8);	// X_MSB
+	buf16[1] |= (  uint16_t) buf8[2];			// Y_LSB
+	buf16[1] |= (((uint16_t) buf8[3]) << 8);	// Y_MSB
+	buf16[2] |= (  uint16_t) buf8[4];			// Z_LSB
+	buf16[2] |= (((uint16_t) buf8[5]) << 8);	// Z_MSB
+	// Convert data
+	int i;
+	for(i=0; i < 3; i++)
+	{
+		// Convert raw to mdps
+		float degrees = 1000.0f * a3g4250d_from_fs245dps_to_mdps((int16_t) buf16[i]);
+		// Convert to rad/s
+		gyroData[i] = degrees * M_PI / 180.0f;
+	}
+
+	return status;
+}
+// Mag
+AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData)
+{
+	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
+	uint8_t buf8[ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES] = {0};
+	// Get raw data
+	status = getMagnetometerMeasurementsRaw(magnetometerNumber,buf8);
+	if(status != ADCS_DRIVER_NO_ERROR) return status;
+	// Format raw data
+	uint16_t buf16[3] = {0};
+	buf16[0] |= (  uint16_t) buf8[0];			// X_LSB
+	buf16[0] |= (((uint16_t) buf8[1]) << 8);	// X_MSB
+	buf16[1] |= (  uint16_t) buf8[2];			// Y_LSB
+	buf16[1] |= (((uint16_t) buf8[3]) << 8);	// Y_MSB
+	buf16[2] |= (  uint16_t) buf8[4];			// Z_LSB
+	buf16[2] |= (((uint16_t) buf8[5]) << 8);	// Z_MSB
+	// Convert data
+	int i;
+	for(i=0; i < 3; i++)
+	{
+		// Convert raw to milli Gauss
+		float milli_gauss = mmc5883ma_from_fs8G_to_mG(buf16[i]);
+		// Convert to Teslas
+		magnetometerData[i] = milli_gauss / 10.0f;
+	}
+
+	return status;
+}
+// Sun
+AdcsDriverError_t getSunAngle(uint8_t * measurements)
+{
+	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
+
+	return status;
+}
 
