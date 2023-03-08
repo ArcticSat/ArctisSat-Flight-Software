@@ -80,7 +80,7 @@
 //#define SERVER
 //#define CLIENT
 //#define CAN_SERVER
-//#define CSP_SERVER
+#define CSP_SERVER
 
 
 /* External variables */
@@ -139,33 +139,33 @@ int main( void )
 //            //What to do here? try again? can cdh work without fs?
 //        }
     // Create LED spinning task
-//    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
-//                            "LED Spinner",               // Text name for debugging
-//                            150,                        // Size of the stack allocated for this task
-//                            NULL,                        // Task parameter is not used
-//                            2,                           // Task runs at priority 1
-//                            NULL);                       // Task handle is not used
-
-    status = xTaskCreate(    vTestRtosTime,              // The task function that spins the LEDs
-                            "RTOS time",               // Text name for debugging
-                            400,                        // Size of the stack allocated for this task
+    status = xTaskCreate(    vTaskSpinLEDs,              // The task function that spins the LEDs
+                            "LED Spinner",               // Text name for debugging
+                            150,                        // Size of the stack allocated for this task
                             NULL,                        // Task parameter is not used
-                            1,                           // Task runs at priority 1
+                            2,                           // Task runs at priority 1
                             NULL);                       // Task handle is not used
 
+//    status = xTaskCreate(    vTestRtosTime,              // The task function that spins the LEDs
+//                            "RTOS time",               // Text name for debugging
+//                            400,                        // Size of the stack allocated for this task
+//                            NULL,                        // Task parameter is not used
+//                            1,                           // Task runs at priority 1
+//                            NULL);                       // Task handle is not used
+
     // Create UART0 RX Task
-//    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
-//                            "UART0 Receiver",            // Text name for debugging
-//                            1200,                        // Size of the stack allocated for this task
-//                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
-//                            3,                           // Task runs at priority 2
-//                            &xUART0RxTaskToNotify);      // Task handle for task notification
-//    status = xTaskCreate(vTTT_Scheduler,
-//                         "TTT",
-//                         1000,
-//                         NULL,
-//                         2,
-//                         &vTTTScheduler_h);
+    status = xTaskCreate(    vTaskUARTBridge,            // The task function that handles all UART RX events
+                            "UART0 Receiver",            // Text name for debugging
+                            1200,                        // Size of the stack allocated for this task
+                            (void *) &g_mss_uart0,       // Task parameter is the UART instance used by the task
+                            3,                           // Task runs at priority 2
+                            &xUART0RxTaskToNotify);      // Task handle for task notification
+    status = xTaskCreate(vTTT_Scheduler,
+                         "TTT",
+                         1000,
+                         NULL,
+                         2,
+                         &vTTTScheduler_h);
 
 
 //    status = xTaskCreate(vTestSPI,
