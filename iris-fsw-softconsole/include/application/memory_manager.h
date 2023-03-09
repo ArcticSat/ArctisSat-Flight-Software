@@ -24,7 +24,11 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+#define SC_STATUS_SIZE_BYTES 2
+typedef struct  {
+	uint8_t deployment_state;
+	uint8_t detumble_state;
+} ScStatus_t;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -60,6 +64,7 @@ void get_telemetry(TelemetryChannel_t channel_id);
 void log_event(telemetryPacket_t * pkt);
 /*** Spacecraft status utilities ***/
 int InitSpacecraftStatus(void);
+int getScStatus(ScStatus_t * sc_status);
 int CommitSpacecraftStatus(void);
 // Deployment status
 int getDeploymentStartupState(uint8_t * state);

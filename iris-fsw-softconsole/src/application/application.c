@@ -45,6 +45,8 @@
 
 void InitMissionOperations(void)
 {
+	// Initialize the memory manager
+	init_memory_manager();
 	// Initialize the spacecraft's status
 	int result_fs;
 	result_fs = InitSpacecraftStatus();
@@ -71,7 +73,8 @@ void InitNormalOperations(void)
 	getDeploymentStartupState(&deployment_state);
 	if(deployment_state == DPL_STATE_STOWED)
 	{
-//		InitiateSpacecraftDeployment();
+		InitiateSpacecraftDeployment();
+		setDeploymentStartupState(DPL_STATE_DEPLOYED);
 	}
 
 	// Resume tasks

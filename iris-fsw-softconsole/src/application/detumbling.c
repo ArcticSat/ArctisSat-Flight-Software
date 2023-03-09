@@ -193,6 +193,7 @@ void detumbleWait(void)
     if(detumblingComplete())
     {
     	// TODO: exit detumbling
+    	setDetumblingStartupState(DETUMBLING_COMPLETE);
         InitNormalOperations();
         while(1);
     }

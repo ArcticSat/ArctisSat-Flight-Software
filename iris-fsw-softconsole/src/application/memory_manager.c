@@ -20,10 +20,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-typedef struct  {
-	uint8_t deployment_state;
-	uint8_t detumble_state;
-} ScStatus_t;
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -93,6 +90,7 @@ void log_event(telemetryPacket_t * pkt)
 int InitSpacecraftStatus(void)
 {
 	lfs_file_t file = {0};
+	lfs_ssize_t bytesRead = 0;
 	// Open detumble_state file
 	char filename[MM_FILENAME_MAX];
 	sprintf(filename,"%s",filenames[SC_STATUS_FILE_IDX]);
@@ -100,29 +98,38 @@ int InitSpacecraftStatus(void)
 	sc_status_read_result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
 	if(sc_status_read_result_fs != FS_OK) return sc_status_read_result_fs;
 	// Read state
-	sc_status_read_result_fs = fs_file_read( &file, (void *) &scStatus, sizeof(scStatus));
-	if(sc_status_read_result_fs != FS_OK) return sc_status_read_result_fs;
+	bytesRead = fs_file_read( &file, (void *) &scStatus, sizeof(scStatus));
+	// TODO: error handling on bytes read?
 	// Close file
 	sc_status_read_result_fs = fs_file_close( &file);
 	// Return
 	return sc_status_read_result_fs; // If state is zero, then detumble
 }
+
+int getScStatus(ScStatus_t * sc_status)
+{
+	memcpy(sc_status,&scStatus,sizeof(ScStatus_t));
+	return sc_status_read_result_fs;
+}
+
 int CommitSpacecraftStatus(void)
 {
 	if(sc_status_read_result_fs != FS_OK)
 	{
 		return sc_status_read_result_fs;
 	}
+
 	lfs_file_t file = {0};
+	lfs_ssize_t bytesWritten = 0;
 	// Open detumble_state file
 	char filename[MM_FILENAME_MAX];
 	sprintf(filename,"%s",filenames[SC_STATUS_FILE_IDX]);
 //	const char * filename = filenames[SC_STATUS_FILE_IDX];
 	sc_status_read_result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
 	if(sc_status_read_result_fs != FS_OK) return sc_status_read_result_fs;
-	// Read state
-	sc_status_read_result_fs = fs_file_write( &file, (void *) &scStatus, sizeof(scStatus));
-	if(sc_status_read_result_fs != FS_OK) return sc_status_read_result_fs;
+	// Write state
+	bytesWritten = fs_file_write( &file, (void *) &scStatus, sizeof(scStatus));
+	// TODO: error handling on bytes written?
 	// Close file
 	sc_status_read_result_fs = fs_file_close( &file);
 	// Return
