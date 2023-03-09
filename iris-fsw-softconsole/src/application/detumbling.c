@@ -208,11 +208,25 @@ void vHandleDetumbleTimer(TimerHandle_t xTimer)
     int currentID = pvTimerGetTimerID(xTimer);
     currentID++;
 
-    if(currentID > 3) {
+    if(currentID > 10) {
         currentID = 1;
     }
 
     vTimerSetTimerID(xTimer, currentID);
+}
+
+DETUMBLE_STATES determineState(int inputID) {
+    DETUMBLE_STATES output = COLLECT_DATA;
+
+    if(inputID <= 2) { //up to 200ms
+        output = COLLECT_DATA;
+    } else if(inputID <= 5) { //200 - 500 = 300ms
+        output = CALC_EXEC_DIPOLE;
+    } else { //1000 - 500 = 500ms
+        output = DETUMBLE_WAIT;
+    }
+
+    return output;
 }
 
 void vDetumbleDriver(void)
@@ -220,7 +234,7 @@ void vDetumbleDriver(void)
 	// Power the ADCS
     setLoadSwitch(LS_ADCS,SWITCH_ON);
     // Initialize timer
-    detumbleTimer = xTimerCreate("detumbleTimer", pdMS_TO_TICKS(333), pdTRUE, ( void * ) COLLECT_DATA, vHandleDetumbleTimer);
+    detumbleTimer = xTimerCreate("detumbleTimer", pdMS_TO_TICKS(100), pdTRUE, ( void * ) COLLECT_DATA, vHandleDetumbleTimer);
 //    StaticTimer_t timerSpace;
 //    TimerHandle_t detumbleTimerStatic = xTimerCreateStatic("detumbleTimer", pdMS_TO_TICKS(333), pdTRUE, ( void * ) COLLECT_DATA, vHandleTimer, &timerSpace);
     if(detumbleTimer == NULL)
@@ -235,15 +249,15 @@ void vDetumbleDriver(void)
         xTimerStart(detumbleTimer,portMAX_DELAY);
     }
     for(;;) {
-        while(pvTimerGetTimerID(detumbleTimer) == COLLECT_DATA) {
+        while(determineState(pvTimerGetTimerID(detumbleTimer)) == COLLECT_DATA) {
             collectMagData();
         }
 
-        while(pvTimerGetTimerID(detumbleTimer) == CALC_EXEC_DIPOLE) {
+        while(determineState(pvTimerGetTimerID(detumbleTimer)) == CALC_EXEC_DIPOLE) {
             calculateExecuteDipole();
         }
 
-        while(pvTimerGetTimerID(detumbleTimer) == DETUMBLE_WAIT) {
+        while(determineState(pvTimerGetTimerID(detumbleTimer)) == DETUMBLE_WAIT) {
             detumbleWait();
         }
     }
