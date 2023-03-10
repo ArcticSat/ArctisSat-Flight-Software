@@ -51,6 +51,9 @@ void InitMissionOperations(void)
 	int result_fs;
 	result_fs = InitSpacecraftStatus();
 
+	telemetryPacket_t tmpkt = {0};
+//	tmpkt.telem_id =
+
     // Start up any tasks that depend on CSP, FS.
 	uint8_t detumble_state;
 	result_fs = getDetumblingStartupState(&detumble_state);
@@ -58,6 +61,7 @@ void InitMissionOperations(void)
 	{
 		// Detumble mode
 		vTaskResume(vDetumbleDriver_h);
+		vTaskDelay(2000);
 	}
 	else
 	{
@@ -80,7 +84,7 @@ void InitNormalOperations(void)
 	// Resume tasks
 	vTaskResume(vCanServer_h);
 	vTaskResume(vTTTScheduler_h);
-	vTaskResume(vFw_Update_Mgr_Task_h);
+//	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 
 void HandleTm(csp_conn_t * conn, csp_packet_t * packet)

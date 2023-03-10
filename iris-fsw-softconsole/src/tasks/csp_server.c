@@ -29,11 +29,12 @@
 #include "csp/interfaces/csp_if_can.h"
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
-//#include "taskhandles.h"
+#include "taskhandles.h"
 //#include "version.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "task.h"
 
 
 //------------------------------------------------------------------------------
@@ -74,7 +75,17 @@ void vCSP_Server(void * pvParameters){
 	filesystem_initialization();
 
 	// Initialize Mission-level Operations (requires FS init)
+//	InitiateSpacecraftDeployment();
 	InitMissionOperations();
+//    vTaskSuspend(vDetumbleDriver_h);
+
+//	// Send ping test
+//	int ping_result = -1;
+//	while(1)
+//	{
+//		ping_result = csp_ping(9, 5000, 50, 0);
+//		vTaskDelay(1000);
+//	}
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -130,6 +141,7 @@ void vCSP_Server(void * pvParameters){
 				} // case CSP_CMD_PORT
 				case CSP_TELEM_PORT:
 					default:{
+						vTaskDelay(15000);
 						csp_service_handler(conn,packet);
 						break;
 					}
@@ -177,6 +189,8 @@ uint8_t configure_csp(){
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
     char* canRoute = "0/0 CAN";
+//    char* canRoute = "9/5 CAN 3";
+//    char* canRoute = "9/5 CAN 3, 0/0 CAN";
 
 //    char* gndRoute = "9/5 KISS";
 

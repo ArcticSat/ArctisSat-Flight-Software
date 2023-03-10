@@ -45,11 +45,11 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-typedef enum DETUMBLE_STATES {
+typedef enum  {
     COLLECT_DATA = 1,
     CALC_EXEC_DIPOLE = 2,
     DETUMBLE_WAIT = 3
-};
+} eDetumbleStates;
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
@@ -71,6 +71,21 @@ uint16_t detumbling_cycles = 0;
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+eDetumbleStates determineState(int inputID) {
+	eDetumbleStates output = COLLECT_DATA;
+
+    if(inputID <= 2) { //up to 200ms
+        output = COLLECT_DATA;
+    } else if(inputID <= 5) { //200 - 500 = 300ms
+        output = CALC_EXEC_DIPOLE;
+    } else { //1000 - 500 = 500ms
+        output = DETUMBLE_WAIT;
+    }
+
+    return output;
+}
+
 bool detumblingComplete(void)
 {
 //    return detumbling_cycles > MAX_DETUMBLE_TIME_SECONDS;
@@ -91,7 +106,7 @@ void collectMagData(void)
     uint16_t tempMagData[3];
     int i;
     int magDataIndex = 0;
-    while(pvTimerGetTimerID(detumbleTimer) == COLLECT_DATA && magDataIndex < NUM_MAG_SAMPLES) {
+    while(determineState(pvTimerGetTimerID(detumbleTimer)) == COLLECT_DATA && magDataIndex < NUM_MAG_SAMPLES) {
         // Get measurements
         getMagnetometerMeasurements(1, rawMagData);
         // TODO: capture sample time (store in a public variable)
@@ -106,7 +121,7 @@ void collectMagData(void)
         magDataIndex++;
     }
     // Wait
-    while(pvTimerGetTimerID(detumbleTimer) == COLLECT_DATA);
+    while(determineState(pvTimerGetTimerID(detumbleTimer)) == COLLECT_DATA);
 }
 
 void calculateExecuteDipole(void)
@@ -114,7 +129,7 @@ void calculateExecuteDipole(void)
     int totalMeasurements = 0;
     int i, j;
     float voltage = 0.0;
-    while(pvTimerGetTimerID(detumbleTimer) == CALC_EXEC_DIPOLE) {
+    while(determineState(pvTimerGetTimerID(detumbleTimer)) == CALC_EXEC_DIPOLE) {
         /*** Calculate Dipole ***/
         // Calculate finite different of magnetometer data
         for(i = 0; i < NUM_MAG_FINITE_DIFFERENCES; i++) {
@@ -175,11 +190,11 @@ void calculateExecuteDipole(void)
         /*** Send packet ***/
 		telemetryPacket_t tmpkt = {0};
 		tmpkt.telem_id = CDH_DETUMBLING_TM_ID;
-
+		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 #endif
 
 
-        while(pvTimerGetTimerID(detumbleTimer) == CALC_EXEC_DIPOLE); // wait after calc
+        while(determineState(pvTimerGetTimerID(detumbleTimer)) == CALC_EXEC_DIPOLE); // wait after calc
     }
 }
 
@@ -200,7 +215,7 @@ void detumbleWait(void)
     detumbling_cycles++;
 
     // Wait
-    while(pvTimerGetTimerID(detumbleTimer) == DETUMBLE_WAIT); // wait
+    while(determineState(pvTimerGetTimerID(detumbleTimer)) == DETUMBLE_WAIT); // wait
 }
 
 void vHandleDetumbleTimer(TimerHandle_t xTimer)
@@ -213,20 +228,6 @@ void vHandleDetumbleTimer(TimerHandle_t xTimer)
     }
 
     vTimerSetTimerID(xTimer, currentID);
-}
-
-DETUMBLE_STATES determineState(int inputID) {
-    DETUMBLE_STATES output = COLLECT_DATA;
-
-    if(inputID <= 2) { //up to 200ms
-        output = COLLECT_DATA;
-    } else if(inputID <= 5) { //200 - 500 = 300ms
-        output = CALC_EXEC_DIPOLE;
-    } else { //1000 - 500 = 500ms
-        output = DETUMBLE_WAIT;
-    }
-
-    return output;
 }
 
 void vDetumbleDriver(void)
@@ -242,7 +243,10 @@ void vDetumbleDriver(void)
     	// TODO: error handling
 //        InitNormalOps();
     	setDetumblingStartupState(DETUMBLING_COMPLETE);
-        while(1);
+        while(1)
+        {
+        	vTaskDelay(10000);
+        }
     }
     else
     {

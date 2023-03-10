@@ -137,7 +137,7 @@ int main( void )
 	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
 ////    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 //    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-	status = xTaskCreate(vDetumbleDriver,"detumbling",400,NULL,1,&vDetumbleDriver_h);
+	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,1,&vDetumbleDriver_h);
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vTTTScheduler_h);

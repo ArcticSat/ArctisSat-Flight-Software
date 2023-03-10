@@ -233,7 +233,7 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 			// Set deployment state
 			int result;
 			uint8_t state = cmd_pkt->data[0];
-//			result = setDeploymentStartupState(state);
+			result = setDeploymentStartupState(state);
 //			break;
 		}
 		case CDH_GET_SPACECRAFT_STATUS_CMD:{

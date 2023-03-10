@@ -38,11 +38,13 @@ void InitiateSpacecraftDeployment(void)
 {
 	// Deploy solar arrays
 	setLoadSwitch(LS_DPL_S, SWITCH_ON);
-	vTaskDelay(pdMS_TO_TICKS(DEPLOYMENT_WAIT_TIME_SECONDS));
+//	vTaskDelay(pdMS_TO_TICKS(DEPLOYMENT_WAIT_TIME_SECONDS));
+	vTaskDelay(DEPLOYMENT_WAIT_TIME_SECONDS*1000);
 	setLoadSwitch(LS_DPL_S, SWITCH_OFF);
 	// Deploy antenna (shuts off automatically)
 	setLoadSwitch(LS_DPL_A, SWITCH_ON);
-	vTaskDelay(pdMS_TO_TICKS(DEPLOYMENT_WAIT_TIME_SECONDS));
+//	vTaskDelay(pdMS_TO_TICKS(DEPLOYMENT_WAIT_TIME_SECONDS));
+	vTaskDelay(DEPLOYMENT_WAIT_TIME_SECONDS*1000);
 	setLoadSwitch(LS_DPL_A, SWITCH_OFF);
 }
 
