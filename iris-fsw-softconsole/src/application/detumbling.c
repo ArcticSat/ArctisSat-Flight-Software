@@ -89,12 +89,16 @@ eDetumbleStates determineState(int inputID) {
 
 bool detumblingComplete(void)
 {
+	float rotation_rate[3];
+	AdcsDriverError_t status;
+	// Get rotation rate
+	status = getGyroscopeDataRadiansPerSecond(GYRO_1,rotation_rate);
 //    return detumbling_cycles > MAX_DETUMBLE_TIME_SECONDS;
     if(detumbling_cycles > MAX_DETUMBLE_TIME_SECONDS)
         return true;
     int i;
     for(i=0; i < 3; i++){
-        if(dipole[i] > MAX_DIPOLE)
+        if(rotation_rate[i] > MIN_DETUMBLE_ROTATION_RPS)
             return false;
     }
     return true;

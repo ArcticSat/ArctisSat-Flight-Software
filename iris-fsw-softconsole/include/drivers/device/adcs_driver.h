@@ -34,6 +34,7 @@
 #define MAX_DIPOLE 0.2
 #define MAX_VOLTAGE 5.0
 #define MAX_PWM 255.0
+#define MIN_DETUMBLE_ROTATION_RPS 0.5
 // Gyroscope data conversion
 #define DPS_TO_RPS 0.017448
 // Magnetometer data conversion
