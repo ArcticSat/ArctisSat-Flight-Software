@@ -445,57 +445,43 @@ uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec )
 
 /*** Application-level sensor polling ***/
 // Gyro
-AdcsDriverError_t getGyroscopeDataRadians(GyroId_t gyroNumber, float * gyroData)
+AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps)
 {
 	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
-	uint8_t buf8[ADCS_GYRO_RAW_DATA_SIZE_BYTES] = {0};
+	uint8_t gyroRaw8[ADCS_GYRO_RAW_DATA_SIZE_BYTES] = {0};
 	// Get raw data
-	status = getGyroMeasurementsRaw(gyroNumber,buf8);
+	status = getGyroMeasurementsRaw(gyroNumber,gyroRaw8);
 	if(status != ADCS_DRIVER_NO_ERROR) return status;
-	// Format raw data
-	uint16_t buf16[3] = {0};
-	buf16[0] |= (  uint16_t) buf8[0];			// X_LSB
-	buf16[0] |= (((uint16_t) buf8[1]) << 8);	// X_MSB
-	buf16[1] |= (  uint16_t) buf8[2];			// Y_LSB
-	buf16[1] |= (((uint16_t) buf8[3]) << 8);	// Y_MSB
-	buf16[2] |= (  uint16_t) buf8[4];			// Z_LSB
-	buf16[2] |= (((uint16_t) buf8[5]) << 8);	// Z_MSB
-	// Convert data
+	// Convert raw data
 	int i;
-	for(i=0; i < 3; i++)
-	{
-		// Convert raw to mdps
-		float degrees = 1000.0f * a3g4250d_from_fs245dps_to_mdps((int16_t) buf16[i]);
-		// Convert to rad/s
-		gyroData[i] = degrees * M_PI / 180.0f;
+	for(i=0; i < 3; i++){
+		// Format raw axis data as 16-bit unsigned integer
+		uint16_t gyroRaw16 = 0;
+		gyroRaw16 |= (uint16_t) gyroRaw8[2*i];				// LSB transferred first
+		gyroRaw16 |= (((uint16_t) gyroRaw8[2*i+1]) << 8);	// MSB second
+		// Convert raw sample to radians/s
+		gyroDataRps[i] = ((int16_t) gyroRaw16) * DPS_TO_RPS;
 	}
 
 	return status;
 }
 // Mag
-AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData)
+AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magDataTeslas)
 {
 	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
-	uint8_t buf8[ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES] = {0};
+	uint8_t magRaw8[ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES] = {0};
 	// Get raw data
-	status = getMagnetometerMeasurementsRaw(magnetometerNumber,buf8);
+	status = getMagnetometerMeasurementsRaw(magnetometerNumber,magRaw8);
 	if(status != ADCS_DRIVER_NO_ERROR) return status;
-	// Format raw data
-	uint16_t buf16[3] = {0};
-	buf16[0] |= (  uint16_t) buf8[0];			// X_LSB
-	buf16[0] |= (((uint16_t) buf8[1]) << 8);	// X_MSB
-	buf16[1] |= (  uint16_t) buf8[2];			// Y_LSB
-	buf16[1] |= (((uint16_t) buf8[3]) << 8);	// Y_MSB
-	buf16[2] |= (  uint16_t) buf8[4];			// Z_LSB
-	buf16[2] |= (((uint16_t) buf8[5]) << 8);	// Z_MSB
-	// Convert data
+	// Convert raw data
 	int i;
-	for(i=0; i < 3; i++)
-	{
-		// Convert raw to milli Gauss
-		float milli_gauss = mmc5883ma_from_fs8G_to_mG(buf16[i]);
-		// Convert to Teslas
-		magnetometerData[i] = milli_gauss / 10.0f;
+	for(i=0; i < 3; i++){
+		// Format raw axis data as 16-bit unsigned integer
+		uint16_t magRaw16 = 0;
+		magRaw16 |= (uint16_t) magRaw8[2*i];				// LSB transferred first
+		magRaw16 |= (((uint16_t) magRaw8[2*i+1]) << 8);
+		// Convert raw sample to Teslas
+		magDataTeslas[i] = ((-8) + (magRaw16 * MAG_LSB)) * MILLIGAUSS_TO_TESLA_CONVERSION;
 	}
 
 	return status;

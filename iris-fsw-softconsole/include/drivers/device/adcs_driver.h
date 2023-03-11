@@ -27,8 +27,10 @@
 #define ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES  6
 #define ADCS_SUN_SENSOR_DATA_SIZE   164
 #define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES + ADCS_GYRO_RAW_DATA_SIZE_BYTES + ADCS_SUN_SENSOR_DATA_SIZE)
-// Raw gyro data conversion
-#define A3G4250D_FULL_SCALE_MAX 8.0
+// Gyroscope data conversion
+#define DPS_TO_RPS 0.017448;
+// Magnetometer data conversion
+#define MILLIGAUSS_TO_TESLA_CONVERSION 1.0/10.0
 // Raw sun sensor data conversion
 #define NOP 0x00    //Idle command
 #define CR 0xF0     //Chip reset
@@ -132,7 +134,7 @@ float a3g4250d_from_fs245dps_to_mdps(int16_t lsb);
 float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw);
 uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec);
 // Application-level sensor polling
-AdcsDriverError_t getGyroscopeDataRadians(GyroId_t gyroNumber, float * gyroData);
+AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps);
 AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData);
 AdcsDriverError_t getSunAngle(uint8_t * measurements);
 
