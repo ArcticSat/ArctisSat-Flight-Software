@@ -27,15 +27,18 @@
 #define ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES  6
 #define ADCS_SUN_SENSOR_DATA_SIZE   164
 #define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES + ADCS_GYRO_RAW_DATA_SIZE_BYTES + ADCS_SUN_SENSOR_DATA_SIZE)
+// Axes
+#define NUM_MAG_AXES 3
 // Torque rod parameters
 #define DIPOLE_SLOPE 0.04
 #define MAX_DIPOLE 0.2
 #define MAX_VOLTAGE 5.0
 #define MAX_PWM 255.0
 // Gyroscope data conversion
-#define DPS_TO_RPS 0.017448;
+#define DPS_TO_RPS 0.017448
 // Magnetometer data conversion
-#define MILLIGAUSS_TO_TESLA_CONVERSION 1.0/10.0
+#define MAG_LSB 0.00025 //From datasheet - LSB is 0.25 miligauss
+#define GAUSS_TO_TESLA_CONVERSION 1/10000 //1 tesla = 10000 gauss
 // Raw sun sensor data conversion
 #define NOP 0x00    //Idle command
 #define CR 0xF0     //Chip reset
@@ -169,9 +172,11 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
 AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor);
 AdcsDriverError_t getSunSensorMeasurementsRaw(uint8_t * measurements);
+// Torque rod data conversion
+float dipoleToVoltage(float dipole);
 // Raw sensor data conversion
-float a3g4250d_from_fs245dps_to_mdps(int16_t lsb);
-float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw);
+float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro);
+float convertMagDataRawToTeslas(uint16_t rawMag);
 uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec);
 // Application-level sensor polling
 AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps);

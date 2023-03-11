@@ -57,10 +57,12 @@ typedef enum  {
 TaskHandle_t xHandleDetumble;
 TimerHandle_t detumbleTimer;
 // collectMagData
-volatile int magData[NUM_MAG_SAMPLES][3] = {0};
+volatile uint16_t magDataRaw[NUM_MAG_SAMPLES][3] = {0};
+volatile TickType_t magDataSampleTime[NUM_MAG_SAMPLES] = {0};
 // calculateExecuteDipole
 float dipole[3];
-int diffs[NUM_MAG_FINITE_DIFFERENCES][3] = {0};
+int diffs[NUM_MAG_FINITE_DIFFERENCES-1][3] = {0};
+volatile bool sampleValid[NUM_MAG_SAMPLES-1];
 volatile const float gain = -1.0;
 volatile uint8_t polarity[3] = {0};
 volatile uint8_t pwm[3] = {0};
@@ -70,27 +72,6 @@ uint16_t detumbling_cycles = 0;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//From datasheet - LSB is 0.25 miligauss
-#define MAG_LSB 0.00025
-
-//1 tesla = 10000 gauss
-#define GAUSS_TO_TESLA_CONVERSION 1/10000
-
-float convertMagData(uint16_t rawMag) {
-    //Field range is +- 8 gauss and 16 bit accuracy therefore 1 LSB = 0.25mGauss
-    //From datasheet - returns 16-bit unsigned int ADC reading
-
-    return (-8) + ((rawMag * MAG_LSB) * GAUSS_TO_TESLA_CONVERSION); //needs to return 32-bit, as 8 Gauss = 80,000 Tesla > 2^16
-}
-
-#define DPS_TO_RPS 0.017448 
-float convertGyroData(uint16_t rawGyro) {
-    //+- 245 dps scale
-    //Raw gyro data is 2's complement (signed) 16 bit values, should just be able to multiply by 2pi/360
-    
-    return ((int_16) rawGyro) * DPS_TO_RPS;
-}
 
 eDetumbleStates determineState(int inputID) {
 	eDetumbleStates output = COLLECT_DATA;
@@ -128,7 +109,8 @@ void collectMagData(void)
     int magDataIndex = 0;
     while(determineState(pvTimerGetTimerID(detumbleTimer)) == COLLECT_DATA && magDataIndex < NUM_MAG_SAMPLES) {
         // Get measurements
-        getMagnetometerMeasurements(1, rawMagData);
+    	getMagnetometerMeasurementsRaw(MAGNETOMETER_1, rawMagData);
+    	magDataSampleTime[magDataIndex] = xTaskGetTickCount();
         // TODO: capture sample time (store in a public variable)
 
         tempMagData[0] = (rawMagData[0] << 8) | rawMagData[1];
@@ -136,7 +118,7 @@ void collectMagData(void)
         tempMagData[2] = (rawMagData[4] << 8) | rawMagData[5];
 
         for(i = 0; i < 3; i++) {
-            magData[magDataIndex][i] = tempMagData[i];
+            magDataRaw[magDataIndex][i] = tempMagData[i];
         }
         magDataIndex++;
     }
@@ -151,21 +133,51 @@ void calculateExecuteDipole(void)
     float voltage = 0.0;
     while(determineState(pvTimerGetTimerID(detumbleTimer)) == CALC_EXEC_DIPOLE) {
         /*** Calculate Dipole ***/
+    	// Convert raw data
+    	float magDataTeslas[NUM_MAG_SAMPLES][3] = {0};
+        for(i = 0; i < NUM_MAG_FINITE_DIFFERENCES; i++){
+            for(j = 0; j < 3; j++){
+            	magDataTeslas[i][j] = convertMagDataRawToTeslas(magDataRaw[i][j]);
+            }
+        }
         // Calculate finite different of magnetometer data
-        for(i = 0; i < NUM_MAG_FINITE_DIFFERENCES; i++) {
-            if(magData[i][0] != 0 && magData[i+1][0] != 0) {
+		for(i = 0; i < NUM_MAG_FINITE_DIFFERENCES - 1; i++) {
+			// Calculate delta t
+			double delta_t_ms = (float) (magDataSampleTime[i+1] - magDataSampleTime[i]);
+			// Check for valid raw data
+			bool valid_dt = delta_t_ms > 0;
+			bool valid_sample = false;
+			// Current sample
+			for(j=0; j < 3; j++){
+				if(magDataTeslas[i][j] != 0)
+					valid_sample = true;
+			}
+			// Next sample
+			if(valid_sample){
+				valid_sample = false;
+				for(j=0; j < 3; j++){
+					if(magDataTeslas[i+1][j] != 0)
+						valid_sample = true;
+				}
+			}
+			// Calculate diff, if data valid
+			sampleValid[i] = valid_dt && valid_sample;
+            if(sampleValid[i])
+            {
+				// Do diffs
                 for(j = 0; j < 3; j++) {
-                    diffs[i][j] = magData[i+1][j] - magData[i][j];
-                    // TODO: divide by delta t
+                    diffs[i][j] = (magDataTeslas[i+1][j] - magDataTeslas[i][j]) / delta_t_ms;
                 }
                 totalMeasurements++;
             }
         }
-
+		// Average diff
         for(i = 0; i < totalMeasurements; i++) {
-            dipole[0] += diffs[i][0];
-            dipole[1] += diffs[i][1];
-            dipole[2] += diffs[i][2];
+        	if(sampleValid[i]){
+				dipole[0] += diffs[i][0];
+				dipole[1] += diffs[i][1];
+				dipole[2] += diffs[i][2];
+        	}
         }
         // Calculate dipole
         dipole[0] = dipole[0] / totalMeasurements;
@@ -212,8 +224,6 @@ void calculateExecuteDipole(void)
 		tmpkt.telem_id = CDH_DETUMBLING_TM_ID;
 		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 #endif
-
-
         while(determineState(pvTimerGetTimerID(detumbleTimer)) == CALC_EXEC_DIPOLE); // wait after calc
     }
 }

@@ -368,20 +368,18 @@ float dipoleToVoltage(float dipole)
     } else {
         return reqVoltage;
     }
-
+}
 /*** Raw sensor data conversion ***/
 // Gyro
-float a3g4250d_from_fs245dps_to_mdps(int16_t lsb)
+float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 {
-	return ((float)lsb * 8.75f);
+	return (float) (( (int16_t) rawGyro) * DPS_TO_RPS );
 }
 
 // Mag
-float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw)
+float convertMagDataRawToTeslas(uint16_t rawMag)
 {
-	uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
-	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
-	return magnetic_field;
+	return (float) ( ((-8) + (rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
 }
 
 // Sun
@@ -442,11 +440,12 @@ AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * 
 		gyroRaw16 |= (uint16_t) gyroRaw8[2*i];				// LSB transferred first
 		gyroRaw16 |= (((uint16_t) gyroRaw8[2*i+1]) << 8);	// MSB second
 		// Convert raw sample to radians/s
-		gyroDataRps[i] = ((int16_t) gyroRaw16) * DPS_TO_RPS;
+		gyroDataRps[i] = convertGyroDataRawToRadiansPerSecond(gyroRaw16);
 	}
 
 	return status;
 }
+
 // Mag
 AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magDataTeslas)
 {
@@ -463,7 +462,7 @@ AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber,
 		magRaw16 |= (uint16_t) magRaw8[2*i];				// LSB transferred first
 		magRaw16 |= (((uint16_t) magRaw8[2*i+1]) << 8);
 		// Convert raw sample to Teslas
-		magDataTeslas[i] = ((-8) + (magRaw16 * MAG_LSB)) * MILLIGAUSS_TO_TESLA_CONVERSION;
+		magDataTeslas[i] = convertMagDataRawToTeslas(magRaw16);
 	}
 
 	return status;
