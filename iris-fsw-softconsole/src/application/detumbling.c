@@ -71,16 +71,21 @@ uint16_t detumbling_cycles = 0;
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#define MAG_LSB 0.25
-#define GAUSS_TO_TESLA_CONVERSION 10000
-int32_t convertMagData(uint16_t rawMag) {
-    //Field range is +- 8 gauss and 16 bit accuracy therefore 1 LSB = 0.25mGauss
+//From datasheet - LSB is 0.25 miligauss
+#define MAG_LSB 0.00025
 
-    return (-8) + (rawMag * MAG_LSB * GAUSS_TO_TESLA_CONVERSION); //needs to return 32-bit, as 8 Gauss = 80,000 Tesla > 2^16
+//1 tesla = 10000 gauss
+#define GAUSS_TO_TESLA_CONVERSION 1/10000
+
+float convertMagData(uint16_t rawMag) {
+    //Field range is +- 8 gauss and 16 bit accuracy therefore 1 LSB = 0.25mGauss
+    //From datasheet - returns 16-bit unsigned int ADC reading
+
+    return (-8) + ((rawMag * MAG_LSB) * GAUSS_TO_TESLA_CONVERSION); //needs to return 32-bit, as 8 Gauss = 80,000 Tesla > 2^16
 }
 
-#define DPS_TO_RPS 0.017448
-int16_t convertGyroData(uint16_t rawGyro) {
+#define DPS_TO_RPS 0.017448 
+float convertGyroData(uint16_t rawGyro) {
     //+- 245 dps scale
     //Raw gyro data is 2's complement (signed) 16 bit values, should just be able to multiply by 2pi/360
     
