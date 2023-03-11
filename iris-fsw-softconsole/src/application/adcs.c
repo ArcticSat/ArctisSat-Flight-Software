@@ -69,34 +69,34 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		break;
 	case ADCS_GET_MEASUREMENT_GYRO_GENERIC_CMD:
 		// Get reading
-		error_code = getGyroMeasurementsGeneric(rx_buf);
+		error_code = getGyroMeasurementsGenericRaw(rx_buf);
 		// Send telemetry
 		tm_pkt.telem_id = ADCS_MESAUREMENT_GYRO_ID;
-		tm_pkt.length = ADCS_GYRO_DATA_SIZE;
+		tm_pkt.length = ADCS_GYRO_RAW_DATA_SIZE_BYTES;
 		tm_pkt.data = rx_buf;
 		// Log telemetry
 		log_telemetry(&tm_pkt);
 		break;
 	case ADCS_GET_MEASUREMENT_GYRO_CMD:
 		// Get reading
-		error_code = getGyroMeasurements(
+		error_code = getGyroMeasurementsRaw(
 				(GyroId_t) cmd_pkt->data[0],
 				rx_buf);
 		// Send telemetry
 		tm_pkt.telem_id = ADCS_MESAUREMENT_GYRO_ID;
-		tm_pkt.length = ADCS_GYRO_DATA_SIZE;
+		tm_pkt.length = ADCS_GYRO_RAW_DATA_SIZE_BYTES;
 		tm_pkt.data = rx_buf;
 		// Log telemetry
 		log_telemetry(&tm_pkt);
 		break;
 	case ADCS_GET_MEASUREMENT_MAGNETOMETER_CMD:
 		// Get reading
-		error_code = getMagnetometerMeasurements(
+		error_code = getMagnetometerMeasurementsRaw(
 				(MagnetometerId_t) cmd_pkt->data[0],
 				rx_buf);
 		// Send telemetry
 		tm_pkt.telem_id = ADCS_MESAUREMENT_MAGNETOMETER_ID;
-		tm_pkt.length = ADCS_MAGNETORQUER_DATA_SIZE;
+		tm_pkt.length = ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES;
 		tm_pkt.data = rx_buf;
 		// Log telemetry
 		log_telemetry(&tm_pkt);
@@ -106,7 +106,7 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		break;
 	case ADCS_GET_MEASUREMENT_SUN_CMD:
 		// Get reading
-		error_code = getSunSensorMeasurements(rx_buf);
+		error_code = getSunSensorMeasurementsRaw(rx_buf);
 		// Send telemetry
 		tm_pkt.telem_id = ADCS_MESAUREMENT_SUN_ID;
 		/*
