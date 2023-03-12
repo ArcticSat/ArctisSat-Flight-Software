@@ -22,6 +22,7 @@
 #include "drivers/software_update_driver.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "tasks/telemetry.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -29,11 +30,14 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 static uint8_t fwMgrState = FW_STATE_IDLE;
 static uint8_t fwMgrArmed = 0;
-static uint32_t fw_armed_timeout=0;
+static int32_t fw_armed_timeout=0;
 static uint8_t fwMgrExeConfirmed = 0;
 static uint8_t rx_in_progress = 0;
 static uint8_t rx_slot_index = 0;
+static int rx_byte_index=0;
 static uint8_t targetFw = 1;//Which image will we upgrade to. 1 is default for update image. 0 for golden.
+static int UploadMode = FW_UPLOAD_REV2;
+uint16_t curr_seq_num = 0;
 
 static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
 
@@ -64,6 +68,9 @@ QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 static int updateState(int state);
 static int checksumAllFw(); //Runs checksum on the golden and update files, and their backups. The verifiedStatus global will be updated.
+static void fwRxSendAck(int ackNak, uint16_t seq);
+
+
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
@@ -102,14 +109,14 @@ void checksum_file(uint32_t * out, char * filename){
 
     fs_file_seek(&file, 0, SEEK_SET);
 
-    uint8_t byte_buff[256];
+    uint8_t byte_buff[512];
     //Use a buffer here to reduce filesystem overhead...
     //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
 
-//    TickType_t start = xTaskGetTickCount();
+    TickType_t start = xTaskGetTickCount();
     int count = 0;
     int bytes_to_process = 0;
-    while( (bytes_to_process = fs_file_read(&file, byte_buff, 256)) >0 ) {
+    while( (bytes_to_process = fs_file_read(&file, byte_buff, 512)) >0 ) {
 
         for(int i =0; i < bytes_to_process; i++){
             crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
@@ -127,8 +134,8 @@ void checksum_file(uint32_t * out, char * filename){
 
     *out = crc_32_val;
 
-//    TickType_t time = xTaskGetTickCount()-start;
-//    printf("Checksum took %d ms\n",time);
+    TickType_t time = xTaskGetTickCount()-start;
+    printf("Checksum took %d ms\n",time);
     printf("crc32'd %d bytes\n",count);
 }
 
@@ -212,10 +219,12 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 
     lfs_file_t fwfile = {0};
-    int rx_byte_index=0;
+
     uint8_t rxDataBuff[FW_CHUNK_SIZE];
     char tempFileName[64];
     uint8_t fwTempFileOpen = 0;
+
+
 
 
     fwDataQueue = xQueueCreate(5,sizeof(uint8_t)*FW_CHUNK_SIZE);
@@ -248,7 +257,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 
                     //Open up the file.
-                    if(!fwTempFileOpen){
+                    if(!fs_is_open(&fwfile)){
 
                         snprintf(tempFileName,64,"%s.tmp",fwFileNames[rx_slot_index]);//We will upload our file to .tmp. once complete, delete original and rename the temp file.
 
@@ -266,14 +275,45 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     if(res == pdTRUE){
 
-                        int write_res =fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
-                        if(write_res <0){
-                            printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
-                            updateState(FW_STATE_IDLE);
-                            break;
-                        }
-                        rx_byte_index += FW_CHUNK_SIZE;
+                        if(UploadMode == FW_UPLOAD_REV2){
 
+                            //First thing is to unpack the data and extra info.
+                            uint16_t seq_num =0;
+                            memcpy(&seq_num,&rxDataBuff[0],sizeof(uint16_t));
+                            uint8_t* data = &rxDataBuff[sizeof(uint16_t)];
+                            uint8_t dataSize = sizeof(rxDataBuff)-sizeof(uint16_t);
+                            int seek =0;
+                            int ack_nak = 1;
+
+                            if(seq_num !=curr_seq_num){
+                                //We have missed a packet.
+                                printf("FwMgr: missed packet or ooo | rx %d expect %d\n",seq_num,curr_seq_num);
+                                ack_nak = 0;
+                            }
+                            if(ack_nak){
+                                int write_res =fs_file_write( &fwfile, data, dataSize );
+                                if(write_res <0){
+                                    printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
+                                    updateState(FW_STATE_IDLE);
+                                    break;
+                                }
+                                rx_byte_index += dataSize;
+                            }
+                            fwRxSendAck(ack_nak,seq_num);
+                            if(ack_nak)curr_seq_num++;
+
+
+                        }
+                        else{
+
+                            int write_res =fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
+                            if(write_res <0){
+                                printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
+                                updateState(FW_STATE_IDLE);
+                                break;
+                            }
+                            rx_byte_index += FW_CHUNK_SIZE;
+                        }
                         if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
 
                             fs_file_sync(&fwfile);
@@ -324,6 +364,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                 rx_byte_index  =0;
                                 rx_in_progress =0;
                                 fwTempFileOpen =0;
+                                curr_seq_num=0;
                                 updateState(FW_STATE_IDLE);
                             }
                         }
@@ -332,7 +373,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 }
 
-
+                if(fwMgrState == FW_STATE_IDLE){
+                    //If we're done in RX state, make sure we close the temp file. Catches case where we resetFwMgr, but file doesn't get closed.
+                    if(fs_is_open(&fwfile)) fs_file_close(&fwfile);
+                }
 
                 break;
             }
@@ -572,6 +616,13 @@ int getFwManagerState(){
     return fwMgrState;
 }
 
+void fw_mgr_get_rx_progress(int* curr,uint32_t* total ){
+
+    *curr = rx_byte_index;
+    *total = fwFiles[rx_slot_index].filesize;
+
+}
+
 int setFwManagerState(int state){
 
     int res = updateState(state);
@@ -669,6 +720,15 @@ void uploadFwChunk(uint8_t * data, uint16_t length){
     xQueueSendToBack(fwDataQueue,data,100);
 }
 
+void uploadFwChunk2(uint8_t * data, uint16_t length){
+
+    if(length>FW_CHUNK_SIZE){
+        printf("fw chunk larger than chunk size!Not ok\n");
+        return;
+    }
+    xQueueSendToBack(fwDataQueue,data,100);
+}
+
 void initializeFwMgr(){
 
     //Reset all our state variables:
@@ -678,6 +738,9 @@ void initializeFwMgr(){
     fwMgrExeConfirmed = 0;
     rx_in_progress = 0;
     rx_slot_index = 0;
+    rx_byte_index=0;
+    curr_seq_num = 0;
+
 
     //Load/calculate our file metadata
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
@@ -765,5 +828,25 @@ void setFwTargetImage(uint8_t target){
 
     if(target == 0 || target == 1)
         targetFw = target;
+}
+
+void fwRxSendAck(int ackNak, uint16_t seq){
+
+    telemetryPacket_t t;
+    Calendar_t now = {0}; //Set to zero, since payload does not keep track of time. CDH will timestamp on receipt.
+
+    uint8_t data[3];
+
+    data[0] = ackNak;
+    memcpy(&data[1],&seq,sizeof(uint16_t));
+
+    t.telem_id = CDH_FW_ACK_ID;
+    t.timestamp = now;
+    t.length = 3;
+    t.data = data;
+
+    sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
+
+
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

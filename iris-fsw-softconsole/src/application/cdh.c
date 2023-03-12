@@ -174,7 +174,13 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                     break;
                 }
                 case CDH_FW_PUT_DATA_CMD:{
-                    uploadFwChunk(cmd_pkt->data,cmd_pkt->length);
+                   // int r = rand();
+                  //  if(r < 0.9*RAND_MAX){ //10% of time "drop packet". FOR TESTING ONLY! REMOVE!
+                        uploadFwChunk(cmd_pkt->data,cmd_pkt->length);
+                  //  }
+                   // else{
+                  //      printf("CDH Simulated fw packet drop!\n");
+                  //  }
                     break;
                 }
                 case CDH_FW_GET_STATE_CMD:{
@@ -271,6 +277,21 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                 case CDH_RESET_SYSTEM_CMD:{
                     SCB_Type* systemcontrol = SCB;
                     systemcontrol->AIRCR = (0x05FA << 16)|SCB_AIRCR_SYSRESETREQ_Msk;
+                    break;
+                }
+                case CDH_FW_RX_PROGRESS_CMD:{
+
+                    int curr=0;
+                    uint32_t tot=0;
+                    fw_mgr_get_rx_progress(&curr,&tot);
+                    printf("FW RX: %d bytes of %d\n",curr,tot);
+
+                    break;
+                }
+                case CDH_FW_PUT_DATA_2_CMD:{
+                    //Improved FW Upload.
+                    uploadFwChunk2(cmd_pkt->data,cmd_pkt->length);
+
                     break;
                 }
         default:{

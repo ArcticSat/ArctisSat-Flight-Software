@@ -11,6 +11,7 @@
 //#include <stdint.h>
 #include "drivers/device/rtc/rtc_common.h"
 #include <csp/csp.h>
+#include "tasks/telemetry.h"
 
 //Define the csp address of all devices in the network.
 #define POWER_CSP_ADDRESS	2
@@ -87,6 +88,8 @@ typedef enum
 	CDH_TTT_LIST_ID,
 	CDH_MSG_ID,
 	CDH_FW_STATE_ID,
+	CDH_FW_ACK_ID,
+	CDH_FW_RQST_ID,
 	CDH_TELEMETRY_END,
 	/*** EVENT TELEMETRY ***/
 	EVENT_ID,
@@ -221,6 +224,8 @@ typedef enum
 	CDH_FW_SET_DESVER_CMD,
 	CDH_FORMAT_FS_CMD,
 	CDH_RESET_SYSTEM_CMD,
+	CDH_FW_RX_PROGRESS_CMD,
+	CDH_FW_PUT_DATA_2_CMD,
 	CDH_COMMANDS_END,
 	/*** GROUND COMMANDS ***/
 	GND_TM_VERBOSITY_CMD,

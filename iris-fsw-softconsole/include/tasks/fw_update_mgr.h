@@ -20,9 +20,9 @@
 
 //For testing only. Comment this out!
 //With this we don't keep backup of the firmware, to reduce flash needed.
-//#define NO_FW_BACKUP
+#define NO_FW_BACKUP
 
-#define FW_CHUNK_SIZE   150
+#define FW_CHUNK_SIZE   70
 #define NUM_FIRMWARES       2 //We keep a golden image and an update image.
 #define FW_ARMED_TIMEOUT_MS  (2 * 60*1000) //10 minutes
 
@@ -46,6 +46,11 @@ typedef enum{
 
 } fwMgrState_t;
 
+enum{
+    FW_UPLOAD_REV1,
+    FW_UPLOAD_REV2
+
+};
 
 extern QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -96,6 +101,9 @@ int setFwManagerState(int state);
 //Saves a chunk of data to one of the firmware files
 void uploadFwChunk(uint8_t * data, uint16_t length);//Will length ever be larger than 256? should be smaller than chunk size...
 
+//Improved version...
+void uploadFwChunk2(uint8_t * data, uint16_t length);
+
 //Computes the checksum of a file.
 void checksum_file(uint32_t * out, char * filename);
 
@@ -121,6 +129,9 @@ void setFwChecksum(uint8_t slot, uint32_t check);
 //In case we need to manually assign the design version for the firmware.
 //Slot  is 0(golden), 1(update).
 void setFwDesignVer(uint8_t slot, uint8_t ver);
+
+//Gets the current number of bytes uploaded and the total expected for the current upload.
+void fw_mgr_get_rx_progress(int* curr,uint32_t* total );
 
 
 #endif // FW_UPDATE_MGR_H
