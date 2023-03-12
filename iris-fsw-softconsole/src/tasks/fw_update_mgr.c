@@ -139,6 +139,51 @@ void checksum_file(uint32_t * out, char * filename){
     printf("crc32'd %d bytes\n",count);
 }
 
+void cehcksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uint32_t len){
+
+    //Based on the libcrc example/test program.
+    uint32_t crc_32_val = 0xffffffffL;
+    char ch;
+    unsigned char prev_byte;
+    lfs_file_t file = {0};
+    int result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
+    if(result_fs < 0){
+        printf("Could not open file to checksum: %d\n",result_fs);
+        return;
+    }
+
+    fs_file_seek(&file, start_byte, SEEK_SET);
+
+    uint8_t byte_buff[512];
+    //Use a buffer here to reduce filesystem overhead...
+    //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
+
+    TickType_t start = xTaskGetTickCount();
+    int count = 0;
+    int bytes_to_process = 0;
+    while( (bytes_to_process = fs_file_read(&file, byte_buff, 512)) >0 ) {
+
+        for(int i =0; i < bytes_to_process; i++){
+            crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+            count ++;
+        }
+
+    }
+
+    fs_file_seek(&file, 0, SEEK_SET);
+
+    fs_file_close(&file);
+
+
+    crc_32_val        ^= 0xffffffffL;
+
+    *out = crc_32_val;
+
+    TickType_t time = xTaskGetTickCount()-start;
+    printf("Checksum took %d ms\n",time);
+    printf("crc32'd %d bytes\n",count);
+
+}
 
 void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
 
@@ -299,7 +344,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                 }
                                 rx_byte_index += dataSize;
                             }
-                            fwRxSendAck(ack_nak,seq_num);
+
+                            fwRxSendAck(ack_nak,curr_seq_num);
                             if(ack_nak)curr_seq_num++;
 
 
