@@ -132,12 +132,14 @@ int main( void )
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
 	BaseType_t status;
-    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-////    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+
+	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
+
+    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,3,&vTTTScheduler_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
+	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
 //    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,1,&vDetumbleDriver_h);
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vTTTScheduler_h);

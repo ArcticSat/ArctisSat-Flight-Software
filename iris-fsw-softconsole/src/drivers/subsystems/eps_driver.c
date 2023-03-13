@@ -51,9 +51,13 @@ void setLoadSwitch(uint8_t loadSwitchNumber, eSwitchState state)
 		}
 	}
 	// Send CAN message
-	cmd.id = POW_TXID;
-	cmd.dlc = 2;
-	cmd.data[0] = cmd_id;
-	cmd.data[1] = loadSwitchNumber;
-	CAN_transmit_message(&cmd);
+	int i;
+	for(i=0; i < 10; i++){
+		cmd.id = POW_TXID;
+		cmd.dlc = 2;
+		cmd.data[0] = cmd_id;
+		cmd.data[1] = loadSwitchNumber;
+		CAN_transmit_message(&cmd);
+		vTaskDelay(50);
+	}
 }

@@ -73,6 +73,7 @@ void vCSP_Server(void * pvParameters){
 
 	//Make sure FS is up before all tasks
 	filesystem_initialization();
+//	vTaskDelay(30*1000);
 
 	// Initialize Mission-level Operations (requires FS init)
 //	InitiateSpacecraftDeployment();
@@ -141,7 +142,7 @@ void vCSP_Server(void * pvParameters){
 				} // case CSP_CMD_PORT
 				case CSP_TELEM_PORT:
 					default:{
-						vTaskDelay(15000);
+//						vTaskDelay(15000);
 						csp_service_handler(conn,packet);
 						break;
 					}
@@ -150,6 +151,7 @@ void vCSP_Server(void * pvParameters){
 				csp_buffer_free(packet);
 				csp_close(conn);
 		} // if(conn)
+		vTaskDelay(80);
 	} // while(1)
 } // End of vCSP_Server
 
