@@ -17,6 +17,7 @@ uint8_t tempBuff[256]={0};
 
 void unpackTelemetry(uint8_t * data, telemetryPacket_t* output){
 
+    memset(tempBuff,0,256);
     memcpy((void*)&output->timestamp,&data[0],sizeof(Calendar_t));
     memcpy(&output->telem_id, &data[sizeof(Calendar_t)],1);
     memcpy(&output->length, &data[sizeof(Calendar_t)+1],1);

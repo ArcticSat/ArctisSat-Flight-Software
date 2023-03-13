@@ -174,13 +174,13 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                     break;
                 }
                 case CDH_FW_PUT_DATA_CMD:{
-                   // int r = rand();
-                  //  if(r < 0.9*RAND_MAX){ //10% of time "drop packet". FOR TESTING ONLY! REMOVE!
+//                    int r = rand();
+//                    if(r < 0.99*(double)RAND_MAX){ //10% of time "drop packet". FOR TESTING ONLY! REMOVE!
                         uploadFwChunk(cmd_pkt->data,cmd_pkt->length);
-                  //  }
-                   // else{
-                  //      printf("CDH Simulated fw packet drop!\n");
-                  //  }
+//                    }
+//                    else{
+//                        printf("CDH Simulated fw packet drop!\n");
+//                    }
                     break;
                 }
                 case CDH_FW_GET_STATE_CMD:{
@@ -291,6 +291,63 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                 case CDH_FW_PUT_DATA_2_CMD:{
                     //Improved FW Upload.
                     uploadFwChunk2(cmd_pkt->data,cmd_pkt->length);
+
+                    break;
+                }
+                case CDH_CHECKSUM_FILE_PART_CMD:{
+
+                    uint32_t* start = (uint32_t*)(&cmd_pkt->data[0]);
+                    uint32_t* len = (uint32_t*)(&cmd_pkt->data[sizeof(uint32_t)]);
+                    char filename[64] ={0};
+                    strncpy(filename,(char*)(&cmd_pkt->data[sizeof(uint32_t)*2]),64);
+
+                    printf("Running checksum of file:%s, starting at byte %d for %d bytes\n",filename,*start,*len);
+                    //TODO: Document limitation with checksum, cannot be 0. Should be very rare, but pre checksum all files before upload.
+                    uint32_t check = 0;
+                    checksum_file_area(&check,filename,*start, *len,0);
+                    printf("Checksum of file %s, %d bytes @ 0x%X = %X\n",filename,*len,*start,check);
+
+                    break;
+                }
+                case CDH_FILE_WRITE_CMD:{
+
+                    uint32_t offset=0;
+                    uint32_t datalen=0;
+                    char filename[64]={0};
+                    uint8_t* data;
+
+                    memcpy(&offset,&cmd_pkt->data[0],sizeof(uint32_t));
+                    memcpy(&datalen,&cmd_pkt->data[sizeof(uint32_t)],sizeof(uint32_t));
+                    strcpy(filename,&cmd_pkt->data[sizeof(uint32_t)*2]);
+                    data = &cmd_pkt->data[sizeof(uint32_t)*2+strlen(filename)+1];
+
+                    lfs_file_t file={0};
+                    int res= fs_file_open(&file, filename, LFS_O_WRONLY);
+                    if(res != FS_OK){
+                        printf("Couldn't open file %s to write %d\n.",filename,res);
+                        break;
+                    }
+
+                    res = fs_file_seek(&file, offset, LFS_SEEK_SET);
+                    if(res <= FS_OK){
+                        printf("Couldn't seek file %d\n.",res);
+                        goto cdh_file_write_end;
+                        break;
+                    }
+
+                    res = fs_file_write(&file, data, datalen);
+                    if(res <= 0){
+                        printf("Couldn't write file %d\n.",res);
+                        goto cdh_file_write_end;
+                        break;
+                    }
+
+               cdh_file_write_end:
+                    res = fs_file_close(&file);
+                    if(res != FS_OK){
+                        printf("Couldn't close file %d\n.",res);
+                        break;
+                    }
 
                     break;
                 }

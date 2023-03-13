@@ -139,7 +139,7 @@ void checksum_file(uint32_t * out, char * filename){
     printf("crc32'd %d bytes\n",count);
 }
 
-void cehcksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uint32_t len){
+void checksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uint32_t len, int quiet){
 
     //Based on the libcrc example/test program.
     uint32_t crc_32_val = 0xffffffffL;
@@ -154,21 +154,41 @@ void cehcksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uin
 
     fs_file_seek(&file, start_byte, SEEK_SET);
 
-    uint8_t byte_buff[512];
+    uint8_t byte_buff[256];
     //Use a buffer here to reduce filesystem overhead...
     //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
 
     TickType_t start = xTaskGetTickCount();
-    int count = 0;
-    int bytes_to_process = 0;
-    while( (bytes_to_process = fs_file_read(&file, byte_buff, 512)) >0 ) {
+//    int count = 0;
+//    int bytes_to_process = 0;
+//    while( (bytes_to_process = fs_file_read(&file, byte_buff, 512)) >0 ) {
+//
+//        for(int i =0; i < bytes_to_process; i++){
+//            crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+//            count ++;
+//        }
+//
+//    }
 
-        for(int i =0; i < bytes_to_process; i++){
-            crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
-            count ++;
-        }
+      int count = 0;
+      int bytes_left = len;
+      int bytes_to_process = bytes_left>256 ? 256:bytes_left;
+      int addr_curr = start_byte;
+      int actual = fs_file_read(&file, byte_buff, bytes_to_process);
 
-    }
+      while( actual>0 && bytes_to_process > 0) {
+
+          for(int i =0; i < actual; i++){
+              crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+              count ++;
+          }
+          addr_curr += bytes_to_process;
+          bytes_left = bytes_left-bytes_to_process;
+          bytes_to_process = bytes_left>256 ? 256:bytes_left;
+
+          actual = fs_file_read(&file, byte_buff, bytes_to_process);
+
+      }
 
     fs_file_seek(&file, 0, SEEK_SET);
 
@@ -180,9 +200,10 @@ void cehcksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uin
     *out = crc_32_val;
 
     TickType_t time = xTaskGetTickCount()-start;
-    printf("Checksum took %d ms\n",time);
-    printf("crc32'd %d bytes\n",count);
-
+    if(!quiet){
+        printf("Checksum took %d ms\n",time);
+        printf("crc32'd %d bytes\n",count);
+    }
 }
 
 void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
@@ -225,6 +246,8 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
 //    printf("Checksum took %d ms\n",time);
     printf("crc32'd %d bytes\n",count);
 }
+
+
 
 int copy_to_prog_flash(char * filename, uint32_t address){
 

@@ -107,6 +107,9 @@ void uploadFwChunk2(uint8_t * data, uint16_t length);
 //Computes the checksum of a file.
 void checksum_file(uint32_t * out, char * filename);
 
+//Computes the checksum of part of a file.
+void checksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uint32_t len,int quiet);
+
 //Will run the checksum algorithm on the program flash, starting at the specified address and using "size" bytes.
 void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size);
 
