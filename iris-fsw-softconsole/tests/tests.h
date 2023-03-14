@@ -38,6 +38,8 @@ void vTestMRAM(void *pvParameters);
 //FreeRTOS Test task for external flash memory.
 void vTestFlash(void *pvParameters);
 void vTestFlashFull(void *pvParameters);
+//For the W25N only.Finds the factory bad blocks.For fresh chips only. Any writing or erasing could destroy the bb markers.
+void vTestFlashBB(void *pvParameters);
 
 //FreeRTOS Test task for ADCS driver.
 void vTestAdcsDriver(void * pvParameters);

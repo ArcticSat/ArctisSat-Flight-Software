@@ -17,14 +17,38 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "drivers/protocol/spi.h"
+#include <math.h> //If someone can implement an arctan without math.h that would be sweet.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define ADCS_GYRO_DATA_SIZE  6
-#define ADCS_MAGNETORQUER_DATA_SIZE  6
+// SPI parameters
+#define ADCS_GYRO_RAW_DATA_SIZE_BYTES  6
+#define ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES  6
 #define ADCS_SUN_SENSOR_DATA_SIZE   164
-#define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETORQUER_DATA_SIZE + ADCS_GYRO_DATA_SIZE + ADCS_SUN_SENSOR_DATA_SIZE)
+#define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES + ADCS_GYRO_RAW_DATA_SIZE_BYTES + ADCS_SUN_SENSOR_DATA_SIZE)
+// Raw gyro data conversion
+#define A3G4250D_FULL_SCALE_MAX 8.0
+// Raw sun sensor data conversion
+#define NOP 0x00    //Idle command
+#define CR 0xF0     //Chip reset
+#define RT 0x68     //Read threshold
+#define WT 0xCC     //Write threshold
+#define SI 0xB8     //Start integration
+#define SIL 0xB4    // Start integration long
+#define RO1 0x9C    //ReadOut 1-bit
+#define RO2 0x96    //ReadOut 1.5(2)-bit
+#define RO4 0x93    //ReadOut 4-bit
+#define RO8 0x99    //ReadOut 8-bit
+#define TZ1 0xE8    //Test zebra pattern 1
+#define TZ2 0xE4    //Test zebra pattern 2
+#define TZ12 0xE2   //Test zebra pattern 1 & 2
+#define TZ0 0xE1    //Test zebra pattern 0
+#define SM 0xC6     //Sleep mode
+#define WU 0xC3     //Wake-up
+#define MASK_HEIGHT 2.06    // h in the paper (mm)
+#define REF_PIXEL 62        // reference pixel
+#define PIXEL_LENGTH 50e-3  // pixel length (mm)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMERATIONS AND ENUMERATION TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -98,11 +122,19 @@ AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t cmd_id, TortqueRodPolarity_
 AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t cmd_id, uint8_t pwm);
 // Sensor Polling commands
 AdcsDriverError_t setGyroI2cAddress(uint8_t addr);
-AdcsDriverError_t getGyroMeasurementsGeneric(uint8_t * gyroMeasurements);
-AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
-AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
+AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements);
+AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
+AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor);
-AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements);
+AdcsDriverError_t getSunSensorMeasurementsRaw(uint8_t * measurements);
+// Raw sensor data conversion
+float a3g4250d_from_fs245dps_to_mdps(int16_t lsb);
+float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw);
+uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec);
+// Application-level sensor polling
+AdcsDriverError_t getGyroscopeDataRadians(GyroId_t gyroNumber, float * gyroData);
+AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData);
+AdcsDriverError_t getSunAngle(uint8_t * measurements);
 
 
 

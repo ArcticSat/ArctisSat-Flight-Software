@@ -103,7 +103,7 @@ FlashStatus_t flash_device_init(FlashDev_t *device){
 #if defined(MT25Q_DATA_FLASH)
 			result = MT25Q_setup_flash(device->driver);
 #elif defined(W25N_DATA_FLASH)
-			result = w25n_dev_init(device->driver, 8, ECC_ON);
+			result = w25n_dev_init(device->driver, 0, ECC_ON);//Note: The reserved blocks should be subtracted from the device size, since the w25n driver can't update the flash device struct.
 #elif defined(AT25SF_DATA_FLASH)
 		    result = AT25SF_setup_flash(device->driver);
 #endif

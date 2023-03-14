@@ -621,6 +621,8 @@ FlashStatus_t w25n_dev_init(W25NDevice_t * dev, uint8_t bb_reserve, W25NEccCheck
 
 	 int num_bb = 0;
 	 uint8_t cfg0;
+	 cfg0 = w25n_read_reg(dev, W25N_REG_CONF);
+
 	 for (uint8_t i = 0; i < 1; i++) {
 
 	   w25n_write_reg(dev, W25N_REG_PROT, 0);
@@ -632,7 +634,8 @@ FlashStatus_t w25n_dev_init(W25NDevice_t * dev, uint8_t bb_reserve, W25NEccCheck
 	 if (dev->bb_reserve > 0) {
 	   dev->size -= ((size_t) 1 * dev->bb_reserve * W25N_BLOCK_SIZE);
 	 }
-
+	 int bad_blocks=0;
+	 w25n_read_bb_lut(dev,&(dev->bb_lut), &bad_blocks);
 
 	return result;
 
