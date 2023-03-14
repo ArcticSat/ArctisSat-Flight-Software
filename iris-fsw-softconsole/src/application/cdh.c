@@ -15,6 +15,7 @@
 #include "drivers/device/rtc/rtc_time.h"
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/protocol/can.h"
+#include "application/memory_manager.h"
 
 #include "task.h"
 #include "version.h"
@@ -228,6 +229,37 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 			systemcontrol->AIRCR = (0x05FA << 16)|SCB_AIRCR_SYSRESETREQ_Msk;
 			break;
 		}
+		case CDH_GET_SPACECRAFT_STATUS_CMD:{
+			// Get deployment state
+			int result;
+			ScStatus_t sc_status;
+			result = getScStatus(&sc_status);
+			// Format data
+			uint8_t buf[2+SC_STATUS_SIZE_BYTES] = {0};
+			memcpy(buf,&result,sizeof(result));
+			memcpy(&buf[2],&sc_status,sizeof(SC_STATUS_SIZE_BYTES));
+			// Send telemetry packet
+			telemetryPacket_t tmpkt = {0};
+			tmpkt.telem_id = CDH_SPACECRAFT_STATUS_ID;
+			tmpkt.length = 2+SC_STATUS_SIZE_BYTES;
+			tmpkt.data = buf;
+			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+			break;
+		}
+		case CDH_SET_DEPLOYMENT_STARTUP_STATE_CMD:{
+			// Set deployment state
+			int result;
+			uint8_t state = cmd_pkt->data[0];
+			result = setDeploymentStartupState(state);
+			break;
+		}
+		case CDH_SET_DETUMBLING_STARTUP_STATE_CMD:{
+			// Set detumbling state
+			int result;
+			uint8_t state = cmd_pkt->data[0];
+			result = setDetumblingStartupState(state);
+			break;
+		}
 		default:{
 			break;
 		}
@@ -302,6 +334,6 @@ void vCanServer(void * pvParameters)
 			unpackRawCanTelemetry(&rxmsg, &tmpkt);
 			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 		}
-
+		vTaskDelay(100);
 	}
 }

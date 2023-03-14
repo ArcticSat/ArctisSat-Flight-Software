@@ -12,46 +12,12 @@
 
 #include "drivers/device/adcs_driver.h"
 #include "board_definitions.h"
+#include <stdlib.h>
 
 #define SPI_EFFICIENT
 
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
-
-// ADCS Command IDs
-typedef enum
-{
-	ADCS_CMD_PING = 1,
-	ADCS_CMD_SET_PWM_TORQUE_ROD_1,						// 2
-	ADCS_CMD_SET_PWM_TORQUE_ROD_2,						// 3
-	ADCS_CMD_SET_PWM_TORQUE_ROD_3,						// 4
-	ADCS_CMD_SET_ON_TORQUE_ROD_1,							// 5
-	ADCS_CMD_SET_ON_TORQUE_ROD_2,							// 6
-	ADCS_CMD_SET_ON_TORQUE_ROD_3,							// 7
-	ADCS_CMD_SET_OFF_TORQUE_ROD_1,						// 8
-	ADCS_CMD_SET_OFF_TORQUE_ROD_2,						// 9
-	ADCS_CMD_SET_OFF_TORQUE_ROD_3,						// 10
-	ADCS_CMD_SET_POLARITY_TORQUE_ROD_1,					// 11
-	ADCS_CMD_SET_POLARITY_TORQUE_ROD_2,					// 12
-	ADCS_CMD_SET_POLARITY_TORQUE_ROD_3,					// 13
-	ADCS_CMD_SET_PWM_COUNTER_TORQUE_ROD,				// 14
-	ADCS_SELECT_SS1,											// 15
-	ADCS_SELECT_SS2,											// 16
-	ADCS_SELECT_SS3,											// 17
-	ADCS_SELECT_SS4,											// 18
-	ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR,				// 19
-	ADCS_SET_GYRO_I2C_ADDRESS,								// 20
-	ADCS_GET_GYRO_MEASUREMENT,								// 21
-	ADCS_CMD_GET_MEASUREMENT_GYRO_1,						// 22
-	ADCS_CMD_GET_MEASUREMENT_GYRO_2,						// 23
-	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1,			// 24
-	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2,			// 25
-	ADCS_SPI_PORT_TOGGLE,									// 26
-	ADCS_SYNC_SPI,												// 27
-	NUM_ADCS_COMMANDS,										// 28
-	ADCS_ACK=55,
-	ADCS_SPI_CMD_ERROR = 75,
-} AdcsCommands_t;
 
 /*
  * Utilities
@@ -387,19 +353,33 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(uint8_t * measurements)
 	return status;
 }
 
+float dipoleToVoltage(float dipole)
+{
+	// TODO: check abs()
+    if(abs(dipole) > MAX_DIPOLE) {
+        return MAX_VOLTAGE * ((dipole >= 0) ? 1 : -1); //convert to proper sign with ternary
+    }
+
+    float reqVoltage = 0.0;
+    reqVoltage = dipole / DIPOLE_SLOPE;
+
+    if(abs(reqVoltage) > MAX_VOLTAGE) {
+        return MAX_VOLTAGE * ((reqVoltage >= 0) ? 1 : -1);
+    } else {
+        return reqVoltage;
+    }
+}
 /*** Raw sensor data conversion ***/
 // Gyro
-float a3g4250d_from_fs245dps_to_mdps(int16_t lsb)
+float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 {
-	return ((float)lsb * 8.75f);
+	return (float) (( (int16_t) rawGyro) * DPS_TO_RPS );
 }
 
 // Mag
-float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw)
+float convertMagDataRawToTeslas(uint16_t rawMag)
 {
-	uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
-	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
-	return magnetic_field;
+	return (float) ( ((-8) + (rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
 }
 
 // Sun
@@ -445,57 +425,44 @@ uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec )
 
 /*** Application-level sensor polling ***/
 // Gyro
-AdcsDriverError_t getGyroscopeDataRadians(GyroId_t gyroNumber, float * gyroData)
+AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps)
 {
 	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
-	uint8_t buf8[ADCS_GYRO_RAW_DATA_SIZE_BYTES] = {0};
+	uint8_t gyroRaw8[ADCS_GYRO_RAW_DATA_SIZE_BYTES] = {0};
 	// Get raw data
-	status = getGyroMeasurementsRaw(gyroNumber,buf8);
+	status = getGyroMeasurementsRaw(gyroNumber,gyroRaw8);
 	if(status != ADCS_DRIVER_NO_ERROR) return status;
-	// Format raw data
-	uint16_t buf16[3] = {0};
-	buf16[0] |= (  uint16_t) buf8[0];			// X_LSB
-	buf16[0] |= (((uint16_t) buf8[1]) << 8);	// X_MSB
-	buf16[1] |= (  uint16_t) buf8[2];			// Y_LSB
-	buf16[1] |= (((uint16_t) buf8[3]) << 8);	// Y_MSB
-	buf16[2] |= (  uint16_t) buf8[4];			// Z_LSB
-	buf16[2] |= (((uint16_t) buf8[5]) << 8);	// Z_MSB
-	// Convert data
+	// Convert raw data
 	int i;
-	for(i=0; i < 3; i++)
-	{
-		// Convert raw to mdps
-		float degrees = 1000.0f * a3g4250d_from_fs245dps_to_mdps((int16_t) buf16[i]);
-		// Convert to rad/s
-		gyroData[i] = degrees * M_PI / 180.0f;
+	for(i=0; i < 3; i++){
+		// Format raw axis data as 16-bit unsigned integer
+		uint16_t gyroRaw16 = 0;
+		gyroRaw16 |= (uint16_t) gyroRaw8[2*i];				// LSB transferred first
+		gyroRaw16 |= (((uint16_t) gyroRaw8[2*i+1]) << 8);	// MSB second
+		// Convert raw sample to radians/s
+		gyroDataRps[i] = convertGyroDataRawToRadiansPerSecond(gyroRaw16);
 	}
 
 	return status;
 }
+
 // Mag
-AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData)
+AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magDataTeslas)
 {
 	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
-	uint8_t buf8[ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES] = {0};
+	uint8_t magRaw8[ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES] = {0};
 	// Get raw data
-	status = getMagnetometerMeasurementsRaw(magnetometerNumber,buf8);
+	status = getMagnetometerMeasurementsRaw(magnetometerNumber,magRaw8);
 	if(status != ADCS_DRIVER_NO_ERROR) return status;
-	// Format raw data
-	uint16_t buf16[3] = {0};
-	buf16[0] |= (  uint16_t) buf8[0];			// X_LSB
-	buf16[0] |= (((uint16_t) buf8[1]) << 8);	// X_MSB
-	buf16[1] |= (  uint16_t) buf8[2];			// Y_LSB
-	buf16[1] |= (((uint16_t) buf8[3]) << 8);	// Y_MSB
-	buf16[2] |= (  uint16_t) buf8[4];			// Z_LSB
-	buf16[2] |= (((uint16_t) buf8[5]) << 8);	// Z_MSB
-	// Convert data
+	// Convert raw data
 	int i;
-	for(i=0; i < 3; i++)
-	{
-		// Convert raw to milli Gauss
-		float milli_gauss = mmc5883ma_from_fs8G_to_mG(buf16[i]);
-		// Convert to Teslas
-		magnetometerData[i] = milli_gauss / 10.0f;
+	for(i=0; i < 3; i++){
+		// Format raw axis data as 16-bit unsigned integer
+		uint16_t magRaw16 = 0;
+		magRaw16 |= (uint16_t) magRaw8[2*i];				// LSB transferred first
+		magRaw16 |= (((uint16_t) magRaw8[2*i+1]) << 8);
+		// Convert raw sample to Teslas
+		magDataTeslas[i] = convertMagDataRawToTeslas(magRaw16);
 	}
 
 	return status;

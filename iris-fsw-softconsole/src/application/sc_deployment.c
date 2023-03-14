@@ -1,31 +1,23 @@
 /*
- * application.c
+ * deployables.c
  *
- *  Created on: Jul. 4, 2022
- *      Author: jpmck
+ *  Created on: Mar. 3, 2023
+ *      Author: Jayden McKoy
  */
-
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#include "application/application.h"
-#include "taskhandles.h"
-#include "drivers/filesystem_driver.h"
-#include "application/memory_manager.h"
 #include "application/sc_deployment.h"
-
-#include "application/cdh.h"
-#include "application/eps.h"
-#include "application/payload.h"
-#include "application/adcs.h"
+#include "drivers/subsystems/eps_driver.h"
 
 #include "FreeRTOS.h"
+#include "task.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+#define DEPLOYMENT_WAIT_TIME_SECONDS 30
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -42,61 +34,17 @@
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void InitMissionOperations(void)
+void InitiateSpacecraftDeployment(void)
 {
-	// Initialize the memory manager
-	init_memory_manager();
-	// Initialize the spacecraft's status
-	int result_fs;
-	result_fs = InitSpacecraftStatus();
-
-	telemetryPacket_t tmpkt = {0};
-//	tmpkt.telem_id =
-
-    // Start up any tasks that depend on CSP, FS.
-	uint8_t detumble_state;
-	result_fs = getDetumblingStartupState(&detumble_state);
-	if(result_fs == FS_OK && detumble_state == DETUMBLING_NOT_COMPLETE)
-	{
-		// Detumble mode
-		vTaskResume(vDetumbleDriver_h);
-		vTaskDelay(2000);
-	}
-	else
-	{
-		// Normal operations
-		InitNormalOperations();
-	}
+	// Deploy solar arrays
+	setLoadSwitch(LS_DPL_S, SWITCH_ON);
+//	vTaskDelay(pdMS_TO_TICKS(DEPLOYMENT_WAIT_TIME_SECONDS));
+	vTaskDelay(DEPLOYMENT_WAIT_TIME_SECONDS*1000);
+	setLoadSwitch(LS_DPL_S, SWITCH_OFF);
+	// Deploy antenna (shuts off automatically)
+	setLoadSwitch(LS_DPL_A, SWITCH_ON);
+//	vTaskDelay(pdMS_TO_TICKS(DEPLOYMENT_WAIT_TIME_SECONDS));
+	vTaskDelay(DEPLOYMENT_WAIT_TIME_SECONDS*1000);
+	setLoadSwitch(LS_DPL_A, SWITCH_OFF);
 }
 
-void InitNormalOperations(void)
-{
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-		InitiateSpacecraftDeployment();
-		setDeploymentStartupState(DPL_STATE_DEPLOYED);
-	}
-
-	// Resume tasks
-	vTaskResume(vCanServer_h);
-	vTaskResume(vTTTScheduler_h);
-//	vTaskResume(vFw_Update_Mgr_Task_h);
-}
-
-void HandleTm(csp_conn_t * conn, csp_packet_t * packet)
-{
-	int src = csp_conn_src(conn);
-	switch(src){
-		case PAYLOAD_CSP_ADDRESS:{
-			HandlePayloadTlm(conn,packet);
-			break;
-		}
-		default:{
-			break;
-		}
-	}
-}

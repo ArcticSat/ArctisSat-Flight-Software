@@ -9,6 +9,8 @@
 #include "main.h"
 #include "tasks/telemetry.h"
 #include "drivers/device/adcs_driver.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 {

@@ -18,13 +18,12 @@
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
 //#include "tasks/fw_update_mgr.h"
-#include "application/telemetry_manager.h"
-//
 #include "drivers/filesystem_driver.h"
 //#include "drivers/software_update_driver.h"
 #include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/device/rtc/rtc_time.h"
 //#include "drivers/device/memory/flash_common.h"
+#include "application/application.h"
 
 #include "csp/csp.h"
 #include "csp/interfaces/csp_if_can.h"
@@ -35,6 +34,7 @@
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "task.h"
 
 
 //------------------------------------------------------------------------------
@@ -73,14 +73,20 @@ void vCSP_Server(void * pvParameters){
 
 	//Make sure FS is up before all tasks
 	filesystem_initialization();
+//	vTaskDelay(30*1000);
 
-    //Start up any tasks that depend on CSP, FS.
-    vTaskResume(vCanServer_h);
-    vTaskResume(vTTTScheduler_h);
-//    if(get_fs_status() == FS_OK){
-//    	vTaskResume(vFw_Update_Mgr_Task_h);
-//    }
+	// Initialize Mission-level Operations (requires FS init)
+//	InitiateSpacecraftDeployment();
+	InitMissionOperations();
+//    vTaskSuspend(vDetumbleDriver_h);
 
+//	// Send ping test
+//	int ping_result = -1;
+//	while(1)
+//	{
+//		ping_result = csp_ping(9, 5000, 50, 0);
+//		vTaskDelay(1000);
+//	}
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -125,9 +131,6 @@ void vCSP_Server(void * pvParameters){
 							break;
 						}
 						case GND_TELEMETRY_REQUEST_CMD:{
-							TelemetryChannel_t channel_id;
-							channel_id = (TelemetryChannel_t) cmd_pkt.data[0];
-							get_telemetry(channel_id);
 							break;
 						}
 						default:{
@@ -139,6 +142,7 @@ void vCSP_Server(void * pvParameters){
 				} // case CSP_CMD_PORT
 				case CSP_TELEM_PORT:
 					default:{
+//						vTaskDelay(15000);
 						csp_service_handler(conn,packet);
 						break;
 					}
@@ -147,6 +151,7 @@ void vCSP_Server(void * pvParameters){
 				csp_buffer_free(packet);
 				csp_close(conn);
 		} // if(conn)
+		vTaskDelay(80);
 	} // while(1)
 } // End of vCSP_Server
 
@@ -186,6 +191,8 @@ uint8_t configure_csp(){
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
     char* canRoute = "0/0 CAN";
+//    char* canRoute = "9/5 CAN 3";
+//    char* canRoute = "9/5 CAN 3, 0/0 CAN";
 
 //    char* gndRoute = "9/5 KISS";
 

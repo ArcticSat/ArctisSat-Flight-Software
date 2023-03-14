@@ -6,6 +6,7 @@
  */
 
 #include "application/eps.h"
+#include "drivers/subsystems/eps_driver.h"
 #include "drivers/protocol/can.h"
 
 void HandlePowerCommand(telemetryPacket_t * cmd_pkt)
@@ -62,17 +63,19 @@ void HandlePowerCommand(telemetryPacket_t * cmd_pkt)
 	//			break;
 	//		}
 		case POWER_SET_LOAD_OFF_CMD:{
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
-			cmd.data[1] = cmd_pkt->data[0];
-			CAN_transmit_message(&cmd);
+			setLoadSwitch(cmd_pkt->data[0],SWITCH_OFF);
+//			cmd.dlc = 2;
+//			cmd.data[0] = POWER_SET_LOAD_OFF_CMD;
+//			cmd.data[1] = cmd_pkt->data[0];
+//			CAN_transmit_message(&cmd);
 			break;
 		}
 		case POWER_SET_LOAD_ON_CMD:{
-			cmd.dlc = 2;
-			cmd.data[0] = POWER_SET_LOAD_ON_CMD;
-			cmd.data[1] = cmd_pkt->data[0];
-			CAN_transmit_message(&cmd);
+			setLoadSwitch(cmd_pkt->data[0],SWITCH_ON);
+//			cmd.dlc = 2;
+//			cmd.data[0] = POWER_SET_LOAD_ON_CMD;
+//			cmd.data[1] = cmd_pkt->data[0];
+//			CAN_transmit_message(&cmd);
 			break;
 		}
 		case POWER_SET_SOLAR_OFF_CMD:{

@@ -1,102 +1,76 @@
 /*
- * application.c
+ * telemetry_manager.h
  *
- *  Created on: Jul. 4, 2022
- *      Author: jpmck
+ *  Created on: Dec. 2, 2022
+ *      Author: jpmckoy
  */
+
+#ifndef INCLUDE_APPLICATION_MEMORY_MANAGER_H_
+#define INCLUDE_APPLICATION_MEMORY_MANAGER_H_
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#include "application/application.h"
-#include "taskhandles.h"
-#include "drivers/filesystem_driver.h"
-#include "application/memory_manager.h"
-#include "application/sc_deployment.h"
-
-#include "application/cdh.h"
-#include "application/eps.h"
-#include "application/payload.h"
-#include "application/adcs.h"
-
-#include "FreeRTOS.h"
+#include "tasks/telemetry.h"
+#include "application/detumbling.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+#define TM_VERBOSITY
+#define EVENT_DATA_SIZE 4
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+#define SC_STATUS_SIZE_BYTES 2
+typedef struct  {
+	uint8_t deployment_state;
+	uint8_t detumble_state;
+} ScStatus_t;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Telemetry channels
+typedef enum {
+	SC_STATUS,
+	EVENT_LOG,
+	CDH_CHANNEL,
+	POWER_TLM_CHANNEL,
+	PAYLOAD_TLM_CHANNEL,
+	ADCS_TLM_CHANNEL,
+	NUM_TLM_CHANNELS,
+} TelemetryChannel_t;
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// VARIABLES
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// FUNCTIONS
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void InitMissionOperations(void)
+// Event IDs
+typedef enum
 {
-	// Initialize the memory manager
-	init_memory_manager();
-	// Initialize the spacecraft's status
-	int result_fs;
-	result_fs = InitSpacecraftStatus();
+	TASK_ERROR,
+	TASK_SUCCESS
+} EventId_t;
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// GLOBALS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-	telemetryPacket_t tmpkt = {0};
-//	tmpkt.telem_id =
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// FUNCTION PROTOTYPES
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void init_memory_manager(void);
+void set_telemetry_verbose(bool verbose);
+void log_telemetry(telemetryPacket_t * pkt);
+void get_telemetry(TelemetryChannel_t channel_id);
+void log_event(telemetryPacket_t * pkt);
+/*** Spacecraft status utilities ***/
+int InitSpacecraftStatus(void);
+int getScStatus(ScStatus_t * sc_status);
+int CommitSpacecraftStatus(void);
+// Deployment status
+int getDeploymentStartupState(uint8_t * state);
+int setDeploymentStartupState(uint8_t state);
+// Detumbling status
+int getDetumblingStartupState(uint8_t * state);
+int setDetumblingStartupState(uint8_t state);
 
-    // Start up any tasks that depend on CSP, FS.
-	uint8_t detumble_state;
-	result_fs = getDetumblingStartupState(&detumble_state);
-	if(result_fs == FS_OK && detumble_state == DETUMBLING_NOT_COMPLETE)
-	{
-		// Detumble mode
-		vTaskResume(vDetumbleDriver_h);
-		vTaskDelay(2000);
-	}
-	else
-	{
-		// Normal operations
-		InitNormalOperations();
-	}
-}
-
-void InitNormalOperations(void)
-{
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-		InitiateSpacecraftDeployment();
-		setDeploymentStartupState(DPL_STATE_DEPLOYED);
-	}
-
-	// Resume tasks
-	vTaskResume(vCanServer_h);
-	vTaskResume(vTTTScheduler_h);
-//	vTaskResume(vFw_Update_Mgr_Task_h);
-}
-
-void HandleTm(csp_conn_t * conn, csp_packet_t * packet)
-{
-	int src = csp_conn_src(conn);
-	switch(src){
-		case PAYLOAD_CSP_ADDRESS:{
-			HandlePayloadTlm(conn,packet);
-			break;
-		}
-		default:{
-			break;
-		}
-	}
-}
+#endif /* INCLUDE_APPLICATION_MEMORY_MANAGER_H_ */
