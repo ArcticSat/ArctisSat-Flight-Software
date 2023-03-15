@@ -166,6 +166,7 @@ AdcsDriverError_t adcsSyncSpi(void);
 AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t rod_state);
 AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
 AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t cmd_id, uint8_t pwm);
+/*** TODO: validity of sampled data (e.g. all zeros may indicate an SPI transfer error) ***/
 // Sensor Polling commands
 AdcsDriverError_t setGyroI2cAddress(uint8_t addr);
 AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements);

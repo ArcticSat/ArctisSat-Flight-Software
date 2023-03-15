@@ -5,25 +5,44 @@
  *      Author: jpmckoy
  */
 
-
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// INCLUDES
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "application/cdh.h"
-
+#include "main.h"
 #include "tasks/fw_update_mgr.h"
-
 #include "drivers/filesystem_driver.h"
 #include "drivers/software_update_driver.h"
 #include "drivers/device/rtc/rtc_time.h"
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/protocol/can.h"
+#include "drivers/subsystems/eps_driver.h"
+#include "tasks/scheduler.h"
 #include "application/memory_manager.h"
-
 #include "task.h"
 #include "version.h"
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// DEFINITIONS AND MACROS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-// TBC: change printfs to log_telemetry, with a CDH command option for printing
-//		vs
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// STRUCTS AND STRUCT TYPEDEFS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// ENUMS AND ENUM TYPEDEFS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// VARIABLES
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+uint8_t can_data_buf[256];
+uint8_t tm_id_queue[NUM_MSVB_POLLS_FOR_BACK_SA_PANELS+1] = {POWER_READ_TEMP_ID};
+float backpanel_sa_data[NUM_BACK_SOLAR_STRINGS] = {0.0};
+uint8_t backpanel_data_count = 0;
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// FUNCTIONS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 {
@@ -31,8 +50,11 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
     	case CDH_SCHEDULE_TTT_CMD:{
             uint8_t taskCode = cmd_pkt->data[0];
             uint8_t parameter = cmd_pkt->data[1];
-            Calendar_t * timeTag = (Calendar_t*) (cmd_pkt->data[2]);
-            schedule_task_with_param(taskCode, parameter, *timeTag);
+//            Calendar_t * timeTag = (Calendar_t*) (cmd_pkt->data[2]);
+//            schedule_task_with_param(taskCode, parameter, *timeTag);
+            Calendar_t timeTag = {0};
+            memcpy(&timeTag,&cmd_pkt->data[2],sizeof(Calendar_t));
+            schedule_task_with_param(taskCode, &parameter, timeTag);
             break;
         }
 		case CDH_LIST_FILES_CMD:{
@@ -266,61 +288,16 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 	} // End of switch(cmd_pkt->telem_id)
 } // End of HandleCdhCommand
 
-
-// CAN server variables
-extern QueueHandle_t can_rx_queue;
-uint8_t numCanMsgs = 0;
-CANMessage_t can_q[10] = {0};
-uint8_t telem_id = 0;
-
-void vCanServerBasic(void * pvParameters)
+void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
 {
-	int messages_processed = 0;
-	CANMessage_t rx_msg;
-	while(1)
-	{
-		if(numCanMsgs > 0)
-		{
-			numCanMsgs--;
-			uint8_t tm_id = can_q[numCanMsgs].data[0];
-			switch(tm_id)
-			{
-				case POWER_FRAM_GET_OPMODE_ID:{
-					telemetryPacket_t telemetry;
-					// Send telemetry value
-					telemetry.telem_id = POWER_FRAM_GET_OPMODE_ID;
-					telemetry.length = 3;
-					telemetry.data = &can_q[numCanMsgs].data[1];
-					log_telemetry(&telemetry);
-					break;
-				}
-				case POWER_READ_ADC_A_ID:{
-					telemetryPacket_t telemetry;
-					// Send telemetry value
-					telemetry.telem_id = POWER_READ_ADC_A_ID;
-					telemetry.length = 2;
-					telemetry.data = &can_q[numCanMsgs].data[1];
-					log_telemetry(&telemetry);
-					break;
-				}
-				case POWER_READ_ADC_B_ID:{
-					telemetryPacket_t telemetry;
-					// Send telemetry value
-					telemetry.telem_id = POWER_READ_ADC_A_ID;
-					telemetry.length = 2;
-					telemetry.data = &can_q[numCanMsgs].data[1];
-					log_telemetry(&telemetry);
-					break;
-				}
-				default:{
-					break;
-				}
-			}
-		}
-		vTaskDelay(500);
-	}
+	memcpy(can_data_buf,0,256);
+	memcpy(&output->telem_id,&can_msg->data[0],1);
+	memcpy(&output->length,&can_msg->dlc,1);
+	output->length -= 1;
+	memcpy(can_data_buf,&can_msg->data[1],output->length);
+	output->data = can_data_buf;
+	MSS_RTC_get_calendar_count(&output->timestamp);
 }
-
 
 void vCanServer(void * pvParameters)
 {
@@ -328,12 +305,49 @@ void vCanServer(void * pvParameters)
 	telemetryPacket_t tmpkt = {0};
 	while(1)
 	{
+		int i;
+		bool is_backpanel_sa_current;
 		if( xQueueReceive(can_rx_queue,&rxmsg,pdMS_TO_TICKS(10000)) )
 		{
 		 /* rxmsg now contains a copy of xMessage. */
 			unpackRawCanTelemetry(&rxmsg, &tmpkt);
+			// Update tm_id queue
+			is_backpanel_sa_current = true;
+			for(i=0; i < NUM_MSVB_POLLS_FOR_BACK_SA_PANELS; i++)
+			{
+				tm_id_queue[i] = tm_id_queue[i+1];
+				if(tm_id_queue[i] != POWER_READ_MSB_VOLTAGE_ID)
+				{
+					is_backpanel_sa_current = false;
+				}
+			}
+			tm_id_queue[i] = tmpkt.telem_id;
+			// Check for back panel solar array data
+			if(is_backpanel_sa_current)
+			{
+				if(backpanel_data_count >= NUM_BACK_SOLAR_STRINGS)
+				{
+					backpanel_data_count = 0;
+				}
+				memcpy(&backpanel_sa_data[backpanel_data_count++],tmpkt.data,sizeof(float));
+			}
+
+			// TODO: log telemetry
 			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 		}
 		vTaskDelay(100);
 	}
+}
+
+bool spacecraftIsBackwards(void)
+{
+	int i;
+	for(i=0; i < NUM_BACK_SOLAR_STRINGS; i++)
+	{
+		if(sa_current_eclipse_threshold < backpanel_sa_data[i])
+		{
+			return false;
+		}
+	}
+	return true;
 }

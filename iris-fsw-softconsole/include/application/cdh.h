@@ -15,8 +15,8 @@
 
 
 void HandleCdhCommand(telemetryPacket_t * cmd_pkt);
-void vCanServerBasic(void * pvParameters);
 void vCanServer(void * pvParameters);
+bool spacecraftIsBackwards(void);
 
 
 #endif /* INCLUDE_APPLICATION_CDH_H_ */
