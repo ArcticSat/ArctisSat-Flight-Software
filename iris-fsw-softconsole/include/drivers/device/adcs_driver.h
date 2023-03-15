@@ -172,7 +172,7 @@ AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements);
 AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
 AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor);
-AdcsDriverError_t getSunSensorMeasurementsRaw(uint8_t * measurements);
+AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements);
 // Torque rod data conversion
 float dipoleToVoltage(float dipole);
 // Raw sensor data conversion

@@ -99,12 +99,6 @@ typedef enum
 	GND_FRAME_ID,
 	GND_TELEMETRY_END,
 	/*** CDH TELEMETRY ***/
-	CDH_TIME_ID,
-	CDH_BOARD_TEMP_ID,
-	CDH_TTT_LIST_ID,
-	CDH_MSG_ID,
-	CDH_FW_STATE_ID,
-	CDH_TELEMETRY_END,
 } TelemetryId_t;
 // Command IDs
 typedef enum

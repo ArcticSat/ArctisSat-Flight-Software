@@ -341,7 +341,7 @@ AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 	return status;
 }
 
-AdcsDriverError_t getSunSensorMeasurementsRaw(uint8_t * measurements)
+AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 {
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
 	AdcsDriverError_t status;
