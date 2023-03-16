@@ -89,8 +89,9 @@ typedef enum
 	CDH_FW_STATE_ID,
 	// Memory manager telemetry
 	CDH_SPACECRAFT_STATUS_ID,
-	// Detumbling telemetry
+	// Control telemetry
 	CDH_DETUMBLING_TM_ID,
+	CDH_SUN_POINTING_ID,
 	// CDH telemetry end
 	CDH_TELEMETRY_END,
 	/*** EVENT TELEMETRY ***/

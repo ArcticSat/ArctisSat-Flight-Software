@@ -15,6 +15,9 @@
 #include "drivers/device/adcs_driver.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "application/cdh.h"
+#ifdef SUN_POINTING_DEBUG_TELEMETRY
+#include "tasks/telemetry.h"
+#endif
 
 #include <math.h>
 
@@ -31,7 +34,8 @@
 #define NUM_SAMPLE_LOOPS_MAGNETOMETER		5
 // Back panel polling
 #define BACKPANEL_SA_POLLING_LOOPS				10
-
+// Telemetry rates
+#define SUN_POINTING_TM_RATE 3
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -70,8 +74,8 @@ volatile bool mag_sample_valid[NUM_SAMPLE_LOOPS_MAGNETOMETER] = {false};
 volatile uint8_t num_valid_ss_samples = 0;
 volatile uint8_t num_valid_gyro_samples = 0;
 volatile uint8_t num_valid_mag_samples = 0;
-// Eclipse variable
-volatile bool eclipse = false;
+// Spacecraft is backwards variable
+volatile bool backwards = false;
 // Control gains
 volatile const float rate_gain = 0.0004;
 volatile float sun_gain = 0.0;
@@ -83,6 +87,11 @@ volatile uint8_t polarity_x, polarity_y, polarity_z;
 volatile uint8_t pwm_x, pwm_y, pwm_z;
 // Saturation limit
 volatile const float magt_sat = 0.1731; // Amp-m^2
+// Debugging telemetry
+#ifdef SUN_POINTING_DEBUG_TELEMETRY
+telemetryPacket_t sun_pointing_pkt = {0};
+uint8_t sun_pointing_pkt_count = 0;
+#endif
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -406,10 +415,20 @@ void SunPointingP2( void )
 	scaled_dipole_cmd_y = dipole_cmd_y*magt_scale;
 	scaled_dipole_cmd_z = dipole_cmd_z*magt_scale;
 
-	/*** Calculate the scaled commands to magnetorquers ***/
-	voltage_x = dipoleToVoltage(dipole_cmd_x);
-	voltage_y = dipoleToVoltage(dipole_cmd_y);
-	voltage_z = dipoleToVoltage(dipole_cmd_z);
+	/*** Calculate the scaled commands to magnetorquers (based on backwards) ***/
+	backwards = spacecraftIsBackwards();
+	if(backwards)
+	{
+		voltage_x = dipoleToVoltage(magt_sat/2);
+		voltage_y = dipoleToVoltage(magt_sat/2);
+		voltage_z = dipoleToVoltage((magt_sat/2)*mag_z/mag_y);
+	}
+	else
+	{
+		voltage_x = dipoleToVoltage(scaled_dipole_cmd_x);
+		voltage_y = dipoleToVoltage(scaled_dipole_cmd_y);
+		voltage_z = dipoleToVoltage(scaled_dipole_cmd_z);
+	}
 	polarity_x = ((voltage_x >= 0) ? 1 : 0);
 	polarity_y = ((voltage_y >= 0) ? 1 : 0);
 	polarity_z = ((voltage_z >= 0) ? 1 : 0);
@@ -423,6 +442,39 @@ void SunPointingP2( void )
 
 void SunPointingP3( void )
 {
+#ifdef SUN_POINTING_DEBUG_TELEMETRY
+	sun_pointing_pkt.telem_id = CDH_SUN_POINTING_ID;
+	sun_pointing_pkt.length = 16;
+	uint8_t data[16] = {0};
+	// Backwards
+	memcpy(&data[0],&backwards,sizeof(uint8_t));
+	// Number of valid samples
+	memcpy(&data[1],&num_valid_ss_samples,sizeof(uint8_t));
+	memcpy(&data[2],&num_valid_gyro_samples,sizeof(uint8_t));
+	memcpy(&data[3],&num_valid_mag_samples,sizeof(uint8_t));
+	// Calculated dipole
+	memcpy(&data[4],&dipole_cmd_x,sizeof(dipole_cmd_x));
+	memcpy(&data[6],&dipole_cmd_y,sizeof(dipole_cmd_y));
+	memcpy(&data[8],&dipole_cmd_z,sizeof(dipole_cmd_z));
+	// Actuation polarity
+	memcpy(&data[10],&polarity_x,sizeof(polarity_x));
+	memcpy(&data[11],&polarity_y,sizeof(polarity_y));
+	memcpy(&data[12],&polarity_z,sizeof(polarity_z));
+	// PWM
+	memcpy(&data[13],&pwm_x,sizeof(pwm_x));
+	memcpy(&data[14],&pwm_y,sizeof(pwm_y));
+	memcpy(&data[15],&pwm_z,sizeof(pwm_z));
+	// Send telemetry
+	if(SUN_POINTING_TM_RATE == sun_pointing_pkt_count)
+	{
+		sendTelemetryAddr(&sun_pointing_pkt, GROUND_CSP_ADDRESS);
+		sun_pointing_pkt_count = 0;
+	}
+	else
+	{
+		sun_pointing_pkt_count++;
+	}
+#endif
 	/*** Send the scaled commands to magnetorquers ***/
     // Set polarity
     setTorqueRodPolarity(TORQUE_ROD_1,polarity_x);
