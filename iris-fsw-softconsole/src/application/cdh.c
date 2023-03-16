@@ -38,6 +38,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 uint8_t can_data_buf[256];
 uint8_t tm_id_queue[NUM_MSVB_POLLS_FOR_BACK_SA_PANELS+1] = {POWER_READ_TEMP_ID};
+// TODO: mutex backpanel_sa_data usage throughout this file
 float backpanel_sa_data[NUM_BACK_SOLAR_STRINGS] = {0.0};
 uint8_t backpanel_data_count = 0;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

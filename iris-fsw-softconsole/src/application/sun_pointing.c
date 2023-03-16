@@ -23,8 +23,8 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Phase period settings
 #define SAMPLE_SUN_SENSOR_DUR 1
-#define SAMPLE_MAGS_CONTROL_DUR 4
-#define CYCLE_DUR 10
+#define SAMPLE_MAGS_CONTROL_DUR 3
+#define CYCLE_DUR 9
 // Number of samples by sensor type
 #define NUM_SAMPLE_LOOPS_SUN_SENSOR			5
 #define NUM_SAMPLE_LOOPS_GYROSCOPE			5
@@ -44,7 +44,7 @@ typedef enum  {
     SAMPLE_SUN_SENSOR_GYROS = SAMPLE_SUN_SENSOR_DUR,
     SAMPLE_MAGS_CONTROL = SAMPLE_MAGS_CONTROL_DUR,
     COMMAND_TORQ_RODS = CYCLE_DUR
-}SUN_POINTING_STATES;
+} eSunPointingStates;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -79,6 +79,8 @@ volatile float sun_gain = 0.0;
 volatile const float target_rate_y = 0.0175; // radians/s
 // Dipole command
 float dipole_cmd_x, dipole_cmd_y, dipole_cmd_z;
+volatile uint8_t polarity_x, polarity_y, polarity_z;
+volatile uint8_t pwm_x, pwm_y, pwm_z;
 // Saturation limit
 volatile const float magt_sat = 0.1731; // Amp-m^2
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -95,6 +97,21 @@ void vHandleTimer(TimerHandle_t xTimer);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+eSunPointingStates determineSunPointingState(int inputID) {
+
+	eSunPointingStates output;
+
+    if(inputID <= 2) { //up to 200ms
+        output = SAMPLE_SUN_SENSOR_GYROS;
+    } else if(inputID <= 5) { //200 - 500 = 300ms
+        output = SAMPLE_MAGS_CONTROL;
+    } else { //1000 - 500 = 500ms
+        output = COMMAND_TORQ_RODS;
+    }
+
+    return output;
+}
+
 void SunPointing( void )
 {
     sunPointingTimer = xTimerCreate("sunPointingTimer", pdMS_TO_TICKS(100), pdTRUE, ( void * ) SAMPLE_SUN_SENSOR_GYROS, vHandleTimer);
@@ -109,15 +126,15 @@ void SunPointing( void )
     }
     for(;;)
     {
-        while(pvTimerGetTimerID(sunPointingTimer) == SAMPLE_SUN_SENSOR_GYROS)
+        while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS)
         {
             SunPointingP1();
         }
-        while(pvTimerGetTimerID(sunPointingTimer) == SAMPLE_MAGS_CONTROL)
+        while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_MAGS_CONTROL)
         {
             SunPointingP2();
         }
-        while(pvTimerGetTimerID(sunPointingTimer) == COMMAND_TORQ_RODS)
+        while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == COMMAND_TORQ_RODS)
         {
             SunPointingP3();
         }
@@ -201,6 +218,8 @@ void SunPointingP1( void )
     	num_valid_gyro_samples++;
     }
 
+    /*** Wait ***/
+    while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS);
 }
 
 void SunPointingP2( void )
@@ -217,6 +236,10 @@ void SunPointingP2( void )
     float sun_error_x, sun_error_z;
     float torque_command_x, torque_command_y, torque_command_z;
     float B_scale;
+	float max_cmd;
+	float magt_scale;
+	float scaled_dipole_cmd_x, scaled_dipole_cmd_y, scaled_dipole_cmd_z;
+    float voltage_x, voltage_y, voltage_z;
 
 	/*** Sample magnetometers ***/
     for(i=0; i<NUM_SAMPLE_LOOPS_MAGNETOMETER; i++)
@@ -228,14 +251,19 @@ void SunPointingP2( void )
     }
 
 	/*** Convert all sensor samples from raw to proper units ***/
-	// TODO (sun-pointing): Convert sun sensor samples to unit vector
     ss_x_sum = 0.0;
     ss_z_sum = 0.0;
     for(i=0; i<NUM_SAMPLE_LOOPS_SUN_SENSOR; i++)
     {
-    	// TODO: adcs error handling - validity check
-    	// Convert X-angle
-    	// Convert Z-angle
+    	if(ss_sample_valid[i])
+    	{
+    		// Convert X-angle
+    		ss_x_sum += sin(AngleDecompose(ss_x_buf[i],3));
+    		// Convert Z-angle
+    		ss_z_sum += sin(AngleDecompose(ss_z_buf[i],3));
+    		// Update valid sun samples
+    		num_valid_ss_samples++;
+    	}
     }
 
 	// Convert gyroscope samples to radians per second
@@ -262,6 +290,8 @@ void SunPointingP2( void )
 			rawGyro |=  ((uint16_t) gyro_buf[4]);
 			rawGyro |= (((uint16_t) gyro_buf[5]) << 8);
 			gyro_z_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
+    		// Update valid gyro samples
+    		num_valid_gyro_samples++;
     	}
     }
 	// Convert magnetometer samples to Tesla
@@ -288,6 +318,8 @@ void SunPointingP2( void )
 			rawMag |=  ((uint16_t) mag_buf[4]);
 			rawMag |= (((uint16_t) mag_buf[5]) << 8);
 			mag_z_sum += convertMagDataRawToTeslas(rawMag);
+    		// Update valid mag samples
+    		num_valid_mag_samples++;
     	}
     }
 
@@ -347,13 +379,7 @@ void SunPointingP2( void )
     dipole_cmd_x = B_scale*(mag_y*torque_command_z - mag_z*torque_command_y); // Amp-m^2
     dipole_cmd_y = B_scale*(mag_z*torque_command_x - mag_x*torque_command_z); // Amp-m^2
     dipole_cmd_z = B_scale*(mag_x*torque_command_y - mag_y*torque_command_x); // Amp-m^2
-}
 
-void SunPointingP3( void )
-{
-	float max_cmd;
-	float magt_scale;
-	float scaled_dipole_cmd_x, scaled_dipole_cmd_y, scaled_dipole_cmd_z;
 	/*** Find the max abs dipole command ***/
 	max_cmd = abs(dipole_cmd_x);
 	if(abs(dipole_cmd_y) > max_cmd)
@@ -380,27 +406,42 @@ void SunPointingP3( void )
 	scaled_dipole_cmd_y = dipole_cmd_y*magt_scale;
 	scaled_dipole_cmd_z = dipole_cmd_z*magt_scale;
 
-	/*** TODO: Send the scaled commands to magnetorquers if we are not backwards ***/
+	/*** Calculate the scaled commands to magnetorquers ***/
+	voltage_x = dipoleToVoltage(dipole_cmd_x);
+	voltage_y = dipoleToVoltage(dipole_cmd_y);
+	voltage_z = dipoleToVoltage(dipole_cmd_z);
+	polarity_x = ((voltage_x >= 0) ? 1 : 0);
+	polarity_y = ((voltage_y >= 0) ? 1 : 0);
+	polarity_z = ((voltage_z >= 0) ? 1 : 0);
+	pwm_x = (uint8_t)( ((polarity_x-1) * voltage_x ) * ( MAX_VOLTAGE / MAX_PWM ));
+	pwm_y = (uint8_t)( ((polarity_y-1) * voltage_y ) * ( MAX_VOLTAGE / MAX_PWM ));
+	pwm_z = (uint8_t)( ((polarity_z-1) * voltage_z ) * ( MAX_VOLTAGE / MAX_PWM ));
+
+    /*** Wait ***/
+    while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_MAGS_CONTROL);
+}
+
+void SunPointingP3( void )
+{
+	/*** Send the scaled commands to magnetorquers ***/
+    // Set polarity
+    setTorqueRodPolarity(TORQUE_ROD_1,polarity_x);
+    setTorqueRodPolarity(TORQUE_ROD_2,polarity_y);
+    setTorqueRodPolarity(TORQUE_ROD_3,polarity_z);
+    // Set PWM
+    setTorqueRodPwm(TORQUE_ROD_1,pwm_x);
+    setTorqueRodPwm(TORQUE_ROD_2,pwm_y);
+    setTorqueRodPwm(TORQUE_ROD_3,pwm_z);
+
+    /*** Wait ***/
+    while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == COMMAND_TORQ_RODS);
 }
 
 void vHandleTimer(TimerHandle_t xTimer)
 {
-    int currentID = pvTimerGetTimerID(xTimer);
+    int currentID = *(int *) pvTimerGetTimerID(xTimer);
     currentID++;
     currentID %= CYCLE_DUR;
 
-    if(currentID <= SAMPLE_SUN_SENSOR_DUR)
-    {
-        currentID = SAMPLE_SUN_SENSOR_GYROS;
-    }
-    else if(currentID <= SAMPLE_MAGS_CONTROL_DUR)
-    {
-        currentID = SAMPLE_MAGS_CONTROL;
-    }
-    else
-    {
-        currentID = COMMAND_TORQ_RODS;
-    }
-
-    vTimerSetTimerID(xTimer, currentID);
+    vTimerSetTimerID(xTimer, (void*) &currentID);
 }

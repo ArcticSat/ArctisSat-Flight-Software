@@ -13,6 +13,7 @@
 #include "drivers/device/adcs_driver.h"
 #include "board_definitions.h"
 #include <stdlib.h>
+#include <math.h>
 
 #define SPI_EFFICIENT
 
@@ -352,7 +353,7 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 //	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
 	return status;
 }
-
+/*** Torque rod data conversion ***/
 float dipoleToVoltage(float dipole)
 {
 	// TODO: check abs()
