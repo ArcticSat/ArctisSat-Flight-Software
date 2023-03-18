@@ -79,7 +79,7 @@
 
 //#define SERVER
 //#define CLIENT
-//#define CAN_SERVER
+#define CAN_SERVER
 #define CSP_SERVER
 
 
