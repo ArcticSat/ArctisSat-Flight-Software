@@ -182,6 +182,9 @@ AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t 
 
 AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t rod_number, uint8_t polarity)
 {
+#ifdef TORQUE_ROD_SIM
+	return ADCS_DRIVER_NO_ERROR;
+#else
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
 	// Get Command ID
@@ -205,10 +208,14 @@ AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t rod_number, uint8_t polarit
 	status = adcsTxRx(&polarity,1,NULL,0);
 
 	return status;
+#endif
 }
 
 AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t rod_number, uint8_t pwm)
 {
+#ifdef TORQUE_ROD_SIM
+	return ADCS_DRIVER_NO_ERROR;
+#else
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
 	// Get Command ID
@@ -232,6 +239,7 @@ AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t rod_number, uint8_t pwm)
 	status = adcsTxRx(&pwm,1,NULL,0);
 
 	return status;
+#endif
 }
 
 /*
@@ -266,6 +274,9 @@ AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements)
 
 AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeasurements)
 {
+#ifdef GYRO_SIM_ENG_VALUE
+	return ADCS_DRIVER_NO_ERROR;
+#else
     // Get command ID
     uint8_t cmd_id = -1;
     switch(gyroNumber)
@@ -288,10 +299,14 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
 	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
 
 	return status;
+#endif
 }
 
 AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements)
 {
+#ifdef MAG_SIM_ENG_VALUE
+	return ADCS_DRIVER_NO_ERROR;
+#else
     // Get command ID
     uint8_t cmd_id = -1;
     switch(magnetometerNumber)
@@ -314,11 +329,15 @@ AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNu
 	status = adcsTxRx(NULL,0,magnetometerMeasurements,ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES);
 
 	return status;
+#endif
 }
 
 
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 {
+#ifdef SS_SIM_ENG_VALUE
+	return ADCS_DRIVER_NO_ERROR;
+#else
 	uint8_t cmd_id;
 	AdcsDriverError_t status;
 	switch(sunSensor)
@@ -340,10 +359,14 @@ AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 	}
 	status = adcsSyncSpiCommand(cmd_id);
 	return status;
+#endif
 }
 
 AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 {
+#ifdef SS_SIM_ENG_VALUE
+	return ADCS_DRIVER_NO_ERROR;
+#else
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
 	AdcsDriverError_t status;
 	status = adcsSyncSpiCommand(cmd_id);
@@ -352,6 +375,7 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 //	vTaskDelay(20);
 //	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
 	return status;
+#endif
 }
 /*** Torque rod data conversion ***/
 float dipoleToVoltage(float dipole)
@@ -374,18 +398,29 @@ float dipoleToVoltage(float dipole)
 // Gyro
 float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 {
+#ifdef GYRO_SIM_ENG_VALUE
+	return GYRO_SIM_ENG_VALUE;
+#else
 	return (float) (( (int16_t) rawGyro) * DPS_TO_RPS );
+#endif
 }
 
 // Mag
 float convertMagDataRawToTeslas(uint16_t rawMag)
 {
+#ifdef MAG_SIM_ENG_VALUE
+	return MAG_SIM_ENG_VALUE;
+#else
 	return (float) ( ((-8) + (rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
+#endif
 }
 
 // Sun
 uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec )
 {
+#ifdef MAG_SIM_ENG_VALUE
+	return MAG_SIM_ENG_VALUE;
+#else
     uint8_t FirstPxlPosition=0,i=0,j=0,ROMask[4] = {0x80,0x80,0xF0,0xFF},ROShift[4] = {1,2,4,8},offset[3] = {1,0,0},RODiv[4] = {1,2,15,255},rxSize[4] = {18,36,72,144},Temp = ROMask[selec];
     float FirstPxlFrac=0;
     uint16_t AngFrac=0;
@@ -422,6 +457,7 @@ uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec )
     }
     AngFrac = 1000*(90-(atan(MASK_HEIGHT/((REF_PIXEL-(FirstPxlPosition-FirstPxlFrac))*PIXEL_LENGTH))*180/M_PI)); // This step uses simple trigonometry to calculate the angle using the incidence length.
     return AngFrac;
+#endif
 }
 
 /*** Application-level sensor polling ***/

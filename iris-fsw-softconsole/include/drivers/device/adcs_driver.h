@@ -22,6 +22,11 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Debug settings
+#define GYRO_SIM_ENG_VALUE 			0.0		// rad/s
+#define MAG_SIM_ENG_VALUE			0.0		// Teslas
+#define SUN_ANGLE_SIM_ENG_VALUE 	90.0	// degrees
+#define TORQUE_ROD_SIM
 // SPI parameters
 #define ADCS_GYRO_RAW_DATA_SIZE_BYTES  6
 #define ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES  6

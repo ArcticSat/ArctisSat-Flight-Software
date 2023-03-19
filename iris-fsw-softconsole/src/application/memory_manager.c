@@ -142,7 +142,7 @@ int getDeploymentStartupState(uint8_t * state)
 {
 	if(sc_status_read_result_fs != FS_OK)
 	{
-		*state = DPL_STATE_STOWED;
+		*state = DPL_STATE_DEPLOYED;
 	}
 	else
 	{

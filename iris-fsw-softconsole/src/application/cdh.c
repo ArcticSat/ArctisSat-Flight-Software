@@ -302,11 +302,11 @@ void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
 
 void vCanServer(void * pvParameters)
 {
+	int i;
 	CANMessage_t rxmsg = {0};
 	telemetryPacket_t tmpkt = {0};
 	while(1)
 	{
-		int i;
 		bool is_backpanel_sa_current;
 		if( xQueueReceive(can_rx_queue,&rxmsg,pdMS_TO_TICKS(10000)) )
 		{
@@ -336,7 +336,7 @@ void vCanServer(void * pvParameters)
 			// TODO: log telemetry
 			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 		}
-		vTaskDelay(100);
+		vTaskDelay(1100);
 	}
 }
 

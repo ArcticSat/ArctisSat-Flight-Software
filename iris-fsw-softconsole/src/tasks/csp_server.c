@@ -73,20 +73,9 @@ void vCSP_Server(void * pvParameters){
 
 	//Make sure FS is up before all tasks
 	filesystem_initialization();
-//	vTaskDelay(30*1000);
 
 	// Initialize Mission-level Operations (requires FS init)
-//	InitiateSpacecraftDeployment();
 	InitMissionOperations();
-//    vTaskSuspend(vDetumbleDriver_h);
-
-//	// Send ping test
-//	int ping_result = -1;
-//	while(1)
-//	{
-//		ping_result = csp_ping(9, 5000, 50, 0);
-//		vTaskDelay(1000);
-//	}
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {

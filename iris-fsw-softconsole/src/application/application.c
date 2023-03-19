@@ -50,24 +50,39 @@ void InitMissionOperations(void)
 	// Initialize the spacecraft's status
 	int result_fs;
 	result_fs = InitSpacecraftStatus();
+	// Check deployment state
+	uint8_t deployment_state;
+	getDeploymentStartupState(&deployment_state);
+	if(deployment_state == DPL_STATE_STOWED)
+	{
+//		InitiateSpacecraftDeployment();
+		setDeploymentStartupState(DPL_STATE_DEPLOYED);
+	}
 
+	int result;
+	ScStatus_t sc_status;
+	result = getScStatus(&sc_status);
+	// Format data
+	uint8_t buf[2+SC_STATUS_SIZE_BYTES] = {0};
+	memcpy(buf,&result,sizeof(result));
+	memcpy(&buf[2],&sc_status,sizeof(SC_STATUS_SIZE_BYTES));
+	// Send telemetry packet
 	telemetryPacket_t tmpkt = {0};
-//	tmpkt.telem_id =
+	tmpkt.telem_id = CDH_SPACECRAFT_STATUS_ID;
+	tmpkt.length = 2+SC_STATUS_SIZE_BYTES;
+	tmpkt.data = buf;
+	sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 
-    // Start up any tasks that depend on CSP, FS.
-	uint8_t detumble_state;
-	result_fs = getDetumblingStartupState(&detumble_state);
-	if(result_fs == FS_OK && detumble_state == DETUMBLING_NOT_COMPLETE)
-	{
-		// Detumble mode
-		vTaskResume(vDetumbleDriver_h);
-		vTaskDelay(2000);
-	}
-	else
-	{
-		// Normal operations
-		InitNormalOperations();
-	}
+//	int ping_result = -1;
+//	ping_result = csp_ping(10, 5000, 50, 0);
+//	int x = 7;
+
+
+	// Resume tasks
+//	vTaskResume(vSunPointing_h);
+//	vTaskResume(vCanServer_h);
+//	vTaskResume(vTTTScheduler_h);
+//	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 
 void InitNormalOperations(void)
@@ -82,8 +97,8 @@ void InitNormalOperations(void)
 	}
 
 	// Resume tasks
-	vTaskResume(vCanServer_h);
-	vTaskResume(vTTTScheduler_h);
+//	vTaskResume(vCanServer_h);
+//	vTaskResume(vTTTScheduler_h);
 //	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 

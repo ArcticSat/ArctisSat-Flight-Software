@@ -12,6 +12,7 @@
 #include "main.h"
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include "timers.h"
+#include "task.h"
 #include "drivers/device/adcs_driver.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "application/cdh.h"
@@ -35,7 +36,7 @@
 // Back panel polling
 #define BACKPANEL_SA_POLLING_LOOPS				10
 // Telemetry rates
-#define SUN_POINTING_TM_RATE 3
+#define SUN_POINTING_TM_RATE 1
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -118,10 +119,12 @@ eSunPointingStates determineSunPointingState(int inputID) {
         output = COMMAND_TORQ_RODS;
     }
 
+//    vTaskDelay(10);
+
     return output;
 }
 
-void SunPointing( void )
+void vSunPointing( void * pvParameters )
 {
     sunPointingTimer = xTimerCreate("sunPointingTimer", pdMS_TO_TICKS(100), pdTRUE, ( void * ) SAMPLE_SUN_SENSOR_GYROS, vHandleTimer);
 
@@ -135,6 +138,7 @@ void SunPointing( void )
     }
     for(;;)
     {
+    	int x = 7;
         while(determineSunPointingState(*(int *)pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS)
         {
             SunPointingP1();
@@ -147,6 +151,7 @@ void SunPointing( void )
         {
             SunPointingP3();
         }
+        int j = 7;
     }
 }
 
@@ -182,9 +187,9 @@ void SunPointingP1( void )
     int i;
 
     /*** Turn off torque rods ***/
-    setTorqueRodState(TORQUE_ROD_1, TR_STATE_OFF);
-    setTorqueRodState(TORQUE_ROD_2, TR_STATE_OFF);
-    setTorqueRodState(TORQUE_ROD_3, TR_STATE_OFF);
+    setTorqueRodPwm(TORQUE_ROD_1,0);
+    setTorqueRodPwm(TORQUE_ROD_2,0);
+    setTorqueRodPwm(TORQUE_ROD_3,0);
 
     /*** Poll the back panels to check if Y- is facing the sun ***/
     if(backpanel_loop_counter == BACKPANEL_SA_POLLING_LOOPS)
@@ -465,7 +470,7 @@ void SunPointingP3( void )
 	memcpy(&data[14],&pwm_y,sizeof(pwm_y));
 	memcpy(&data[15],&pwm_z,sizeof(pwm_z));
 	// Send telemetry
-	if(SUN_POINTING_TM_RATE == sun_pointing_pkt_count)
+	if((SUN_POINTING_TM_RATE - 1) == sun_pointing_pkt_count)
 	{
 		sendTelemetryAddr(&sun_pointing_pkt, GROUND_CSP_ADDRESS);
 		sun_pointing_pkt_count = 0;
