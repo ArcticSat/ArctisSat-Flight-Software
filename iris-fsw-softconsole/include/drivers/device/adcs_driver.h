@@ -23,10 +23,38 @@
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Debug settings
-#define GYRO_SIM_ENG_VALUE 			0.0		// rad/s
-#define MAG_SIM_ENG_VALUE			0.0		// Teslas
-#define SUN_ANGLE_SIM_ENG_VALUE 	90.0	// degrees
+//#define SIM_VALUES_1
+#define SIM_VALUES_2
+
+#ifdef SIM_VALUES_1
+#define BACKWARDS_SIM_ENG_VALUE			0
+#define GYRO_SIM_ENG_VALUE 				0.0					// rad/s
+#define GYRO_X_SIM_ENG_VALUE 			0.01790779			// rad/s
+#define GYRO_Y_SIM_ENG_VALUE 			0.01698973			// rad/s
+#define GYRO_Z_SIM_ENG_VALUE 			0.01677946			// rad/s
+#define MAG_SIM_ENG_VALUE				0.0					// Teslas
+#define MAG_X_SIM_ENG_VALUE				0.000197040			// Teslas
+#define MAG_Y_SIM_ENG_VALUE				-4.9727735e-5		// Teslas
+#define MAG_Z_SIM_ENG_VALUE				-0.00040812			// Teslas
+#define SUN_ANGLE_SIM_ENG_VALUE 		 0					// unitless
+#define SUN_VECT_X_SIM_ENG_VALUE 		-0.16555641			// unitless
+#define SUN_VECT_Z_SIM_ENG_VALUE 		0.35368141			// unitless
 #define TORQUE_ROD_SIM
+#elif defined(SIM_VALUES_2)
+#define BACKWARDS_SIM_ENG_VALUE			 0
+#define GYRO_SIM_ENG_VALUE 				 0.0				// rad/s
+#define GYRO_X_SIM_ENG_VALUE 			 1000				// rad/s
+#define GYRO_Y_SIM_ENG_VALUE 			 1200				// rad/s
+#define GYRO_Z_SIM_ENG_VALUE 			-2000 				// rad/s
+#define MAG_SIM_ENG_VALUE				 0.0				// Teslas
+#define MAG_X_SIM_ENG_VALUE				-0.0004114751		// Teslas
+#define MAG_Y_SIM_ENG_VALUE				 0.00019760653		// Teslas
+#define MAG_Z_SIM_ENG_VALUE				-9.963983400e-5		// Teslas
+#define SUN_ANGLE_SIM_ENG_VALUE 		 0					// unitless
+#define SUN_VECT_X_SIM_ENG_VALUE 		-0.1319210932		// unitless
+#define SUN_VECT_Z_SIM_ENG_VALUE 		 0.29519842314		// unitless
+#define TORQUE_ROD_SIM
+#endif
 // SPI parameters
 #define ADCS_GYRO_RAW_DATA_SIZE_BYTES  6
 #define ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES  6
@@ -180,7 +208,8 @@ AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNu
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor);
 AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements);
 // Torque rod data conversion
-float dipoleToVoltage(float dipole);
+double dipoleToVoltage(double dipole);
+void MapTorqueRodCommand(double dipole, uint8_t * polarity, uint8_t * pwm);
 // Raw sensor data conversion
 float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro);
 float convertMagDataRawToTeslas(uint16_t rawMag);

@@ -335,7 +335,7 @@ AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNu
 
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 {
-#ifdef SS_SIM_ENG_VALUE
+#ifdef SUN_ANGLE_SIM_ENG_VALUE
 	return ADCS_DRIVER_NO_ERROR;
 #else
 	uint8_t cmd_id;
@@ -364,7 +364,7 @@ AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 
 AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 {
-#ifdef SS_SIM_ENG_VALUE
+#ifdef SUN_ANGLE_SIM_ENG_VALUE
 	return ADCS_DRIVER_NO_ERROR;
 #else
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
@@ -378,7 +378,7 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 #endif
 }
 /*** Torque rod data conversion ***/
-float dipoleToVoltage(float dipole)
+double dipoleToVoltage(double dipole)
 {
 	// TODO: check abs()
     if(abs(dipole) > MAX_DIPOLE) {
@@ -393,6 +393,21 @@ float dipoleToVoltage(float dipole)
     } else {
         return reqVoltage;
     }
+}
+
+void MapTorqueRodCommand(double dipole, uint8_t * polarity, uint8_t * pwm)
+{
+	double voltage = dipoleToVoltage(dipole);
+	if(voltage > 0)
+	{
+		*polarity = 1;
+		*pwm = (uint8_t)(voltage * ( MAX_PWM / MAX_VOLTAGE ));
+	}
+	else
+	{
+		*polarity = 0;
+		*pwm = (uint8_t)(-voltage * ( MAX_PWM / MAX_VOLTAGE ));
+	}
 }
 /*** Raw sensor data conversion ***/
 // Gyro

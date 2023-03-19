@@ -15,6 +15,7 @@
 // INCLUDES
 //------------------------------------------------------------------------------
 #include "tasks/csp_server.h"
+#include "main.h"
 #include "tasks/telemetry.h"
 #include "tasks/scheduler.h"
 //#include "tasks/fw_update_mgr.h"
@@ -72,11 +73,13 @@ void vCSP_Server(void * pvParameters){
     csp_listen(socket,4);
 
 	//Make sure FS is up before all tasks
-	filesystem_initialization();
+//	filesystem_initialization();
 
 	// Initialize Mission-level Operations (requires FS init)
-	InitMissionOperations();
+//	InitMissionOperations();
+	vTaskResume(vSunPointing_h);
 
+//    printf("ok");
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
 		conn = csp_accept(socket, 1000);
@@ -140,7 +143,7 @@ void vCSP_Server(void * pvParameters){
 				csp_buffer_free(packet);
 				csp_close(conn);
 		} // if(conn)
-		vTaskDelay(80);
+//		vTaskDelay(500);
 	} // while(1)
 } // End of vCSP_Server
 
@@ -175,22 +178,28 @@ uint8_t configure_csp(){
         return result;
     }
 
-//    csp_kiss_init(&uartInterface, &uartHandle, uartPutChar, NULL, "KISS");
+
+#ifdef MAKER2_DEVKIT_CONFIGURATION
+    csp_kiss_init(&uartInterface, &uartHandle, uartPutChar, NULL, "KISS");
+    char* gndRoute = "9/5 KISS";
+    csp_rtable_load(gndRoute);
+	if(status != CSP_ERR_NONE){
+		result = 0;
+		return result;
+	}
+#endif
 
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
     char* canRoute = "0/0 CAN";
 //    char* canRoute = "9/5 CAN 3";
 //    char* canRoute = "9/5 CAN 3, 0/0 CAN";
-
-//    char* gndRoute = "9/5 KISS";
-
    csp_rtable_load(canRoute);
-//   csp_rtable_load(gndRoute);
     if(status != CSP_ERR_NONE){
         result = 0;
         return result;
     }
+
 
     /* Start router task with 100 word stack, OS task priority 1 */
     status = csp_route_start_task(4*CSP_DEFAULT_ROUTER_STACK_SIZE, CSP_DEFAULT_ROUTER_PRIORITY);
