@@ -15,6 +15,8 @@
 #include "drivers/mss_gpio/mss_gpio.h"
 #include "tasks/telemetry.h"
 
+
+int last_reboot_wd =0;
 void vTestWD(void *pvParameters)
 {
     // In the future, this task could be used as a reset service. For instance, tasks could:
@@ -27,7 +29,8 @@ void vTestWD(void *pvParameters)
     if (timeout_occured_WD())
     {
         clear_timeout_WD();
-        printf("Last Reboot Due to WD Expiry!");
+        last_reboot_wd = 1;
+
         // TODO - Log event!
     }
     else
@@ -41,6 +44,10 @@ void vTestWD(void *pvParameters)
 
     for (;;)
     {
+        if(last_reboot_wd){
+            int res = printf("last reboot due to Watchdog\n");
+            if(res)last_reboot_wd =0; //Make sure we send the message.
+        }
 
     	for (int ix=0; ix<6; ix+=1)
     	{

@@ -237,6 +237,8 @@ typedef enum
 	CDH_FW_PUT_DATA_2_CMD,
 	CDH_CHECKSUM_FILE_PART_CMD,
 	CDH_FILE_WRITE_CMD,
+	CDH_FILE_INSERT_CMD,
+	CDH_FILE_DELETE_CMD,
 	// Memory manager commands
 	CDH_GET_SPACECRAFT_STATUS_CMD,
 	CDH_SET_DEPLOYMENT_STARTUP_STATE_CMD,
@@ -318,6 +320,8 @@ void sendCommand(telemetryPacket_t * packet,uint8_t addr);//Sends a cmd packet t
 void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr); //Sends telemetry directly to a subsystem.
 void printMsg(char * msg);
 int printf(const char *fmt, ...);
+void set_csp_init(int state);
+int is_csp_up();
 
 /**********************************************************/
 

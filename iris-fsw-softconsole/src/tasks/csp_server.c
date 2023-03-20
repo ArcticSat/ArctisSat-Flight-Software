@@ -63,6 +63,7 @@ void vCSP_Server(void * pvParameters){
     InputQueues_t * queues = (InputQueues_t *) pvParameters;
 
     uint8_t result = configure_csp();
+    if(result)set_csp_init(1);
 
     csp_conn_t * conn = NULL;
 	csp_packet_t * packet= NULL;
@@ -83,7 +84,6 @@ void vCSP_Server(void * pvParameters){
     if(get_fs_status() == FS_OK){
     	vTaskResume(vFw_Update_Mgr_Task_h);
     }
-
 
 	// Initialize Mission-level Operations (requires FS init)
 //	InitMissionOperations();
@@ -158,6 +158,7 @@ uint8_t configure_csp(){
     //csp_debug_hook_set(&csp_debug_hook);
     csp_debug_set_level(CSP_ERROR, false);
     csp_debug_set_level(CSP_WARN, false);
+
     uint8_t result = 1; //Sucess
     // CAN parameters are not actually used. Need to decide where we are doing
     // CAN init. Right now the csp driver does this, but uses hard coded params.
@@ -203,6 +204,7 @@ uint8_t configure_csp(){
 //    char* canRoute = "9/5 CAN 3";
 //    char* canRoute = "9/5 CAN 3, 0/0 CAN";
    csp_rtable_load(canRoute);
+
     if(status != CSP_ERR_NONE){
         result = 0;
         return result;
