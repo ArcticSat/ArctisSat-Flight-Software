@@ -398,14 +398,177 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                         break;
                     }
 
-               cdh_file_write_end:
+                cdh_file_write_end:
                     res = fs_file_close(&file);
                     if(res != FS_OK){
                         printf("Couldn't close file %d\n.",res);
                         break;
                     }
-
+                    printf("done\n");
                     break;
+                }
+                case CDH_FILE_INSERT_CMD:{
+
+                    uint32_t offset=0;
+                    uint32_t datalen=0;
+                    char filename[64]={0};
+                    uint8_t* data;
+                    memcpy(&offset,&cmd_pkt->data[0],sizeof(uint32_t));
+                    memcpy(&datalen,&cmd_pkt->data[sizeof(uint32_t)],sizeof(uint32_t));
+                    strcpy(filename,&cmd_pkt->data[sizeof(uint32_t)*2]);
+                    data = &cmd_pkt->data[sizeof(uint32_t)*2+strlen(filename)+1];
+
+                    char filename_temp[64];
+                    strcpy(filename_temp,filename);
+                    strcat(filename_temp,".tmp");
+                    fs_copy_file(filename, filename_temp);
+
+                    lfs_file_t tempfile={0};
+                    int res= fs_file_open(&tempfile, filename_temp, LFS_O_WRONLY);
+                    if(res != FS_OK){
+                        printf("Couldn't open file %s to write %d\n.",filename,res);
+                        break;
+                    }
+                    lfs_file_t file={0};
+                    res= fs_file_open(&file, filename, LFS_O_RDONLY);
+                    if(res != FS_OK){
+                        printf("Couldn't open file %s to read %d\n.",filename,res);
+                        break;
+                    }
+
+                    //First write the new data to the temp file, at the correct spot.
+                    res = fs_file_seek(&tempfile, offset, LFS_SEEK_SET);
+                    if(res <= FS_OK){
+                        printf("Couldn't seek file %d\n.",res);
+                        goto cdh_file_insert_end;
+                        break;
+                    }
+                    res = fs_file_seek(&file, offset, LFS_SEEK_SET);
+                    if(res <= FS_OK){
+                        printf("Couldn't seek file %d\n.",res);
+                        goto cdh_file_insert_end;
+                        break;
+                    }
+
+                    res = fs_file_write(&tempfile, data, datalen);
+                    if(res <= 0){
+                        printf("Couldn't write file %d\n.",res);
+                        goto cdh_file_insert_end;
+                        break;
+                    }
+
+                    uint8_t buff[256]={0};
+                    int read=0;
+                    while((read=fs_file_read(&file,buff,256))>0){
+
+                        int write = fs_file_write(&tempfile,buff,read);
+                        if(write != read){
+                            printf("error copying file, read != write\n");
+                            break;
+                        }
+                    }
+
+
+
+                cdh_file_insert_end:
+                    res = fs_file_close(&file);
+                    if(res != FS_OK){
+                        printf("Couldn't close file %d\n.",res);
+                        break;
+                    }
+                    res = fs_file_close(&tempfile);
+                    if(res != FS_OK){
+                        printf("Couldn't close file %d\n.",res);
+                        break;
+                    }
+                    res = fs_rename(filename_temp, filename);
+                    if(res != FS_OK){
+                        printf("Couldn't mv temp file to replace original %d\n.",res);
+                        break;
+                    }
+                    printf("done\n");
+                    break;
+                }
+                case CDH_FILE_DELETE_CMD:{
+
+                    uint32_t offset=0;
+                    uint32_t datalen=0;
+                    char filename[64]={0};
+                    memcpy(&offset,&cmd_pkt->data[0],sizeof(uint32_t));
+                    memcpy(&datalen,&cmd_pkt->data[sizeof(uint32_t)],sizeof(uint32_t));
+                    strcpy(filename,&cmd_pkt->data[sizeof(uint32_t)*2]);
+
+                    char filename_temp[64];
+                    strcpy(filename_temp,filename);
+                    strcat(filename_temp,".tmp");
+                    fs_copy_file(filename, filename_temp);
+
+                    lfs_file_t tempfile={0};
+                    int res= fs_file_open(&tempfile, filename_temp, LFS_O_WRONLY);
+                    if(res != FS_OK){
+                        printf("Couldn't open file %s to write %d\n.",filename,res);
+                        break;
+                    }
+                    lfs_file_t file={0};
+                    res= fs_file_open(&file, filename, LFS_O_RDONLY);
+                    if(res != FS_OK){
+                        printf("Couldn't open file %s to read %d\n.",filename,res);
+                        break;
+                    }
+
+                    int filesize = fs_file_size(&tempfile);
+
+                    //Seek so that the read pointer is len bytes ahead, thus deleteing the data between write pointer and read pointer.
+                    res = fs_file_seek(&tempfile, offset, LFS_SEEK_SET);
+                    if(res <= FS_OK){
+                        printf("Couldn't seek file %d\n.",res);
+                        goto cdh_file_delete_end;
+                        break;
+                    }
+                    res = fs_file_seek(&file, offset+datalen, LFS_SEEK_SET);
+                    if(res <= FS_OK){
+                        printf("Couldn't seek file %d\n.",res);
+                        goto cdh_file_delete_end;
+                        break;
+                    }
+
+                    uint8_t buff[256]={0};
+                    int read=0;
+                    while((read=fs_file_read(&file,buff,256))>0){
+
+                        int write = fs_file_write(&tempfile,buff,read);
+                        if(write != read){
+                            printf("error copying file, read != write\n");
+                            break;
+                        }
+                    }
+
+                    res = fs_file_truncate(&tempfile, filesize-datalen);
+                    if(res != FS_OK){
+                        printf("Couldn't truncate file. %d\n.",res);
+                        break;
+                    }
+
+                cdh_file_delete_end:
+                    res = fs_file_close(&file);
+                    if(res != FS_OK){
+                        printf("Couldn't close file %d\n.",res);
+                        break;
+                    }
+                    res = fs_file_close(&tempfile);
+                    if(res != FS_OK){
+                        printf("Couldn't close file %d\n.",res);
+                        break;
+                    }
+                    res = fs_rename(filename_temp, filename);
+                    if(res != FS_OK){
+                        printf("Couldn't mv temp file to replace original %d\n.",res);
+                        break;
+                    }
+
+                    printf("done\n");
+
+                break;
                 }
         default:{
             result = -1;

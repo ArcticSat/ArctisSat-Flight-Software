@@ -38,6 +38,7 @@ static int rx_byte_index=0;
 static uint8_t targetFw = 1;//Which image will we upgrade to. 1 is default for update image. 0 for golden.
 static int UploadMode = FW_UPLOAD_REV2;
 uint16_t curr_seq_num = 0;
+static fw_user_timeout=0;
 
 static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
 
@@ -547,7 +548,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                //If we make it here we should have verified all copies of the firmware, so we can say system is armed!
                if(fwMgrArmed){
                    updateState(FW_STATE_ARMED);
-                   fw_armed_timeout = FW_ARMED_TIMEOUT_MS;
+                   fw_armed_timeout = (fw_user_timeout>0)?fw_user_timeout:FW_ARMED_TIMEOUT_MS;
                }
                else{
                    updateState(FW_STATE_IDLE);
@@ -577,7 +578,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 if(fwMgrExeConfirmed){
 
-                    //First check our file is verified. We should n't be allowed here without the fw being verified, but just in case...
+                    //First check our file is verified. We shouldn't be allowed here without the fw being verified, but just in case...
 //                    if(verifiedStatus.verified[1] != 1){
 //                        printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
 //                        updateState(FW_STATE_IDLE);
@@ -917,5 +918,9 @@ void fwRxSendAck(int ackNak, uint16_t seq){
     sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
 
 
+}
+void fw_mgr_set_arm_timeout(int msec){
+
+    fw_user_timeout = msec;
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

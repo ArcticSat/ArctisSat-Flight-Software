@@ -136,5 +136,8 @@ void setFwDesignVer(uint8_t slot, uint8_t ver);
 //Gets the current number of bytes uploaded and the total expected for the current upload.
 void fw_mgr_get_rx_progress(int* curr,uint32_t* total );
 
+//Change the value of the arming timeout.
+void fw_mgr_set_arm_timeout(int msec);
+
 
 #endif // FW_UPDATE_MGR_H
