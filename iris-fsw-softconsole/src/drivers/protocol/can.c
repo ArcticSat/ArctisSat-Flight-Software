@@ -49,20 +49,6 @@ mss_can_instance_t g_can0;  // MSS CAN object instance.
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-uint8_t data_buf[256];
-
-void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
-{
-	memcpy(data_buf,0,256);
-	memcpy(&output->telem_id,&can_msg->data[0],1);
-	memcpy(&output->length,&can_msg->dlc,1);
-	output->length -= 1;
-//	memcpy(&output->data[0],&can_msg->data[1],output->length);
-	memcpy(data_buf,&can_msg->data[1],output->length);
-	output->data = data_buf;
-	MSS_RTC_get_calendar_count(&output->timestamp);
-}
-
 int init_CAN(CANBaudRate baudrate, QueueHandle_t *csp_rx_queue_handle)
 {
     int rc = 1;
@@ -147,9 +133,10 @@ int CAN_transmit_message(CANMessage_t * message)
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-extern uint8_t numCanMsgs;
-extern CANMessage_t can_q[10];
-telemetryPacket_t tmpkt1 = {0};
+// TODO: remove below three lines
+//extern uint8_t numCanMsgs;
+//extern CANMessage_t can_q[10];
+//telemetryPacket_t tmpkt1 = {0};
 // Interrupt handler for the CAN interrupt. Received CAN messages are placed into a Queue.
 __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 {

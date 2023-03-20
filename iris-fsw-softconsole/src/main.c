@@ -74,6 +74,8 @@
 #include "tasks/fw_update_mgr.h"
 #include "drivers/device/adc/AD7928.h"
 #include "application/cdh.h"
+//#include "application/detumbling.h"
+#include "application/sun_pointing.h"
 
 
 
@@ -93,6 +95,8 @@ TaskHandle_t vFw_Update_Mgr_Task_h;
 TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
+//TaskHandle_t vDetumbleDriver_h;
+TaskHandle_t vSunPointing_h;
 //Debug Only:
 TaskHandle_t vTaskSpinLEDs_h;
 
@@ -130,19 +134,35 @@ int main( void )
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
 	BaseType_t status;
-    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
-	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+
+#ifdef MAKER2_DEVKIT_CONFIGURATION
+    // Create LED spinning task
+    status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
+    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",500,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
+#endif
     status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,1,&vFw_Update_Mgr_Task_h);
+
+//	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
+//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
+	//status = xTaskCreate(vSunPointingLoop,"sunpointing",800,NULL,2,&vSunPointing_h);
+
+    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,3,&vTTTScheduler_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
+	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
+	status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+
 //    //Suspend these because csp server will start once csp is up.
+//    vTaskSuspend(vDetumbleDriver_h);
+    //vTaskSuspend(vSunPointing_h);
     vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vTTTScheduler_h);
     vTaskSuspend(vCanServer_h);
+
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+    // Create UART0 RX Task
     vTaskStartScheduler();
 
 
@@ -183,24 +203,27 @@ int main( void )
 FlashStatus_t data_flash_status;
 static void prvSetupHardware( void )
 {
+#ifdef MAKER2_DEVKIT_CONFIGURATION
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
-//    vInitializeLEDs();
-//
+    vInitializeLEDs();
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-//    vInitializeUARTs(MSS_UART_115200_BAUD);
+    vInitializeUARTs(MSS_UART_115200_BAUD);
+#endif
 //
-//    init_WD();
     init_spi();
-    init_rtc();
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
+#ifdef FLIGHT_MODEL_CONFIGURATION || ENGINEERING_MODEL_CONFIGURATION
+    init_WD();
+    init_rtc();
 #ifdef USING_DATA_FLASH
 	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
 #ifdef USING_PROGRAM_FLASH
     flash_device_init(flash_devices[PROGRAM_FLASH]);
+#endif
 #endif
 //    initADC();
 //    asMram_init();

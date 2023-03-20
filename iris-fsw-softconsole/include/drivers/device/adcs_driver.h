@@ -17,14 +17,82 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "drivers/protocol/spi.h"
+#include <math.h> //If someone can implement an arctan without math.h that would be sweet.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define ADCS_GYRO_DATA_SIZE  6
-#define ADCS_MAGNETORQUER_DATA_SIZE  6
+// Debug settings
+//#define SIM_VALUES_1
+#define SIM_VALUES_2
+
+#ifdef SIM_VALUES_1
+#define BACKWARDS_SIM_ENG_VALUE			0
+#define GYRO_SIM_ENG_VALUE 				0.0					// rad/s
+#define GYRO_X_SIM_ENG_VALUE 			0.01790779			// rad/s
+#define GYRO_Y_SIM_ENG_VALUE 			0.01698973			// rad/s
+#define GYRO_Z_SIM_ENG_VALUE 			0.01677946			// rad/s
+#define MAG_SIM_ENG_VALUE				0.0					// Teslas
+#define MAG_X_SIM_ENG_VALUE				0.000197040			// Teslas
+#define MAG_Y_SIM_ENG_VALUE				-4.9727735e-5		// Teslas
+#define MAG_Z_SIM_ENG_VALUE				-0.00040812			// Teslas
+#define SUN_ANGLE_SIM_ENG_VALUE 		 0					// unitless
+#define SUN_VECT_X_SIM_ENG_VALUE 		-0.16555641			// unitless
+#define SUN_VECT_Z_SIM_ENG_VALUE 		0.35368141			// unitless
+#define TORQUE_ROD_SIM
+#elif defined(SIM_VALUES_2)
+#define BACKWARDS_SIM_ENG_VALUE			 0
+#define GYRO_SIM_ENG_VALUE 				 0.0				// rad/s
+#define GYRO_X_SIM_ENG_VALUE 			 1000				// rad/s
+#define GYRO_Y_SIM_ENG_VALUE 			 1200				// rad/s
+#define GYRO_Z_SIM_ENG_VALUE 			-2000 				// rad/s
+#define MAG_SIM_ENG_VALUE				 0.0				// Teslas
+#define MAG_X_SIM_ENG_VALUE				-0.0004114751		// Teslas
+#define MAG_Y_SIM_ENG_VALUE				 0.00019760653		// Teslas
+#define MAG_Z_SIM_ENG_VALUE				-9.963983400e-5		// Teslas
+#define SUN_ANGLE_SIM_ENG_VALUE 		 0					// unitless
+#define SUN_VECT_X_SIM_ENG_VALUE 		-0.1319210932		// unitless
+#define SUN_VECT_Z_SIM_ENG_VALUE 		 0.29519842314		// unitless
+#define TORQUE_ROD_SIM
+#endif
+// SPI parameters
+#define ADCS_GYRO_RAW_DATA_SIZE_BYTES  6
+#define ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES  6
 #define ADCS_SUN_SENSOR_DATA_SIZE   164
-#define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETORQUER_DATA_SIZE + ADCS_GYRO_DATA_SIZE + ADCS_SUN_SENSOR_DATA_SIZE)
+#define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES + ADCS_GYRO_RAW_DATA_SIZE_BYTES + ADCS_SUN_SENSOR_DATA_SIZE)
+// Axes
+#define NUM_MAG_AXES 3
+// Torque rod parameters
+#define DIPOLE_SLOPE 0.04
+#define MAX_DIPOLE 0.2
+#define MAX_VOLTAGE 5.0
+#define MAX_PWM 255.0
+#define MIN_DETUMBLE_ROTATION_RPS 0.5
+// Gyroscope data conversion
+#define DPS_TO_RPS 0.017448
+// Magnetometer data conversion
+#define MAG_LSB 0.00025 //From datasheet - LSB is 0.25 miligauss
+#define GAUSS_TO_TESLA_CONVERSION 1/10000 //1 tesla = 10000 gauss
+// Raw sun sensor data conversion
+#define NOP 0x00    //Idle command
+#define CR 0xF0     //Chip reset
+#define RT 0x68     //Read threshold
+#define WT 0xCC     //Write threshold
+#define SI 0xB8     //Start integration
+#define SIL 0xB4    // Start integration long
+#define RO1 0x9C    //ReadOut 1-bit
+#define RO2 0x96    //ReadOut 1.5(2)-bit
+#define RO4 0x93    //ReadOut 4-bit
+#define RO8 0x99    //ReadOut 8-bit
+#define TZ1 0xE8    //Test zebra pattern 1
+#define TZ2 0xE4    //Test zebra pattern 2
+#define TZ12 0xE2   //Test zebra pattern 1 & 2
+#define TZ0 0xE1    //Test zebra pattern 0
+#define SM 0xC6     //Sleep mode
+#define WU 0xC3     //Wake-up
+#define MASK_HEIGHT 2.06    // h in the paper (mm)
+#define REF_PIXEL 62        // reference pixel
+#define PIXEL_LENGTH 50e-3  // pixel length (mm)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMERATIONS AND ENUMERATION TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -80,6 +148,41 @@ typedef enum
 	SUN_SENSOR_4,		//4
 } enumSunSensor;
 
+// ADCS Command IDs
+typedef enum
+{
+	ADCS_CMD_PING = 1,
+	ADCS_CMD_SET_PWM_TORQUE_ROD_1,						// 2
+	ADCS_CMD_SET_PWM_TORQUE_ROD_2,						// 3
+	ADCS_CMD_SET_PWM_TORQUE_ROD_3,						// 4
+	ADCS_CMD_SET_ON_TORQUE_ROD_1,							// 5
+	ADCS_CMD_SET_ON_TORQUE_ROD_2,							// 6
+	ADCS_CMD_SET_ON_TORQUE_ROD_3,							// 7
+	ADCS_CMD_SET_OFF_TORQUE_ROD_1,						// 8
+	ADCS_CMD_SET_OFF_TORQUE_ROD_2,						// 9
+	ADCS_CMD_SET_OFF_TORQUE_ROD_3,						// 10
+	ADCS_CMD_SET_POLARITY_TORQUE_ROD_1,					// 11
+	ADCS_CMD_SET_POLARITY_TORQUE_ROD_2,					// 12
+	ADCS_CMD_SET_POLARITY_TORQUE_ROD_3,					// 13
+	ADCS_CMD_SET_PWM_COUNTER_TORQUE_ROD,				// 14
+	ADCS_SELECT_SS1,											// 15
+	ADCS_SELECT_SS2,											// 16
+	ADCS_SELECT_SS3,											// 17
+	ADCS_SELECT_SS4,											// 18
+	ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR,				// 19
+	ADCS_SET_GYRO_I2C_ADDRESS,								// 20
+	ADCS_GET_GYRO_MEASUREMENT,								// 21
+	ADCS_CMD_GET_MEASUREMENT_GYRO_1,						// 22
+	ADCS_CMD_GET_MEASUREMENT_GYRO_2,						// 23
+	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1,			// 24
+	ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2,			// 25
+	ADCS_SPI_PORT_TOGGLE,									// 26
+	ADCS_SYNC_SPI,												// 27
+	NUM_ADCS_COMMANDS,										// 28
+	ADCS_ACK=55,
+	ADCS_SPI_CMD_ERROR = 75,
+} AdcsCommands_t;
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -96,13 +199,25 @@ AdcsDriverError_t adcsSyncSpi(void);
 AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t rod_state);
 AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
 AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t cmd_id, uint8_t pwm);
+/*** TODO: validity of sampled data (e.g. all zeros may indicate an SPI transfer error) ***/
 // Sensor Polling commands
 AdcsDriverError_t setGyroI2cAddress(uint8_t addr);
-AdcsDriverError_t getGyroMeasurementsGeneric(uint8_t * gyroMeasurements);
-AdcsDriverError_t getGyroMeasurements(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
-AdcsDriverError_t getMagnetometerMeasurements(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
+AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements);
+AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeasurements);
+AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNumber, uint8_t * magnetometerMeasurements);
 AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor);
-AdcsDriverError_t getSunSensorMeasurements(uint8_t * measurements);
+AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements);
+// Torque rod data conversion
+double dipoleToVoltage(double dipole);
+void MapTorqueRodCommand(double dipole, uint8_t * polarity, uint8_t * pwm);
+// Raw sensor data conversion
+float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro);
+float convertMagDataRawToTeslas(uint16_t rawMag);
+uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec);
+// Application-level sensor polling
+AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps);
+AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData);
+AdcsDriverError_t getSunAngle(uint8_t * measurements);
 
 
 

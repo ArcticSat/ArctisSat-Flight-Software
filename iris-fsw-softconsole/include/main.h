@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
+
+//#define FLIGHT_MODEL_CONFIGURATION
+//#define ENGINEERING_MODEL_CONFIGURATION
+#define MAKER2_DEVKIT_CONFIGURATION
 
 typedef enum {
 	CDH_SUBSYS_ID,
