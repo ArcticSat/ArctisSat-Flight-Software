@@ -176,5 +176,24 @@ int setDetumblingStartupState(uint8_t state)
 	scStatus.detumble_state = state;
 	return CommitSpacecraftStatus();
 }
+//Reboot Reason
+int getLastRebootReason(uint8_t *reason){
 
+    if(sc_status_read_result_fs != FS_OK)
+    {
+        *reason = REBOOT_UNKNOWN;
+    }
+    else
+    {
+        *reason = scStatus.last_reboot_reason;
+    }
+
+    return sc_status_read_result_fs;
+
+}
+int setLastRebootReason(uint8_t  reason){
+
+    scStatus.last_reboot_reason = reason;
+    return CommitSpacecraftStatus();
+}
 

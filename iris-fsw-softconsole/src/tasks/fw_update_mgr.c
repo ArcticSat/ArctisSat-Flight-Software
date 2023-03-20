@@ -23,6 +23,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "tasks/telemetry.h"
+#include "application/memory_manager.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -600,7 +601,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     //Shutdown the system, whatever that means.
                     //We should save any time-tagged tasks, adcs state, anything else important that is in RAM.
-
+                    setLastRebootReason(REBOOT_OTA_UPDATE);
 
                     //Update state so we know to post verify on reboot.
                     //ShutdownSystem();

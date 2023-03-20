@@ -331,6 +331,8 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                     break;
                 }
                 case CDH_RESET_SYSTEM_CMD:{
+
+                    setLastRebootReason(REBOOT_USER_SOFT_RESET);
                     SCB_Type* systemcontrol = SCB;
                     systemcontrol->AIRCR = (0x05FA << 16)|SCB_AIRCR_SYSRESETREQ_Msk;
                     break;
