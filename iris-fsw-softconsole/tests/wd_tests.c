@@ -47,23 +47,23 @@ void vTestWD(void *pvParameters)
     int started =0;
     for (;;)
     {
-        if(is_csp_up() && ! started){
-
-            uint8_t reboot=0;
-            int res = getLastRebootReason(&reboot);
-
-            if(res == 0){
-
-                if(last_reboot_wd){
-                    setLastRebootReason(REBOOT_INTERNAL_WD);
-                    last_reboot_wd =0; //Make sure we send the message.
-                }
-                started =1;
-                printf("Last Reboot: %d\n",reboot);
-
-            }
-
-        }
+//        if(is_csp_up() && ! started){
+//
+//            uint8_t reboot=0;
+//            int res = getLastRebootReason(&reboot);
+//
+//            if(res == 0){
+//
+//                if(last_reboot_wd){
+//                    setLastRebootReason(REBOOT_INTERNAL_WD|reboot);//If there was stack overflow which then cause WD timeout, then we don't want to overwrite with WD
+//                    last_reboot_wd =0; //Make sure we send the message.
+//                }
+//                started =1;
+//                printf("Last Reboot: %d\n",reboot); //This will stack overflow if the wdTest task stack size is too small.
+//
+//            }
+//
+//        }
 
 
     	for (int ix=0; ix<6; ix+=1)

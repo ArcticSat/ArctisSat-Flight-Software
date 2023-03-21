@@ -442,22 +442,23 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 
     // TODO - Log event!
 
-    //Try and log to Filesystem if it still works.
-    setLastRebootReason(REBOOT_STACK_OVERFLOW);
+    //Try and log to Filesystem if it still works...
+    //It doesn't work since this is in an interrupt, so things like the mutex used by FS are broken.
+//    setLastRebootReason(REBOOT_STACK_OVERFLOW);
+//
+//    lfs_file_t file={0};
+//    int res =fs_file_open(&file, "stackOverflow.info", LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND);
+//    if(res == FS_OK){
+//
+//        //Add Timestamp?
+//        uint8_t buff[64] ={0} ;
+//        snprintf(buff,64,"Overflow: %s (0x%X)",pcTaskName,pxTask);
+//
+//        fs_file_write(&file,buff,strlen(buff)+1);
+//        fs_file_close(&file);
+//
 
-    lfs_file_t file={0};
-    int res =fs_file_open(&file, "stackOverflow.info", LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND);
-    if(res == FS_OK){
-
-        //Add Timestamp?
-        uint8_t buff[64] ={0} ;
-        snprintf(buff,64,"Overflow: %s (0x%X)",pcTaskName,pxTask);
-
-        fs_file_write(&file,buff,strlen(buff)+1);
-        fs_file_close(&file);
-
-
-    }
+//    }
 
 
     taskDISABLE_INTERRUPTS();
