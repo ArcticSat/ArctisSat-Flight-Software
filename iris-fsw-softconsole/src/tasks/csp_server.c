@@ -20,6 +20,7 @@
 #include "tasks/scheduler.h"
 //#include "tasks/fw_update_mgr.h"
 #include "application/cdh.h"
+#include "application/memory_manager.h"
 
 #include "drivers/filesystem_driver.h"
 //#include "drivers/software_update_driver.h"
@@ -87,6 +88,10 @@ void vCSP_Server(void * pvParameters){
 
 	// Initialize Mission-level Operations (requires FS init)
 //	InitMissionOperations();
+    init_memory_manager();
+    InitSpacecraftStatus();
+
+
 //	vTaskResume(vSunPointing_h);
 
 //    printf("ok");
