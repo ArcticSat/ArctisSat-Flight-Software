@@ -143,8 +143,7 @@ int main( void )
 //    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
-	status = xTaskCreate(vSunPointingLoop,"sunpointing",800,NULL,2,&vSunPointing_h);
+	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
 
 //    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,3,&vTTTScheduler_h);
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);

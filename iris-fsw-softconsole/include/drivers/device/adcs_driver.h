@@ -33,9 +33,9 @@
 #define GYRO_Y_SIM_ENG_VALUE 			0.01698973			// rad/s
 #define GYRO_Z_SIM_ENG_VALUE 			0.01677946			// rad/s
 #define MAG_SIM_ENG_VALUE				0.0					// Teslas
-#define MAG_X_SIM_ENG_VALUE				0.000197040			// Teslas
-#define MAG_Y_SIM_ENG_VALUE				-4.9727735e-5		// Teslas
-#define MAG_Z_SIM_ENG_VALUE				-0.00040812			// Teslas
+#define MAG_X_SIM_ENG_VALUE				-0.00040812			// Teslas
+#define MAG_Y_SIM_ENG_VALUE				0.000197040			// Teslas
+#define MAG_Z_SIM_ENG_VALUE				-4.9727735e-5		// Teslas
 #define SUN_ANGLE_SIM_ENG_VALUE 		 0					// unitless
 #define SUN_VECT_X_SIM_ENG_VALUE 		-0.16555641			// unitless
 #define SUN_VECT_Z_SIM_ENG_VALUE 		0.35368141			// unitless
