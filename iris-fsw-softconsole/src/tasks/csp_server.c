@@ -88,8 +88,8 @@ void vCSP_Server(void * pvParameters){
 
 	// Initialize Mission-level Operations (requires FS init)
 //	InitMissionOperations();
-    init_memory_manager();
-    InitSpacecraftStatus();
+    //init_memory_manager();
+    //InitSpacecraftStatus();
 
 
 //	vTaskResume(vSunPointing_h);
