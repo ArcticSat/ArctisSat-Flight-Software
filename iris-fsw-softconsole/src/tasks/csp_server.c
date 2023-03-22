@@ -105,6 +105,7 @@ void vCSP_Server(void * pvParameters){
 			#endif
             //Handle the message based on the port it was sent to.
             int dest_port = csp_conn_dport(conn);
+            vTaskDelay(20000);
             switch(dest_port){
 				case CSP_CMD_PORT:{
 					telemetryPacket_t cmd_pkt;
@@ -205,9 +206,11 @@ uint8_t configure_csp(){
 
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
-    char* canRoute = "0/0 CAN";
-//    char* canRoute = "9/5 CAN 3";
-//    char* canRoute = "9/5 CAN 3, 0/0 CAN";
+    //char* canRoute = "0/0 CAN";
+    char* canRoute = "9/5 CAN 3, 0/0 CAN";
+
+//    char* gndRoute = "9/5 KISS";
+
    csp_rtable_load(canRoute);
 
     if(status != CSP_ERR_NONE){
