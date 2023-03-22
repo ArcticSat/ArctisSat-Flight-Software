@@ -24,7 +24,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Debug settings
 //#define SIM_VALUES_1
-#define SIM_VALUES_2
+//#define SIM_VALUES_2
 
 #ifdef SIM_VALUES_1
 #define BACKWARDS_SIM_ENG_VALUE			0

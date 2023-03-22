@@ -77,9 +77,12 @@ void vCSP_Server(void * pvParameters){
 
 	// Initialize Mission-level Operations (requires FS init)
 //	InitMissionOperations();
-	vTaskResume(vSunPointing_h);
+//	vTaskResume(xUART0RxTaskToNotify);
+#ifdef INCLUDE_TASK_TTT
+	vTaskResume(vTTTScheduler_h);
+#endif
+//	vTaskResume(vSunPointing_h);
 
-//    printf("ok");
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
 		conn = csp_accept(socket, 1000);
@@ -150,6 +153,7 @@ void vCSP_Server(void * pvParameters){
 uint8_t configure_csp(){
 
     csp_debug_set_level(CSP_ERROR, false);
+//    csp_debug_set_level(CSP_WARN, false);
     uint8_t result = 1; //Sucess
     // CAN parameters are not actually used. Need to decide where we are doing
     // CAN init. Right now the csp driver does this, but uses hard coded params.

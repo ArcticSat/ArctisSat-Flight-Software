@@ -90,6 +90,7 @@
 
 //TaskHandles
 //This is how we are able to disable/enable tasks, either for operations managment or proper startup order.
+TaskHandle_t xUART0RxTaskToNotify;
 TaskHandle_t vTTTScheduler_h;
 TaskHandle_t vFw_Update_Mgr_Task_h;
 TaskHandle_t vCanServer_h;
@@ -100,7 +101,6 @@ TaskHandle_t vSunPointing_h;
 //Debug Only:
 TaskHandle_t vTaskSpinLEDs_h;
 
-extern TaskHandle_t xUART0RxTaskToNotify;
 
 
 /*
@@ -143,17 +143,21 @@ int main( void )
 //    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
-
-//    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,3,&vTTTScheduler_h);
+//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
+#ifdef INCLUDE_TASK_TTT
+    status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
+#endif
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
 //	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
 //    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vDetumbleDriver_h);
-    vTaskSuspend(vSunPointing_h);
-//    vTaskSuspend(vTTTScheduler_h);
+//    vTaskSuspend(vSunPointing_h);
+#ifdef INCLUDE_TASK_TTT
+    vTaskSuspend(vTTTScheduler_h);
+#endif
+//    vTaskSuspend(xUART0RxTaskToNotify);
 //    vTaskSuspend(vCanServer_h);
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
     // Start FreeRTOS Tasks
@@ -210,12 +214,12 @@ static void prvSetupHardware( void )
 #endif
 //
     init_spi();
+    init_rtc();
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
 #ifdef FLIGHT_MODEL_CONFIGURATION || ENGINEERING_MODEL_CONFIGURATION
     init_WD();
-    init_rtc();
 #ifdef USING_DATA_FLASH
 	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif

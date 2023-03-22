@@ -11,6 +11,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #include "drivers/device/adcs_driver.h"
+#include "main.h"
 #include "board_definitions.h"
 #include <stdlib.h>
 #include <math.h>
@@ -33,6 +34,7 @@ AdcsDriverError_t adcs_init_driver(void)
 #ifdef SPI_EFFICIENT
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
 {
+#if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
 	spi_transaction_block_read_without_toggle(
 			ADCS_SPI_CORE,
 			ADCS_SLAVE_CORE,
@@ -41,6 +43,16 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 			rx_data,
 			rx_size);
 	return ADCS_DRIVER_NO_ERROR;
+#elif defined(MAKER2_DEVKIT_CONFIGURATION)
+	spi_transaction_block_read_without_toggle(
+			FLASH_SPI_CORE,
+			ADCS_SLAVE_CORE,
+			tx_data,
+			tx_size,
+			rx_data,
+			rx_size);
+	return ADCS_DRIVER_NO_ERROR;
+#endif
 }
 #elif
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
