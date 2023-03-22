@@ -398,8 +398,9 @@ float a3g4250d_from_fs245dps_to_mdps(int16_t lsb)
 float mmc5883ma_from_fs8G_to_mG(uint16_t mag_fs_raw)
 {
 	uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
-	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
-	return magnetic_field;
+//	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
+//	return magnetic_field
+	return 0.0;
 }
 
 // Sun
@@ -481,7 +482,7 @@ AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber,
 		magRaw16 |= (uint16_t) magRaw8[2*i];				// LSB transferred first
 		magRaw16 |= (((uint16_t) magRaw8[2*i+1]) << 8);
 		// Convert raw sample to Teslas
-		magDataTeslas[i] = ((-8) + (magRaw16 * MAG_LSB)) * MILLIGAUSS_TO_TESLA_CONVERSION;
+//		magDataTeslas[i] = ((-8) + (magRaw16 * MAG_LSB)) * MILLIGAUSS_TO_TESLA_CONVERSION;
 	}
 
 	return status;
