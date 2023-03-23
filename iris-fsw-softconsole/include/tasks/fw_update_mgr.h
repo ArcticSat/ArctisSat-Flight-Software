@@ -20,7 +20,7 @@
 
 //For testing only. Comment this out!
 //With this we don't keep backup of the firmware, to reduce flash needed.
-#define NO_FW_BACKUP
+//#define NO_FW_BACKUP
 
 #define FW_CHUNK_SIZE   70
 #define NUM_FIRMWARES       2 //We keep a golden image and an update image.
