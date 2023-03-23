@@ -103,6 +103,8 @@ TaskHandle_t vTaskSpinLEDs_h;
 
 extern TaskHandle_t xUART0RxTaskToNotify;
 
+HardwareCheck_t setupHardwareStatus = {0};
+
 
 /*
  * Set up the hardware ready to run this demo.
@@ -138,10 +140,10 @@ int main( void )
 
 #ifdef MAKER2_DEVKIT_CONFIGURATION
     // Create LED spinning task
-    status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
+    //status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",1000,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
@@ -204,6 +206,7 @@ int main( void )
 
 /*-----------------------------------------------------------*/
 FlashStatus_t data_flash_status;
+FlashStatus_t program_flash_status;
 static void prvSetupHardware( void )
 {
 #ifdef MAKER2_DEVKIT_CONFIGURATION
@@ -216,11 +219,11 @@ static void prvSetupHardware( void )
 #endif
 
 
-    init_spi();
+    setupHardwareStatus.spi_init = init_spi();
 
 
     //init_mram();
-    init_CAN(CAN_BAUD_RATE_250K,NULL);
+    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
 #if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
     init_WD();
@@ -229,10 +232,14 @@ static void prvSetupHardware( void )
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
 #ifdef USING_PROGRAM_FLASH
-    flash_device_init(flash_devices[PROGRAM_FLASH]);
+    program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
 #endif
 
 #endif
+
+    setupHardwareStatus.data_flash_init = data_flash_status;
+    setupHardwareStatus.program_flash_init = program_flash_status;
+
 //    initADC();
 //    asMram_init();
 
@@ -444,22 +451,14 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 
     //Try and log to Filesystem if it still works...
     //It doesn't work since this is in an interrupt, so things like the mutex used by FS are broken.
-//    setLastRebootReason(REBOOT_STACK_OVERFLOW);
-//
-//    lfs_file_t file={0};
-//    int res =fs_file_open(&file, "stackOverflow.info", LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND);
-//    if(res == FS_OK){
-//
-//        //Add Timestamp?
-//        uint8_t buff[64] ={0} ;
-//        snprintf(buff,64,"Overflow: %s (0x%X)",pcTaskName,pxTask);
-//
-//        fs_file_write(&file,buff,strlen(buff)+1);
-//        fs_file_close(&file);
-//
 
-//    }
+    //So the  flash_write()/flsh_erase() doesn't work either since it calls vTaskDelay.
+    //The drivers already skip the delay if the scheduler is not running but I guess that check fails
+    //It should definitely be possible to get this working...
 
+//    uint8_t reason=0;
+//    getLastRebootReason(&reason);
+//    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
 
     taskDISABLE_INTERRUPTS();
     for( ;; );

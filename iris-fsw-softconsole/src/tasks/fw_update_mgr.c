@@ -39,7 +39,8 @@ static int rx_byte_index=0;
 static uint8_t targetFw = 1;//Which image will we upgrade to. 1 is default for update image. 0 for golden.
 static int UploadMode = FW_UPLOAD_REV2;
 uint16_t curr_seq_num = 0;
-static fw_user_timeout=0;
+static int32_t fw_user_timeout=0;
+static uint8_t fw_update_attempts=0;
 
 static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
 
@@ -588,6 +589,16 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     update_spi_dir(targetFw, fwFiles[targetFw].designver);
 
+                    //Update state so we know to post verify on reboot.
+                    int res = setLastRebootReason(REBOOT_OTA_UPDATE);
+                    if(fw_update_attempts<1 && res != MEM_MGR_OK ){
+
+                        printf("Could not set reboot reason, abort update. Try again to force, you must manually powercycle cdh!\n");
+                        fw_update_attempts ++;
+                        updateState(FW_STATE_IDLE);
+                    }
+
+                    fw_update_attempts=0; //We will reboot so this should get cleared anyways.
 
                     //Do one last check of the fw before we upload
                     uint32_t check = 0;
@@ -601,9 +612,8 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     //Shutdown the system, whatever that means.
                     //We should save any time-tagged tasks, adcs state, anything else important that is in RAM.
-                    setLastRebootReason(REBOOT_OTA_UPDATE);
 
-                    //Update state so we know to post verify on reboot.
+
                     //ShutdownSystem();
 
 
@@ -629,6 +639,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 }
                 updateState(FW_STATE_IDLE);
                 break;
+            }
+            default:{
+
+                vTaskDelay(500);
             }
 
         }
@@ -725,6 +739,11 @@ void setFwDesignVer(uint8_t slot, uint8_t ver){
 
 }
 
+void forceFwManagerState(uint8_t state){
+
+    fwMgrState = state;
+}
+
 int updateState(int state){
 
     int setState = state;
@@ -811,6 +830,7 @@ void initializeFwMgr(){
     rx_slot_index = 0;
     rx_byte_index=0;
     curr_seq_num = 0;
+    fw_update_attempts=0;
 
 
     //Load/calculate our file metadata
@@ -920,8 +940,10 @@ void fwRxSendAck(int ackNak, uint16_t seq){
 
 
 }
-void fw_mgr_set_arm_timeout(int msec){
+int fw_mgr_set_arm_timeout(int msec){
 
-    fw_user_timeout = msec;
+    if(msec>1000) fw_user_timeout = msec;
+
+    return fw_user_timeout;
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

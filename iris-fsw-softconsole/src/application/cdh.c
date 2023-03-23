@@ -65,13 +65,13 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 			ScStatus_t sc_status;
 			result = getScStatus(&sc_status);
 			// Format data
-			uint8_t buf[2+SC_STATUS_SIZE_BYTES] = {0};
+			uint8_t buf[sizeof(result)+SC_STATUS_SIZE_BYTES] = {0};
 			memcpy(buf,&result,sizeof(result));
-			memcpy(&buf[2],&sc_status,sizeof(SC_STATUS_SIZE_BYTES));
+			memcpy(&buf[sizeof(result)],&sc_status,sizeof(SC_STATUS_SIZE_BYTES));
 			// Send telemetry packet
 			telemetryPacket_t tmpkt = {0};
 			tmpkt.telem_id = CDH_SPACECRAFT_STATUS_ID;
-			tmpkt.length = 2+SC_STATUS_SIZE_BYTES;
+			tmpkt.length = sizeof(result)+SC_STATUS_SIZE_BYTES;
 			tmpkt.data = buf;
 			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 			break;
@@ -219,6 +219,12 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                 case CDH_FW_EXECUTE_CMD:{
                     setFwManagerState(FW_STATE_UPDATE);
                     setFwTargetImage(cmd_pkt->data[0]);
+                    break;
+                }
+                case CDH_FORCE_FW_STATE_CMD:{
+
+                    setFwTargetImage(cmd_pkt->data[1]);
+                    forceFwManagerState(cmd_pkt->data[0]);
                     break;
                 }
                 case CDH_FW_EXECUTE_CONFIRM_CMD:{
@@ -571,6 +577,33 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                     printf("done\n");
 
                 break;
+                }
+                case CDH_CLEAR_REBOOT_REASON_CMD:{
+                    // Set deployment state
+                    int result;
+                    uint8_t state = cmd_pkt->data[0];
+                    result = setLastRebootReason(state);
+                    break;
+
+                    break;
+                }
+                case CDH_GET_HW_STATUS_CMD:{
+
+                    telemetryPacket_t hwStatPkt = {0};
+                    hwStatPkt.telem_id = CDH_HW_STATUS_ID;
+                    hwStatPkt.length = sizeof(HardwareCheck_t);
+                    hwStatPkt.data = (uint8_t*)&setupHardwareStatus;
+                    sendTelemetryAddr(&hwStatPkt, GROUND_CSP_ADDRESS);
+
+                    break;
+                }
+                case CDH_SET_FW_ARM_TIMEOUT_CMD:{
+
+                    int32_t msec = 0;
+                    memcpy(&msec,cmd_pkt->data,sizeof(int32_t));
+                    int res =fw_mgr_set_arm_timeout(msec);
+                    printf("Timeout: %d\n",res);
+                    break;
                 }
         default:{
             result = -1;

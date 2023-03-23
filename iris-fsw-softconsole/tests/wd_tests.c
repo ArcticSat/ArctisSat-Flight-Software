@@ -28,6 +28,9 @@ void vTestWD(void *pvParameters)
     // Note that the watchdog is not enabled (by the MSS) for certain situations, such as:
     // - While debugging.
     // - Programming.
+
+    //Dont print from this task! Current stack size is too small
+
     if (timeout_occured_WD())
     {
         clear_timeout_WD();
@@ -47,24 +50,20 @@ void vTestWD(void *pvParameters)
     int started =0;
     for (;;)
     {
-//        if(is_csp_up() && ! started){
-//
-//            uint8_t reboot=0;
-//            int res = getLastRebootReason(&reboot);
-//
-//            if(res == 0){
-//
-//                if(last_reboot_wd){
-//                    setLastRebootReason(REBOOT_INTERNAL_WD|reboot);//If there was stack overflow which then cause WD timeout, then we don't want to overwrite with WD
-//                    last_reboot_wd =0; //Make sure we send the message.
-//                }
-//                started =1;
-//                printf("Last Reboot: %d\n",reboot); //This will stack overflow if the wdTest task stack size is too small.
-//
-//            }
-//
-//        }
 
+        if(last_reboot_wd){
+
+            //If we reset because internal WD, we can try to get the sc status.
+            //If it works we can add this to the reboot reason. If read fails then we can try again later.
+            uint8_t rebootReason;
+            int res = getLastRebootReason(&rebootReason);
+
+            if(res == MEM_MGR_OK){
+                setLastRebootReason(REBOOT_INTERNAL_WD|rebootReason);
+                last_reboot_wd =0;
+            }
+
+        }
 
     	for (int ix=0; ix<6; ix+=1)
     	{
@@ -78,5 +77,6 @@ void vTestWD(void *pvParameters)
 		pinState = ~pinState;
 		service_WD();
         vTaskDelay(pdMS_TO_TICKS(1650));
+
     }
 }

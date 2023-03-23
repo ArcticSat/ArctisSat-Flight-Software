@@ -24,7 +24,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define SC_STATUS_SIZE_BYTES 2
+#define SC_STATUS_SIZE_BYTES 3
 typedef struct  {
 	uint8_t deployment_state;
 	uint8_t detumble_state;
@@ -53,14 +53,22 @@ typedef enum
 
 typedef enum
 {
-    REBOOT_UNKNOWN,
-    REBOOT_INTERNAL_WD,
-    REBOOT_STACK_OVERFLOW,
-    REBOOT_USER_SOFT_RESET,
-    REBOOT_OTA_UPDATE,
-    REBOOT_POWER_REQUEST,
+    REBOOT_UNKNOWN=0x1, //Default reason
+    REBOOT_INTERNAL_WD=0x2,
+    REBOOT_STACK_OVERFLOW=0x4,
+    REBOOT_USER_SOFT_RESET=0x8,
+    REBOOT_OTA_UPDATE=0x10,
+    REBOOT_POWER_REQUEST=0x20,
 
 } RebootReason_t;
+
+typedef enum{
+    MEM_MGR_OK=0,
+    MEM_MGR_NOT_INIT=-1,
+    MEM_MGR_READ_ERR=-2,
+    MEM_MGR_WRITE_ERR=-3,
+
+}MemManagerError_t;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // GLOBALS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

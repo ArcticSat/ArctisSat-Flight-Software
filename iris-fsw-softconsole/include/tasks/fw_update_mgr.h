@@ -97,6 +97,7 @@ int updateFwMetaData(Fw_metadata_t* data);
 
 int getFwManagerState();
 int setFwManagerState(int state);
+void forceFwManagerState(uint8_t state);
 
 //Saves a chunk of data to one of the firmware files
 void uploadFwChunk(uint8_t * data, uint16_t length);//Will length ever be larger than 256? should be smaller than chunk size...
@@ -136,8 +137,8 @@ void setFwDesignVer(uint8_t slot, uint8_t ver);
 //Gets the current number of bytes uploaded and the total expected for the current upload.
 void fw_mgr_get_rx_progress(int* curr,uint32_t* total );
 
-//Change the value of the arming timeout.
-void fw_mgr_set_arm_timeout(int msec);
+//Change the value of the arming timeout. returns the value. must be greater than 1000 (1 second)
+int fw_mgr_set_arm_timeout(int msec);
 
 
 #endif // FW_UPDATE_MGR_H
