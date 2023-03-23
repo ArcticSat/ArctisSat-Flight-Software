@@ -1,9 +1,30 @@
-Common subdirectories: ../../littlefs/.git and ../iris-fsw-softconsole/Libraries/littlefs/.git
-Common subdirectories: ../../littlefs/.github and ../iris-fsw-softconsole/Libraries/littlefs/.github
-Common subdirectories: ../../littlefs/bd and ../iris-fsw-softconsole/Libraries/littlefs/bd
-diff -x ../../littlefs/.git -Nau ../../littlefs/lfs_util.h ../iris-fsw-softconsole/Libraries/littlefs/lfs_util.h
+diff '--exclude=.git' -Naur ../../littlefs/lfs.c ../iris-fsw-softconsole/Libraries/littlefs/lfs.c
+--- ../../littlefs/lfs.c	2022-05-27 19:33:44.051995700 -0400
++++ ../iris-fsw-softconsole/Libraries/littlefs/lfs.c	2023-02-28 23:39:54.974811900 -0500
+@@ -447,7 +447,7 @@
+ #endif
+ 
+ #ifndef LFS_NO_ASSERT
+-static bool lfs_mlist_isopen(struct lfs_mlist *head,
++bool lfs_mlist_isopen(struct lfs_mlist *head,
+         struct lfs_mlist *node) {
+     for (struct lfs_mlist **p = &head; *p; p = &(*p)->next) {
+         if (*p == (struct lfs_mlist*)node) {
+diff '--exclude=.git' -Naur ../../littlefs/lfs.h ../iris-fsw-softconsole/Libraries/littlefs/lfs.h
+--- ../../littlefs/lfs.h	2022-05-27 19:33:44.051995700 -0400
++++ ../iris-fsw-softconsole/Libraries/littlefs/lfs.h	2023-02-28 23:39:54.641419800 -0500
+@@ -676,6 +676,8 @@
+ // Returns a negative error code on failure.
+ int lfs_fs_traverse(lfs_t *lfs, int (*cb)(void*, lfs_block_t), void *data);
+ 
++bool lfs_mlist_isopen(struct lfs_mlist *head, struct lfs_mlist *node);
++
+ #ifndef LFS_READONLY
+ #ifdef LFS_MIGRATE
+ // Attempts to migrate a previous version of littlefs
+diff '--exclude=.git' -Naur ../../littlefs/lfs_util.h ../iris-fsw-softconsole/Libraries/littlefs/lfs_util.h
 --- ../../littlefs/lfs_util.h	2022-05-27 19:33:44.052997500 -0400
-+++ ../iris-fsw-softconsole/Libraries/littlefs/lfs_util.h	2022-05-27 20:38:07.083516900 -0400
++++ ../iris-fsw-softconsole/Libraries/littlefs/lfs_util.h	2023-02-28 02:25:41.718051700 -0500
 @@ -90,6 +90,8 @@
  #endif
  #endif
@@ -13,5 +34,3 @@ diff -x ../../littlefs/.git -Nau ../../littlefs/lfs_util.h ../iris-fsw-softconso
  // Runtime assertions
  #ifndef LFS_ASSERT
  #ifndef LFS_NO_ASSERT
-Common subdirectories: ../../littlefs/scripts and ../iris-fsw-softconsole/Libraries/littlefs/scripts
-Common subdirectories: ../../littlefs/tests and ../iris-fsw-softconsole/Libraries/littlefs/tests
