@@ -615,7 +615,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 
                     //ShutdownSystem();
-
+                    fs_unmount();
 
                     initiate_firmware_update(targetFw);
 
