@@ -62,7 +62,7 @@ void InitMissionOperations(void)
 
 	uint8_t rebootReason=REBOOT_UNKNOWN;
 	getLastRebootReason(&rebootReason);
-	if(rebootReason & REBOOT_OTA_UPDATE){
+	if((rebootReason & REBOOT_OTA_UPDATE) && rebootReason != 0xFF){
 
 	    //We need to powercycle the cdh for the FS, coreSPI etc to work.
 	    //But first, SET the reboot reason to "request" so we don't boot loop.

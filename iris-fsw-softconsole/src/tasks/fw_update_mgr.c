@@ -24,6 +24,7 @@
 #include "task.h"
 #include "tasks/telemetry.h"
 #include "application/memory_manager.h"
+#include "drivers/device/watchdog.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -616,6 +617,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     //ShutdownSystem();
                     fs_unmount();
+
+                    //Stop the external WD.
+                    start_stop_external_wd(0);
+                    vTaskDelay(1000);//Since WD is seperate task, give some time to make sure it runs.
 
                     initiate_firmware_update(targetFw);
 

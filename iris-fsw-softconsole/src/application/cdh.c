@@ -19,6 +19,7 @@
 #include "drivers/subsystems/eps_driver.h"
 #include "tasks/scheduler.h"
 #include "application/memory_manager.h"
+#include "drivers/device/watchdog.h"
 
 #include "task.h"
 #include "version.h"
@@ -603,6 +604,18 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                     memcpy(&msec,cmd_pkt->data,sizeof(int32_t));
                     int res =fw_mgr_set_arm_timeout(msec);
                     printf("Timeout: %d\n",res);
+                    break;
+                }
+                case CDH_WATCHDOG_DISABLE_CMD:{
+
+                    uint8_t val = 0;
+                    memcpy(&val,cmd_pkt->data,sizeof(uint8_t));
+                    start_stop_external_wd(val);
+
+                    break;
+                }
+                case CDH_RQST_PWR_RESET_LOAD_CMD:{
+
                     break;
                 }
         default:{

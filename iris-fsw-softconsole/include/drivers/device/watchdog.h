@@ -48,4 +48,7 @@
 // Call this to clear a timeout event.
 #define clear_timeout_WD()    MSS_WD_clear_timeout_event()
 
+//Will signal the wd task to start or stop the external watchdog.
+void start_stop_external_wd(uint8_t startStop);
+
 #endif // INCLUDE_WATCHDOG_H
