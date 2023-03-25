@@ -187,7 +187,8 @@ typedef enum
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+// Testing
+void vTestAdcsDriverInterface(void * pvParameters);
 // Utilities
 AdcsDriverError_t adcs_init_driver(void);
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size);

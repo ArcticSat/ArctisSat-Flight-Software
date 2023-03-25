@@ -73,15 +73,18 @@ void vCSP_Server(void * pvParameters){
     csp_listen(socket,4);
 
 	//Make sure FS is up before all tasks
-//	filesystem_initialization();
-
+#ifdef FLIGHT_MODEL_CONFIGURATION
+	filesystem_initialization();
 	// Initialize Mission-level Operations (requires FS init)
-//	InitMissionOperations();
+	InitMissionOperations();
+#else
 //	vTaskResume(xUART0RxTaskToNotify);
 #ifdef INCLUDE_TASK_TTT
 	vTaskResume(vTTTScheduler_h);
 #endif
+#endif
 //	vTaskResume(vSunPointing_h);
+//	vTaskResume(vTestAdcsDriverInterface_h);
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {

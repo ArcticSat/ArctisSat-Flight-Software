@@ -98,6 +98,7 @@ TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
 //TaskHandle_t vDetumbleDriver_h;
 TaskHandle_t vSunPointing_h;
+TaskHandle_t vTestAdcsDriverInterface_h;
 //Debug Only:
 TaskHandle_t vTaskSpinLEDs_h;
 
@@ -140,7 +141,7 @@ int main( void )
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",500,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
 //	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
@@ -151,6 +152,8 @@ int main( void )
 //	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
 //    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 
+//    status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",200,NULL,2,&vTestAdcsDriverInterface_h);
+
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vDetumbleDriver_h);
 //    vTaskSuspend(vSunPointing_h);
@@ -160,6 +163,7 @@ int main( void )
 //    vTaskSuspend(xUART0RxTaskToNotify);
 //    vTaskSuspend(vCanServer_h);
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
+//    vTaskSuspend(vTestAdcsDriverInterface_h);
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);

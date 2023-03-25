@@ -14,6 +14,7 @@ extern TaskHandle_t vCSP_Server_h;
 extern TaskHandle_t vTestWD_h;
 //extern TaskHandle_t vDetumbleDriver_h;
 extern TaskHandle_t vSunPointing_h;
+extern TaskHandle_t vTestAdcsDriverInterface_h;
 //Debug Only:
 extern TaskHandle_t vTaskSpinLEDs_h;
 
