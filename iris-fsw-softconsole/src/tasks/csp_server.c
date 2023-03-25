@@ -76,6 +76,7 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
+    InitMissionOperations();
 	//Make sure FS is up before all tasks
 	filesystem_initialization();
 
@@ -87,7 +88,7 @@ void vCSP_Server(void * pvParameters){
     }
 
 	// Initialize Mission-level Operations (requires FS init)
-//	InitMissionOperations();
+
     //init_memory_manager();
     //InitSpacecraftStatus();
 
@@ -105,7 +106,6 @@ void vCSP_Server(void * pvParameters){
 			#endif
             //Handle the message based on the port it was sent to.
             int dest_port = csp_conn_dport(conn);
-            vTaskDelay(20000);
             switch(dest_port){
 				case CSP_CMD_PORT:{
 					telemetryPacket_t cmd_pkt;

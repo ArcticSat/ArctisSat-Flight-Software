@@ -72,7 +72,9 @@ void InitMissionOperations(void)
 	    if(res == MEM_MGR_OK){
 
 	        //Send command to power to reset.
-	        printf("Power cycled CDH\n "); //powercycleCDH();
+	        //printf("Power cycled CDH\n ");
+	    	//powercycleCDH();
+	    	resetLoadSwitch(LS_CDH);
 
 	        //Shouldn't ever get here, if we do... just continue on, we will have to manually fix.
 	        printf("cdh request pwr cycle failed!\n");

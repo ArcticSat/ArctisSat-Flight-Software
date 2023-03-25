@@ -615,7 +615,11 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
                     break;
                 }
                 case CDH_RQST_PWR_RESET_LOAD_CMD:{
-
+                	if (cmd_pkt->data[0] >= NUM_LOAD_SWITCHES) {
+                		break;
+                	} else {
+                		resetLoadSwitch(cmd_pkt->data[0]);
+                	}
                     break;
                 }
         default:{
