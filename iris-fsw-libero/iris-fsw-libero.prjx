@@ -78,7 +78,7 @@ PARENT="<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.cxf"
 ENDFILE
 VALUE "<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\coreparameters.v,tb_hdl"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="1239"
 PARENT="<project>\component\Actel\DirectCore\CoreAPB3\4.1.100\CoreAPB3.cxf"
 IS_READONLY="TRUE"
@@ -463,12 +463,12 @@ PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 ENDFILE
 VALUE "<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.cxf,actgen_cxf"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="19263"
 ENDFILE
 VALUE "<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.v,hdl"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="13994"
 PARENT="<project>\component\work\CoreAPB3_C0\CoreAPB3_C0.cxf"
 IS_READONLY="TRUE"
@@ -504,14 +504,14 @@ SIZE="6540"
 ENDFILE
 VALUE "<project>\component\work\CORESPI_C1\CORESPI_C1.v,hdl"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="5733"
 PARENT="<project>\component\work\CORESPI_C1\CORESPI_C1.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\DESIGN_FIRMWARE\DESIGN_FIRMWARE.cxf,actgen_cxf"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="437"
 ENDFILE
 VALUE "<project>\component\work\FCCC_C0\FCCC_C0.cxf,actgen_cxf"
@@ -541,41 +541,41 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\MSS_C0.cxf,actgen_cxf"
 STATE="utd"
-TIME="1677540950"
+TIME="1679167939"
 SIZE="12244"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\MSS_C0.v,hdl"
 STATE="utd"
-TIME="1677601030"
+TIME="1679167939"
 SIZE="41396"
 PARENT="<project>\component\work\MSS_C0\MSS_C0.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0\subsystem.bfm,sim"
 STATE="utd"
-TIME="1677601030"
+TIME="1679167939"
 SIZE="814"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\CM3_compile_bfm.tcl,sim"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="491"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf,actgen_cxf"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="23369"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.v,hdl"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="50789"
 PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS_pre.v,hdl"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="57868"
 PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 BEGIN_USE_CONSTRAINT
@@ -587,7 +587,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\MSS_C0_MSS_syn.v,hdl"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="49907"
 PARENT="<project>\component\work\MSS_C0_MSS\MSS_C0_MSS.cxf"
 BEGIN_USE_CONSTRAINT
@@ -599,7 +599,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\test.bfm,sim"
 STATE="utd"
-TIME="1677274579"
+TIME="1679167939"
 SIZE="710"
 ENDFILE
 VALUE "<project>\component\work\MSS_C0_MSS\user.bfm,sim"
@@ -634,7 +634,7 @@ IS_READONLY="TRUE"
 ENDFILE
 VALUE "<project>\constraint\io\user.pdc,io_pdc"
 STATE="utd"
-TIME="1677274579"
+TIME="1679193892"
 SIZE="5579"
 IS_TARGET="TRUE"
 ENDFILE
@@ -664,7 +664,7 @@ PARENT="<project>\component\Actel\SmartFusion2MSS\MSS\1.1.500\MSS.cxf"
 ENDFILE
 VALUE "<project>\simulation\subsystem.bfm,sim"
 STATE="utd"
-TIME="1677540948"
+TIME="1678155141"
 SIZE="840"
 PARENT="<project>\component\work\MSS_C0\MSS_C0.cxf"
 ENDFILE
@@ -688,22 +688,22 @@ PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.so,so"
 STATE="utd"
-TIME="1677533702"
+TIME="1679178194"
 SIZE="234"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.vm,syn_vm"
 STATE="utd"
-TIME="1677533700"
-SIZE="1122355"
+TIME="1679178193"
+SIZE="1115713"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0_syn.prj,prj"
 STATE="utd"
-TIME="1677533703"
+TIME="1679178194"
 SIZE="5489"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0_vm.sdc,syn_sdc"
 STATE="utd"
-TIME="1677533700"
+TIME="1679178193"
 SIZE="1310"
 ENDFILE
 ENDLIST
@@ -982,8 +982,8 @@ NAME="Synplify Pro ME"
 FUNCTION="Synthesis"
 TOOL="Synplify Pro ME"
 LOCATION="C:\Microchip\Libero_SoC_v2022.2\SynplifyPro\bin\synplify_pro.exe"
-PARAM="-licensetype synplifypro_actel -batch -log synplify.log"
-BATCH=1
+PARAM=""
+BATCH=0
 LICENSE=""
 IS32BIT="1"
 EndProfile
@@ -1124,10 +1124,8 @@ LIST UserCustomizedFileList
 ENDLIST
 LIST OpenedFileList
 ORIENTATION;HORIZONTAL
-Reports;Reports;0
-ReportsCurrentItem;Run Programming Action:MSS_C0_PROGRAM.log
 StartPage;StartPage;0
-ACTIVEVIEW;Reports
+ACTIVEVIEW;StartPage
 ENDLIST
 LIST ModuleSubBlockList
 LIST "CoreAPB3_C0::work","component\work\CoreAPB3_C0\CoreAPB3_C0.v","TRUE","FALSE"
@@ -1146,8 +1144,6 @@ SUBBLOCK "CORESPI::CORESPI_LIB","component\Actel\DirectCore\CORESPI\5.2.104\rtl\
 ENDLIST
 LIST "CORESPI_C1::work","component\work\CORESPI_C1\CORESPI_C1.v","TRUE","FALSE"
 SUBBLOCK "CORESPI::CORESPI_LIB","component\Actel\DirectCore\CORESPI\5.2.104\rtl\vlog\core\corespi.v","FALSE","FALSE"
-ENDLIST
-LIST "DESIGN_FIRMWARE::work","component\work\DESIGN_FIRMWARE\DESIGN_FIRMWARE.cxf","TRUE","FALSE"
 ENDLIST
 LIST "MSS_010::work","component\work\MSS_C0_MSS\MSS_C0_MSS_syn.v","FALSE","FALSE"
 ENDLIST
