@@ -62,6 +62,15 @@ volatile enumSunSensor ss_x_select = SUN_SENSOR_1; // TODO: confirm value
 volatile enumSunSensor ss_z_select = SUN_SENSOR_2; // TODO: confirm value
 volatile GyroId_t gyro_select = GYRO_1;
 volatile MagnetometerId_t mag_select = MAGNETOMETER_1;
+// Sensor raw data indices
+volatile uint8_t gyro_x_lsb_idx = 2;
+volatile uint8_t gyro_x_msb_idx = 3;
+volatile uint8_t gyro_y_lsb_idx = 0;
+volatile uint8_t gyro_y_msb_idx = 1;
+volatile uint8_t gyro_z_lsb_idx = 4;
+volatile uint8_t gyro_z_msb_idx = 5;
+volatile gyro_x_sign_flip = false;
+volatile gyro_y_sign_flip = true;
 // Sampling buffers
 volatile uint8_t ss_x_buf[NUM_SAMPLE_LOOPS_SUN_SENSOR][ADCS_SUN_SENSOR_DATA_SIZE];
 volatile uint8_t ss_z_buf[NUM_SAMPLE_LOOPS_SUN_SENSOR][ADCS_SUN_SENSOR_DATA_SIZE];
@@ -186,9 +195,9 @@ void SunPointingP1( void )
 	int i;
 
 	/*** Turn off torque rods ***/
-	setTorqueRodPwm(TORQUE_ROD_1,0);
-	setTorqueRodPwm(TORQUE_ROD_2,0);
-	setTorqueRodPwm(TORQUE_ROD_3,0);
+	setTorqueRodPwm(MAGNETORQUER_X,0);
+	setTorqueRodPwm(MAGNETORQUER_Y,0);
+	setTorqueRodPwm(MAGNETORQUER_Z,0);
 
 	/*** Poll the back panels to check if Y- is facing the sun ***/
 	if(backpanel_loop_counter == BACKPANEL_SA_POLLING_LOOPS)
@@ -287,19 +296,20 @@ void SunPointingP2( void )
 		{
 			uint16_t rawGyro;
 			// Gyro X conversion and sum
+			// NOTE: GYRO AXIS ALIGNMENT CORRECTED HERE
 			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[0]);
-			rawGyro |= (((uint16_t) gyro_buf[1]) << 8);
+			rawGyro |=  ((uint16_t) gyro_buf[gyro_x_lsb_idx]);
+			rawGyro |= (((uint16_t) gyro_buf[gyro_x_msb_idx]) << 8);
 			gyro_x_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
 			// Gyro Y conversion and sum
 			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[2]);
-			rawGyro |= (((uint16_t) gyro_buf[3]) << 8);
+			rawGyro |=  ((uint16_t) gyro_buf[gyro_y_lsb_idx]);
+			rawGyro |= (((uint16_t) gyro_buf[gyro_y_msb_idx]) << 8);
 			gyro_y_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
 			// Gyro Z conversion and sum
 			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[4]);
-			rawGyro |= (((uint16_t) gyro_buf[5]) << 8);
+			rawGyro |=  ((uint16_t) gyro_buf[gyro_z_lsb_idx]);
+			rawGyro |= (((uint16_t) gyro_buf[gyro_z_msb_idx]) << 8);
 			gyro_z_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
 		}
 	}
@@ -349,13 +359,18 @@ void SunPointingP2( void )
 	// Gyro average
 	if(num_valid_gyro_samples > 0)
 	{
+		// NOTE: GYRO ORIENTATION CORRECTED HERE
 #ifndef GYRO_X_SIM_ENG_VALUE
 		gyro_x = gyro_x_sum / num_valid_gyro_samples;
+		if(gyro_x_sign_flip)
+			gyro_x = -gyro_x;
 #else
 		gyro_x = GYRO_X_SIM_ENG_VALUE;
 #endif
 #ifndef GYRO_Y_SIM_ENG_VALUE
 		gyro_y = gyro_y_sum / num_valid_gyro_samples;
+		if(gyro_y_sign_flip)
+			gyro_y = -gyro_y;
 #else
 		gyro_y = GYRO_Y_SIM_ENG_VALUE;
 #endif
@@ -368,6 +383,7 @@ void SunPointingP2( void )
 	// Mag average
 	if(num_valid_mag_samples > 0)
 	{
+		// NOTE: MAG ORIENTATION CORRECTED HERE
 #ifndef MAG_X_SIM_ENG_VALUE
 		mag_x = mag_x_sum / num_valid_mag_samples;
 #else
@@ -375,6 +391,7 @@ void SunPointingP2( void )
 #endif
 #ifndef MAG_Y_SIM_ENG_VALUE
 		mag_y = mag_y_sum / num_valid_mag_samples;
+		mag_y = -mag_y;
 #else
 		mag_y = MAG_Y_SIM_ENG_VALUE;
 #endif
@@ -514,13 +531,13 @@ void SunPointingP3( void )
 
 	/*** Send the scaled commands to magnetorquers ***/
 	// Set polarity
-	setTorqueRodPolarity(TORQUE_ROD_1,polarity_x);
-	setTorqueRodPolarity(TORQUE_ROD_2,polarity_y);
-	setTorqueRodPolarity(TORQUE_ROD_3,polarity_z);
+	setTorqueRodPolarity(MAGNETORQUER_X,polarity_x);
+	setTorqueRodPolarity(MAGNETORQUER_Y,polarity_y);
+	setTorqueRodPolarity(MAGNETORQUER_Z,polarity_z);
 	// Set PWM
-	setTorqueRodPwm(TORQUE_ROD_1,pwm_x);
-	setTorqueRodPwm(TORQUE_ROD_2,pwm_y);
-	setTorqueRodPwm(TORQUE_ROD_3,pwm_z);
+	setTorqueRodPwm(MAGNETORQUER_X,pwm_x);
+	setTorqueRodPwm(MAGNETORQUER_Y,pwm_y);
+	setTorqueRodPwm(MAGNETORQUER_Z,pwm_z);
 
     /*** Wait ***/
     while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == COMMAND_TORQ_RODS);

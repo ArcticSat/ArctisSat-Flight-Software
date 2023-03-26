@@ -141,7 +141,7 @@ int main( void )
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",500,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
 //	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
@@ -222,6 +222,7 @@ static void prvSetupHardware( void )
 //    init_mram();
     init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
+	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #ifdef FLIGHT_MODEL_CONFIGURATION || ENGINEERING_MODEL_CONFIGURATION
     init_WD();
 #ifdef USING_DATA_FLASH

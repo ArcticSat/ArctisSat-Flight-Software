@@ -93,6 +93,7 @@
 #define MASK_HEIGHT 2.06    // h in the paper (mm)
 #define REF_PIXEL 62        // reference pixel
 #define PIXEL_LENGTH 50e-3  // pixel length (mm)
+#define sunBufferOffset 13	// Index of first pixel in raw sun data
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMERATIONS AND ENUMERATION TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -103,8 +104,8 @@ typedef enum {
 } AdcsDriverError_t;
 
 typedef enum{
-    MAGNETORQUER_X,
     MAGNETORQUER_Y,
+    MAGNETORQUER_X,
     MAGNETORQUER_Z
 }MagnetorquerID_t;
 
@@ -197,9 +198,9 @@ AdcsDriverError_t pingAdcs(void);
 AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id);
 AdcsDriverError_t adcsSyncSpi(void);
 // Torque Rod commands
-AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t rod_state);
-AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t cmd_id, TortqueRodPolarity_t polarity);
-AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t cmd_id, uint8_t pwm);
+AdcsDriverError_t setTorqueRodState(MagnetorquerID_t rod_number, TortqueRodState_t rod_state);
+AdcsDriverError_t setTorqueRodPolarity(MagnetorquerID_t rod_number, uint8_t polarity);
+AdcsDriverError_t setTorqueRodPwm(MagnetorquerID_t cmd_id, uint8_t pwm);
 /*** TODO: validity of sampled data (e.g. all zeros may indicate an SPI transfer error) ***/
 // Sensor Polling commands
 AdcsDriverError_t setGyroI2cAddress(uint8_t addr);
@@ -214,7 +215,7 @@ void MapTorqueRodCommand(double dipole, uint8_t * polarity, uint8_t * pwm);
 // Raw sensor data conversion
 float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro);
 float convertMagDataRawToTeslas(uint16_t rawMag);
-uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec);
+float AngleDecompose(uint8_t *RXBuff,uint8_t selec);
 // Application-level sensor polling
 AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps);
 AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData);

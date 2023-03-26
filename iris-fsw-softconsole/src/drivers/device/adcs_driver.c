@@ -23,6 +23,13 @@
 #define MAX_SYNC_CYCLES 180
 
 
+const uint8_t ROMask[4] = {0x80,0x80,0xF0,0xFF};
+const uint8_t ROShift[4] = {1,2,4,8};
+const uint8_t sunDataOffset[3] = {1,0,0};
+const uint8_t RODiv[4] = {1,2,15,255};
+const uint8_t sunDataRxSize[4] = {18,36,72,144};
+
+
 void vTestAdcsDriverInterface(void * pvParameters)
 {
 	int i;
@@ -221,7 +228,7 @@ AdcsDriverError_t adcsSyncSpi(void)
  * @return
  */
 
-AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t rod_state)
+AdcsDriverError_t setTorqueRodState(MagnetorquerID_t rod_number, TortqueRodState_t rod_state)
 {
 	AdcsDriverError_t status = ADCS_ERROR_BAD_ID;
 	uint8_t cmd_id = -1;
@@ -231,13 +238,13 @@ AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t 
 		case TR_STATE_OFF:{
 			switch(rod_number)
 			{
-			case TORQUE_ROD_1:
-				cmd_id = ADCS_CMD_SET_OFF_TORQUE_ROD_1;
-				break;
-			case TORQUE_ROD_2:
+			case MAGNETORQUER_X:
 				cmd_id = ADCS_CMD_SET_OFF_TORQUE_ROD_2;
 				break;
-			case TORQUE_ROD_3:
+			case MAGNETORQUER_Y:
+				cmd_id = ADCS_CMD_SET_OFF_TORQUE_ROD_1;
+				break;
+			case MAGNETORQUER_Z:
 				cmd_id = ADCS_CMD_SET_OFF_TORQUE_ROD_3;
 				break;
 			default:
@@ -248,13 +255,13 @@ AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t 
 		case TR_STATE_ON:{
 			switch(rod_number)
 			{
-			case TORQUE_ROD_1:
-				cmd_id = ADCS_CMD_SET_ON_TORQUE_ROD_1;
-				break;
-			case TORQUE_ROD_2:
+			case MAGNETORQUER_X:
 				cmd_id = ADCS_CMD_SET_ON_TORQUE_ROD_2;
 				break;
-			case TORQUE_ROD_3:
+			case MAGNETORQUER_Y:
+				cmd_id = ADCS_CMD_SET_ON_TORQUE_ROD_1;
+				break;
+			case MAGNETORQUER_Z:
 				cmd_id = ADCS_CMD_SET_ON_TORQUE_ROD_3;
 				break;
 			default:
@@ -272,7 +279,7 @@ AdcsDriverError_t setTorqueRodState(TorqueRodId_t rod_number, TortqueRodState_t 
 	return status;
 }
 
-AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t rod_number, uint8_t polarity)
+AdcsDriverError_t setTorqueRodPolarity(MagnetorquerID_t rod_number, uint8_t polarity)
 {
 #ifdef TORQUE_ROD_SIM
 	return ADCS_DRIVER_NO_ERROR;
@@ -282,13 +289,17 @@ AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t rod_number, uint8_t polarit
 	// Get Command ID
 	switch(rod_number)
 	{
-	case TORQUE_ROD_1:
-		cmd_id = ADCS_CMD_SET_POLARITY_TORQUE_ROD_1;
-		break;
-	case TORQUE_ROD_2:
+	case MAGNETORQUER_X:
 		cmd_id = ADCS_CMD_SET_POLARITY_TORQUE_ROD_2;
 		break;
-	case TORQUE_ROD_3:
+	case MAGNETORQUER_Y:
+		cmd_id = ADCS_CMD_SET_POLARITY_TORQUE_ROD_1;
+		if(polarity == TR_POLARITY_NEG)
+			polarity = TR_POLARITY_POS;
+		else if(polarity == TR_POLARITY_POS)
+			polarity = TR_POLARITY_NEG;
+		break;
+	case MAGNETORQUER_Z:
 		cmd_id = ADCS_CMD_SET_POLARITY_TORQUE_ROD_3;
 		break;
 	default:
@@ -303,7 +314,7 @@ AdcsDriverError_t setTorqueRodPolarity(TorqueRodId_t rod_number, uint8_t polarit
 #endif
 }
 
-AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t rod_number, uint8_t pwm)
+AdcsDriverError_t setTorqueRodPwm(MagnetorquerID_t rod_number, uint8_t pwm)
 {
 #ifdef TORQUE_ROD_SIM
 	return ADCS_DRIVER_NO_ERROR;
@@ -313,13 +324,13 @@ AdcsDriverError_t setTorqueRodPwm(TorqueRodId_t rod_number, uint8_t pwm)
 	// Get Command ID
 	switch(rod_number)
 	{
-	case TORQUE_ROD_1:
-		cmd_id = ADCS_CMD_SET_PWM_TORQUE_ROD_1;
-		break;
-	case TORQUE_ROD_2:
+	case MAGNETORQUER_X:
 		cmd_id = ADCS_CMD_SET_PWM_TORQUE_ROD_2;
 		break;
-	case TORQUE_ROD_3:
+	case MAGNETORQUER_Y:
+		cmd_id = ADCS_CMD_SET_PWM_TORQUE_ROD_1;
+		break;
+	case MAGNETORQUER_Z:
 		cmd_id = ADCS_CMD_SET_PWM_TORQUE_ROD_3;
 		break;
 	default:
@@ -523,47 +534,59 @@ float convertMagDataRawToTeslas(uint16_t rawMag)
 }
 
 // Sun
-uint16_t AngleDecompose(uint8_t *RXBuff,uint8_t selec )
+float AngleDecompose(uint8_t *RXBuff,uint8_t selec )
 {
 #ifdef MAG_SIM_ENG_VALUE
 	return MAG_SIM_ENG_VALUE;
 #else
-    uint8_t FirstPxlPosition=0,i=0,j=0,ROMask[4] = {0x80,0x80,0xF0,0xFF},ROShift[4] = {1,2,4,8},offset[3] = {1,0,0},RODiv[4] = {1,2,15,255},rxSize[4] = {18,36,72,144},Temp = ROMask[selec];
-    float FirstPxlFrac=0;
-    uint16_t AngFrac=0;
+	uint8_t FirstPxlPosition=0;
+	uint8_t i=sunBufferOffset;
+	uint8_t j=0;
+//	uint8_t ROMask[4] = {0x80,0x80,0xF0,0xFF};
+//	uint8_t ROShift[4] = {1,2,4,8};
+//	uint8_t sunDataOffset[3] = {1,0,0};
+//	uint8_t RODiv[4] = {1,2,15,255};
+//	uint8_t sunDataRxSize[4] = {18,36,72,144};
+	uint8_t Temp = ROMask[selec];
+	float FirstPxlFrac=0;
+	uint16_t AngFrac=0;
 
-    while(RXBuff[i] == 0)       //Skips the unilluminated pixels
-    {
-        i++;
-    }
-    while(!(RXBuff[i] & Temp))  //Honestly don't remember why I had this
-    {
-        Temp = Temp >> ROShift[selec];
-        j++;
-        if(j>=ROShift[3-selec])
-            break;
-    }
-    switch (selec)      // This depends on the readout mode which is specified with "selec". The code does some binary operations which I do not recall how I wrote, but it should work.
-    {                   // As far as I recall, this code essentially breaks down the gathered raw data to find the first pixel with light, and figures out the fraction.
-        case 0:
-            FirstPxlPosition = (i*ROShift[3-selec]) + j+1;      // FirstPxlPosition is the position of the first fully illuminated pixel
-            FirstPxlFrac = 0;                                   // Fraction of the partially illuminated pixel which should be before the fully illuminated pixel. These then get added up in the final step
-            break;
-        case 1:
-            FirstPxlPosition = (i*ROShift[3-selec]) + j+1;
-            FirstPxlFrac= (float)((RXBuff[i] & (0xC0>>(ROShift[selec]*(j-1)))) >> ((4-j)*ROShift[selec]))/(float)RODiv[selec];
-            break;
-        case 2:
-            FirstPxlPosition = (i*ROShift[3-selec]) + j+2;
-            FirstPxlFrac= (float)((RXBuff[i] & (0xF0>>(ROShift[selec]*j))) >> ((1-j)*ROShift[selec]))/(float)RODiv[selec];
-            break;
-        case 3:
-            FirstPxlPosition = (i*ROShift[3-selec]) + j+2;
-            FirstPxlFrac = (float)RXBuff[i]/(float)RODiv[selec];
-            break;
-    }
-    AngFrac = 1000*(90-(atan(MASK_HEIGHT/((REF_PIXEL-(FirstPxlPosition-FirstPxlFrac))*PIXEL_LENGTH))*180/M_PI)); // This step uses simple trigonometry to calculate the angle using the incidence length.
-    return AngFrac;
+	while(RXBuff[i] != 255)       //Skips the unilluminated pixels
+	{
+		i++;
+	}
+	while(!(RXBuff[i] & Temp))  //Honestly don't remember why I had this
+	{
+		Temp = Temp >> ROShift[selec];
+		j++;
+		if(j>=ROShift[3-selec])
+		break;
+	}
+	switch (selec)      // This depends on the readout mode which is specified with "selec". The code does some binary operations which I do not recall how I wrote, but it should work.
+	{                   // As far as I recall, this code essentially breaks down the gathered raw data to find the first pixel with light, and figures out the fraction.
+		case 0:
+		FirstPxlPosition = ((i-sunBufferOffset)*ROShift[3-selec]) + j+1;      // FirstPxlPosition is the position of the first fully illuminated pixel
+		FirstPxlFrac = 0;                                   // Fraction of the partially illuminated pixel which should be before the fully illuminated pixel. These then get added up in the final step
+		break;
+		case 1:
+		FirstPxlPosition = (i*ROShift[3-selec]) + j+1;
+		FirstPxlFrac= (float)((RXBuff[i] & (0xC0>>(ROShift[selec]*(j-1)))) >> ((4-j)*ROShift[selec]))/(float)RODiv[selec];
+		break;
+		case 2:
+		FirstPxlPosition = (i*ROShift[3-selec]) + j+2;
+		FirstPxlFrac= (float)((RXBuff[i] & (0xF0>>(ROShift[selec]*j))) >> ((1-j)*ROShift[selec]))/(float)RODiv[selec];
+		break;
+		case 3:
+		FirstPxlPosition = ((i-sunBufferOffset)*ROShift[3-selec]) + j+2;
+		FirstPxlFrac = (float)RXBuff[i]/(float)RODiv[selec];
+		break;
+	}
+
+	float denominator = ((REF_PIXEL-(FirstPxlPosition-FirstPxlFrac))*PIXEL_LENGTH);
+	float sunAngle = 90.0 - atan2(MASK_HEIGHT,denominator)*180.0/M_PI;
+//		AngFrac = 1000*(90-(atan(MASK_HEIGHT/denominator)*180/M_PI));
+//		 AngFrac = 1000*(90-(atan(MASK_HEIGHT/((REF_PIXEL-(FirstPxlPosition-FirstPxlFrac))*PIXEL_LENGTH))*180/M_PI)); // This step uses simple trigonometry to calculate the angle using the incidence length.
+	return sunAngle;
 #endif
 }
 
