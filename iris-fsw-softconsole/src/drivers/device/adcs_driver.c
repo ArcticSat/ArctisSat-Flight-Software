@@ -10,24 +10,41 @@
 //  * This does not currently implement communication as specified in SIGMA operations manual *
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// INCLUDES
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "drivers/device/adcs_driver.h"
 #include "main.h"
 #include "board_definitions.h"
 #include "tasks/telemetry.h"
 #include <stdlib.h>
 #include <math.h>
-
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// DEFINITIONS AND MACROS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// SPI parameters
 #define SPI_EFFICIENT
-
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
-
-
+// Magnetometer calibration parameters
+#define MAGNETOMETER_CALIBRATION_SAMPLES	5
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// VARIABLES
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Sun sensor conversion variables
 const uint8_t ROMask[4] = {0x80,0x80,0xF0,0xFF};
 const uint8_t ROShift[4] = {1,2,4,8};
 const uint8_t sunDataOffset[3] = {1,0,0};
 const uint8_t RODiv[4] = {1,2,15,255};
 const uint8_t sunDataRxSize[4] = {18,36,72,144};
+// Magnetometer calibration variables
+float mag_x_offset = 0.0;
+float mag_y_offset = 0.0;
+float mag_z_offset = 0.0;
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// FUNCTIONS
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 void vTestAdcsDriverInterface(void * pvParameters)
@@ -473,7 +490,7 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
 	AdcsDriverError_t status;
 	status = adcsSyncSpiCommand(cmd_id);
-	vTaskDelay(20);
+	vTaskDelay(30);
 	status = adcsTxRx(NULL,0,&measurements[0],ADCS_SUN_SENSOR_DATA_SIZE);
 //	vTaskDelay(20);
 //	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
@@ -641,4 +658,197 @@ AdcsDriverError_t getSunAngle(uint8_t * measurements)
 
 	return status;
 }
+
+
+/*** Sensor calibration ***/
+AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id)
+{
+	const TickType_t sample_delay_ms = 10;
+	const TickType_t command_delay_ms = 10;
+	const TickType_t activation_time_ms = 10;
+
+	uint8_t i;
+	uint8_t buf[6];
+	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
+
+	float 	 T_avg_pos = {0.0};
+	float 	 T_avg_neg = {0.0};
+
+	/*** Turn off all torque rods ***/
+	setTorqueRodPwm(MAGNETORQUER_X, 0);
+	setTorqueRodPwm(MAGNETORQUER_Y, 0);
+	setTorqueRodPwm(MAGNETORQUER_Z, 0);
+	vTaskDelay(TORQUE_ROD_DECAY_TIME_MS);
+
+	/*** Calibrate Mag. X ***/
+	// Activate +X
+	setTorqueRodPolarity(MAGNETORQUER_X, TR_POLARITY_POS);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(MAGNETORQUER_X, 255);
+	vTaskDelay(activation_time_ms);
+	// Sample Mag. X
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+		rawMag = 0;
+		rawMag |=  ((uint16_t) buf[0]);
+		rawMag |= (((uint16_t) buf[1]) << 8);
+
+		T_avg_pos += convertMagDataRawToTeslas(rawMag);
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mag. X
+	T_avg_pos /= MAGNETOMETER_CALIBRATION_SAMPLES;
+	// De-activate +X
+	setTorqueRodPwm(MAGNETORQUER_X,0);
+
+	// Activate -X
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPolarity(MAGNETORQUER_X, TR_POLARITY_NEG);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(MAGNETORQUER_X,255);
+	vTaskDelay(activation_time_ms);
+	// Sample Mag. X
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+		rawMag = 0;
+		rawMag |=  ((uint16_t) buf[0]);
+		rawMag |= (((uint16_t) buf[1]) << 8);
+
+		T_avg_pos += convertMagDataRawToTeslas(rawMag);
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mag. X
+	T_avg_neg /= MAGNETOMETER_CALIBRATION_SAMPLES;
+	// De-activate -X
+	setTorqueRodPwm(MAGNETORQUER_X,0);
+
+	// Calculate X offset
+	mag_x_offset = (T_avg_pos + T_avg_neg) / 2;
+
+
+	/*** Calibrate Mag. Y ***/
+	// Activate +Y
+	setTorqueRodPolarity(MAGNETORQUER_Y, TR_POLARITY_POS);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(MAGNETORQUER_Y, 255);
+	vTaskDelay(activation_time_ms);
+	// Sample Mag. Y
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+		rawMag = 0;
+		rawMag |=  ((uint16_t) buf[2]);
+		rawMag |= (((uint16_t) buf[3]) << 8);
+
+		T_avg_pos -= convertMagDataRawToTeslas(rawMag); // NOTE MINUS-EQUALS (Y-axis is reversed on physical board)
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mag. Y
+	T_avg_pos /= MAGNETOMETER_CALIBRATION_SAMPLES;
+
+	// Activate -Y
+	setTorqueRodPwm(MAGNETORQUER_Y,0);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPolarity(MAGNETORQUER_Y, TR_POLARITY_NEG);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(MAGNETORQUER_Y,255);
+	vTaskDelay(activation_time_ms);
+	// Sample Mag. Y
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+		rawMag = 0;
+		rawMag |=  ((uint16_t) buf[2]);
+		rawMag |= (((uint16_t) buf[3]) << 8);
+
+		T_avg_pos -= convertMagDataRawToTeslas(rawMag);  // NOTE MINUS-EQUALS (Y-axis is reversed on physical board)
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mag. Y
+	T_avg_neg /= MAGNETOMETER_CALIBRATION_SAMPLES;
+
+	// Calculate Y offset
+	mag_y_offset = (T_avg_pos + T_avg_neg) / 2;
+
+
+	/*** Calibrate Mag. Z ***/
+	// Activate +X
+	setTorqueRodPolarity(MAGNETORQUER_Z, TR_POLARITY_POS);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(MAGNETORQUER_Z, 255);
+	vTaskDelay(activation_time_ms);
+	// Sample Mag. Z
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+		rawMag = 0;
+		rawMag |=  ((uint16_t) buf[4]);
+		rawMag |= (((uint16_t) buf[5]) << 8);
+
+		T_avg_pos += convertMagDataRawToTeslas(rawMag);
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mag. Z
+	T_avg_pos /= MAGNETOMETER_CALIBRATION_SAMPLES;
+	// De-activate +Z
+	setTorqueRodPwm(MAGNETORQUER_Z,0);
+
+	// Activate -Z
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPolarity(MAGNETORQUER_Z, TR_POLARITY_NEG);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(MAGNETORQUER_Z,255);
+	vTaskDelay(activation_time_ms);
+	// Sample Mag. X
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+		rawMag = 0;
+		rawMag |=  ((uint16_t) buf[4]);
+		rawMag |= (((uint16_t) buf[5]) << 8);
+
+		T_avg_pos += convertMagDataRawToTeslas(rawMag);
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mag. Z
+	T_avg_neg /= MAGNETOMETER_CALIBRATION_SAMPLES;
+	// De-activate -Z
+	setTorqueRodPwm(MAGNETORQUER_Z,0);
+
+	// Calculate X offset
+	mag_z_offset = (T_avg_pos + T_avg_neg) / 2;
+
+	return status;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

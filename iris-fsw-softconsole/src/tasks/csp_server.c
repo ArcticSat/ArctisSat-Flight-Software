@@ -201,6 +201,7 @@ uint8_t configure_csp(){
     char* canRoute = "0/0 CAN";
 //    char* canRoute = "9/5 CAN 3";
 //    char* canRoute = "9/5 CAN 3, 0/0 CAN";
+//    char* canRoute = "4/5 LOOP, 9/5 CAN 3, 0/0 CAN";
    csp_rtable_load(canRoute);
     if(status != CSP_ERR_NONE){
         result = 0;

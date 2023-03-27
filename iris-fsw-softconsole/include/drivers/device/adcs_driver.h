@@ -62,7 +62,10 @@
 #define ADCS_TELEMETRY_TOTAL_SIZE   (ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES + ADCS_GYRO_RAW_DATA_SIZE_BYTES + ADCS_SUN_SENSOR_DATA_SIZE)
 // Axes
 #define NUM_MAG_AXES 3
+// Magnetometer calibration parameters
+#define MAGNETOMETER_CALIBRATION_CYCLES_SECONDS		30*60
 // Torque rod parameters
+#define TORQUE_ROD_DECAY_TIME_MS 200
 #define DIPOLE_SLOPE 0.04
 #define MAX_DIPOLE 0.2
 #define MAX_VOLTAGE 5.0
@@ -185,6 +188,13 @@ typedef enum
 } AdcsCommands_t;
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// GLOBAL VARIABLES
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Magnetometer calibration variables
+extern float mag_x_offset;
+extern float mag_y_offset;
+extern float mag_z_offset;
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -220,6 +230,8 @@ float AngleDecompose(uint8_t *RXBuff,uint8_t selec);
 AdcsDriverError_t getGyroscopeDataRadiansPerSecond(GyroId_t gyroNumber, float * gyroDataRps);
 AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber, float * magnetometerData);
 AdcsDriverError_t getSunAngle(uint8_t * measurements);
+// Sensor calibration
+AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id);
 
 
 

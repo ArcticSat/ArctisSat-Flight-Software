@@ -53,7 +53,10 @@ typedef enum  {
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// Sun Pointing Task Timer
+// Sun-pointing counters
+uint32_t num_sun_pointing_cycles = 0;
+uint32_t calibration_cycles = 0;
+// Sun-pointing Task Timer
 TimerHandle_t sunPointingTimer;
 // Back panel solar array poll loop counter
 uint8_t backpanel_loop_counter = 0;
@@ -136,8 +139,10 @@ eSunPointingStates determineSunPointingState(int inputID) {
 
 void vSunPointing( void * pvParameters )
 {
+	// Power the ADCS
+    setLoadSwitch(LS_ADCS,SWITCH_ON);
+    // Initialize timer
     sunPointingTimer = xTimerCreate("sunPointingTimer", pdMS_TO_TICKS(100), pdTRUE, ( void * ) SAMPLE_SUN_SENSOR_GYROS, vHandleTimer);
-
     if(sunPointingTimer == NULL)
     {
         while(1);
@@ -148,6 +153,15 @@ void vSunPointing( void * pvParameters )
     }
     for(;;)
     {
+    	/*** Magnetometer calibration ***/
+    	if(calibration_cycles >= MAGNETOMETER_CALIBRATION_CYCLES_SECONDS)
+    	{
+    		// Calibrate
+    		CalibrateMagnetometer(mag_select);
+    		// Wait till next sampling phase
+    		while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) != SAMPLE_SUN_SENSOR_GYROS);
+    	}
+    	/*** Sun-pointing tasks ***/
         while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS)
         {
             SunPointingP1();
@@ -160,6 +174,9 @@ void vSunPointing( void * pvParameters )
         {
             SunPointingP3();
         }
+        // Update counter
+        num_sun_pointing_cycles++;
+        calibration_cycles++;
     }
 }
 
@@ -386,17 +403,20 @@ void SunPointingP2( void )
 		// NOTE: MAG ORIENTATION CORRECTED HERE
 #ifndef MAG_X_SIM_ENG_VALUE
 		mag_x = mag_x_sum / num_valid_mag_samples;
+		mag_x += mag_x_offset;
 #else
 		mag_x = MAG_X_SIM_ENG_VALUE;
 #endif
 #ifndef MAG_Y_SIM_ENG_VALUE
 		mag_y = mag_y_sum / num_valid_mag_samples;
 		mag_y = -mag_y;
+		mag_y += mag_y_offset;
 #else
 		mag_y = MAG_Y_SIM_ENG_VALUE;
 #endif
 #ifndef MAG_Z_SIM_ENG_VALUE
 		mag_z = mag_z_sum / num_valid_mag_samples;
+		mag_z += mag_z_offset;
 #else
 		mag_z = MAG_Z_SIM_ENG_VALUE;
 #endif
