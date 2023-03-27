@@ -22,6 +22,9 @@
 #include "drivers/software_update_driver.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "tasks/telemetry.h"
+#include "application/memory_manager.h"
+#include "drivers/device/watchdog.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -29,11 +32,16 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 static uint8_t fwMgrState = FW_STATE_IDLE;
 static uint8_t fwMgrArmed = 0;
-static uint32_t fw_armed_timeout=0;
+static int32_t fw_armed_timeout=0;
 static uint8_t fwMgrExeConfirmed = 0;
 static uint8_t rx_in_progress = 0;
 static uint8_t rx_slot_index = 0;
+static int rx_byte_index=0;
 static uint8_t targetFw = 1;//Which image will we upgrade to. 1 is default for update image. 0 for golden.
+static int UploadMode = FW_UPLOAD_REV2;
+uint16_t curr_seq_num = 0;
+static int32_t fw_user_timeout=0;
+static uint8_t fw_update_attempts=0;
 
 static Fw_metadata_t fwFiles[4]; //We keep up to 4 fw. Golden + backup, Upgrade + backup.
 
@@ -64,6 +72,9 @@ QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 static int updateState(int state);
 static int checksumAllFw(); //Runs checksum on the golden and update files, and their backups. The verifiedStatus global will be updated.
+static void fwRxSendAck(int ackNak, uint16_t seq);
+
+
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
@@ -102,14 +113,14 @@ void checksum_file(uint32_t * out, char * filename){
 
     fs_file_seek(&file, 0, SEEK_SET);
 
-    uint8_t byte_buff[256];
+    uint8_t byte_buff[512];
     //Use a buffer here to reduce filesystem overhead...
     //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
 
-//    TickType_t start = xTaskGetTickCount();
+    TickType_t start = xTaskGetTickCount();
     int count = 0;
     int bytes_to_process = 0;
-    while( (bytes_to_process = fs_file_read(&file, byte_buff, 256)) >0 ) {
+    while( (bytes_to_process = fs_file_read(&file, byte_buff, 512)) >0 ) {
 
         for(int i =0; i < bytes_to_process; i++){
             crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
@@ -127,11 +138,77 @@ void checksum_file(uint32_t * out, char * filename){
 
     *out = crc_32_val;
 
-//    TickType_t time = xTaskGetTickCount()-start;
-//    printf("Checksum took %d ms\n",time);
+    TickType_t time = xTaskGetTickCount()-start;
+    printf("Checksum took %d ms\n",time);
     printf("crc32'd %d bytes\n",count);
 }
 
+void checksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uint32_t len, int quiet){
+
+    //Based on the libcrc example/test program.
+    uint32_t crc_32_val = 0xffffffffL;
+    char ch;
+    unsigned char prev_byte;
+    lfs_file_t file = {0};
+    int result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
+    if(result_fs < 0){
+        printf("Could not open file to checksum: %d\n",result_fs);
+        return;
+    }
+
+    fs_file_seek(&file, start_byte, SEEK_SET);
+
+    uint8_t byte_buff[256];
+    //Use a buffer here to reduce filesystem overhead...
+    //Size is arbitrary, doesn't seem to actually speed up for large files once above 1.
+
+    TickType_t start = xTaskGetTickCount();
+//    int count = 0;
+//    int bytes_to_process = 0;
+//    while( (bytes_to_process = fs_file_read(&file, byte_buff, 512)) >0 ) {
+//
+//        for(int i =0; i < bytes_to_process; i++){
+//            crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+//            count ++;
+//        }
+//
+//    }
+
+      int count = 0;
+      int bytes_left = len;
+      int bytes_to_process = bytes_left>256 ? 256:bytes_left;
+      int addr_curr = start_byte;
+      int actual = fs_file_read(&file, byte_buff, bytes_to_process);
+
+      while( actual>0 && bytes_to_process > 0) {
+
+          for(int i =0; i < actual; i++){
+              crc_32_val = update_crc_32(     crc_32_val, byte_buff[i]);
+              count ++;
+          }
+          addr_curr += bytes_to_process;
+          bytes_left = bytes_left-bytes_to_process;
+          bytes_to_process = bytes_left>256 ? 256:bytes_left;
+
+          actual = fs_file_read(&file, byte_buff, bytes_to_process);
+
+      }
+
+    fs_file_seek(&file, 0, SEEK_SET);
+
+    fs_file_close(&file);
+
+
+    crc_32_val        ^= 0xffffffffL;
+
+    *out = crc_32_val;
+
+    TickType_t time = xTaskGetTickCount()-start;
+    if(!quiet){
+        printf("Checksum took %d ms\n",time);
+        printf("crc32'd %d bytes\n",count);
+    }
+}
 
 void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
 
@@ -174,6 +251,8 @@ void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size){
     printf("crc32'd %d bytes\n",count);
 }
 
+
+
 int copy_to_prog_flash(char * filename, uint32_t address){
 
     uint32_t filesize = fs_file_size_from_path(filename);
@@ -212,10 +291,12 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 
     lfs_file_t fwfile = {0};
-    int rx_byte_index=0;
+
     uint8_t rxDataBuff[FW_CHUNK_SIZE];
     char tempFileName[64];
     uint8_t fwTempFileOpen = 0;
+
+
 
 
     fwDataQueue = xQueueCreate(5,sizeof(uint8_t)*FW_CHUNK_SIZE);
@@ -248,7 +329,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
 
                     //Open up the file.
-                    if(!fwTempFileOpen){
+                    if(!fs_is_open(&fwfile)){
 
                         snprintf(tempFileName,64,"%s.tmp",fwFileNames[rx_slot_index]);//We will upload our file to .tmp. once complete, delete original and rename the temp file.
 
@@ -266,14 +347,46 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     if(res == pdTRUE){
 
-                        int write_res =fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
-                        if(write_res <0){
-                            printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
-                            updateState(FW_STATE_IDLE);
-                            break;
-                        }
-                        rx_byte_index += FW_CHUNK_SIZE;
+                        if(UploadMode == FW_UPLOAD_REV2){
 
+                            //First thing is to unpack the data and extra info.
+                            uint16_t seq_num =0;
+                            memcpy(&seq_num,&rxDataBuff[0],sizeof(uint16_t));
+                            uint8_t* data = &rxDataBuff[sizeof(uint16_t)];
+                            uint8_t dataSize = sizeof(rxDataBuff)-sizeof(uint16_t);
+                            int seek =0;
+                            int ack_nak = 1;
+
+                            if(seq_num !=curr_seq_num){
+                                //We have missed a packet.
+                                printf("FwMgr: missed packet or ooo | rx %d expect %d\n",seq_num,curr_seq_num);
+                                ack_nak = 0;
+                            }
+                            if(ack_nak){
+                                int write_res =fs_file_write( &fwfile, data, dataSize );
+                                if(write_res <0){
+                                    printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
+                                    updateState(FW_STATE_IDLE);
+                                    break;
+                                }
+                                rx_byte_index += dataSize;
+                            }
+
+                            fwRxSendAck(ack_nak,curr_seq_num);
+                            if(ack_nak)curr_seq_num++;
+
+
+                        }
+                        else{
+
+                            int write_res =fs_file_write( &fwfile, &rxDataBuff, sizeof(rxDataBuff));
+                            if(write_res <0){
+                                printf("FwMgr: Problem writing fw chunk to file: %d \n",write_res);
+                                updateState(FW_STATE_IDLE);
+                                break;
+                            }
+                            rx_byte_index += FW_CHUNK_SIZE;
+                        }
                         if(rx_byte_index >= fwFiles[rx_slot_index].filesize){
 
                             fs_file_sync(&fwfile);
@@ -324,6 +437,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                                 rx_byte_index  =0;
                                 rx_in_progress =0;
                                 fwTempFileOpen =0;
+                                curr_seq_num=0;
                                 updateState(FW_STATE_IDLE);
                             }
                         }
@@ -332,7 +446,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 }
 
-
+                if(fwMgrState == FW_STATE_IDLE){
+                    //If we're done in RX state, make sure we close the temp file. Catches case where we resetFwMgr, but file doesn't get closed.
+                    if(fs_is_open(&fwfile)) fs_file_close(&fwfile);
+                }
 
                 break;
             }
@@ -434,7 +551,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
                //If we make it here we should have verified all copies of the firmware, so we can say system is armed!
                if(fwMgrArmed){
                    updateState(FW_STATE_ARMED);
-                   fw_armed_timeout = FW_ARMED_TIMEOUT_MS;
+                   fw_armed_timeout = (fw_user_timeout>0)?fw_user_timeout:FW_ARMED_TIMEOUT_MS;
                }
                else{
                    updateState(FW_STATE_IDLE);
@@ -464,7 +581,7 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                 if(fwMgrExeConfirmed){
 
-                    //First check our file is verified. We should n't be allowed here without the fw being verified, but just in case...
+                    //First check our file is verified. We shouldn't be allowed here without the fw being verified, but just in case...
 //                    if(verifiedStatus.verified[1] != 1){
 //                        printf("Unverified FW in UPDATE state. This is not allowed, and shouldn't be  possible.\n");
 //                        updateState(FW_STATE_IDLE);
@@ -473,6 +590,16 @@ void vFw_Update_Mgr_Task(void * pvParams){
 
                     update_spi_dir(targetFw, fwFiles[targetFw].designver);
 
+                    //Update state so we know to post verify on reboot.
+                    int res = setLastRebootReason(REBOOT_OTA_UPDATE);
+                    if(fw_update_attempts<1 && res != MEM_MGR_OK ){
+
+                        printf("Could not set reboot reason, abort update. Try again to force, you must manually powercycle cdh!\n");
+                        fw_update_attempts ++;
+                        updateState(FW_STATE_IDLE);
+                    }
+
+                    fw_update_attempts=0; //We will reboot so this should get cleared anyways.
 
                     //Do one last check of the fw before we upload
                     uint32_t check = 0;
@@ -488,9 +615,12 @@ void vFw_Update_Mgr_Task(void * pvParams){
                     //We should save any time-tagged tasks, adcs state, anything else important that is in RAM.
 
 
-                    //Update state so we know to post verify on reboot.
                     //ShutdownSystem();
+                    fs_unmount();
 
+                    //Stop the external WD.
+                    start_stop_external_wd(0);
+                    vTaskDelay(1000);//Since WD is seperate task, give some time to make sure it runs.
 
                     initiate_firmware_update(targetFw);
 
@@ -514,6 +644,10 @@ void vFw_Update_Mgr_Task(void * pvParams){
                 }
                 updateState(FW_STATE_IDLE);
                 break;
+            }
+            default:{
+
+                vTaskDelay(500);
             }
 
         }
@@ -572,6 +706,13 @@ int getFwManagerState(){
     return fwMgrState;
 }
 
+void fw_mgr_get_rx_progress(int* curr,uint32_t* total ){
+
+    *curr = rx_byte_index;
+    *total = fwFiles[rx_slot_index].filesize;
+
+}
+
 int setFwManagerState(int state){
 
     int res = updateState(state);
@@ -601,6 +742,11 @@ void setFwDesignVer(uint8_t slot, uint8_t ver){
 
     updateFwMetaData(&metadata);
 
+}
+
+void forceFwManagerState(uint8_t state){
+
+    fwMgrState = state;
 }
 
 int updateState(int state){
@@ -669,6 +815,15 @@ void uploadFwChunk(uint8_t * data, uint16_t length){
     xQueueSendToBack(fwDataQueue,data,100);
 }
 
+void uploadFwChunk2(uint8_t * data, uint16_t length){
+
+    if(length>FW_CHUNK_SIZE){
+        printf("fw chunk larger than chunk size!Not ok\n");
+        return;
+    }
+    xQueueSendToBack(fwDataQueue,data,100);
+}
+
 void initializeFwMgr(){
 
     //Reset all our state variables:
@@ -678,6 +833,10 @@ void initializeFwMgr(){
     fwMgrExeConfirmed = 0;
     rx_in_progress = 0;
     rx_slot_index = 0;
+    rx_byte_index=0;
+    curr_seq_num = 0;
+    fw_update_attempts=0;
+
 
     //Load/calculate our file metadata
     for(int i=0; i< NUM_FIRMWARES_TOTAL; i++){
@@ -765,5 +924,31 @@ void setFwTargetImage(uint8_t target){
 
     if(target == 0 || target == 1)
         targetFw = target;
+}
+
+void fwRxSendAck(int ackNak, uint16_t seq){
+
+    telemetryPacket_t t;
+    Calendar_t now = {0}; //Set to zero, since payload does not keep track of time. CDH will timestamp on receipt.
+
+    uint8_t data[3];
+
+    data[0] = ackNak;
+    memcpy(&data[1],&seq,sizeof(uint16_t));
+
+    t.telem_id = CDH_FW_ACK_ID;
+    t.timestamp = now;
+    t.length = 3;
+    t.data = data;
+
+    sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
+
+
+}
+int fw_mgr_set_arm_timeout(int msec){
+
+    if(msec>1000) fw_user_timeout = msec;
+
+    return fw_user_timeout;
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

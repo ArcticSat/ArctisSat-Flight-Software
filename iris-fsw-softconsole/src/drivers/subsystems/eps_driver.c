@@ -99,3 +99,25 @@ void pollBackSolarPanels(void)
 	CAN_transmit_message(&cmd);
 	// TODO: push messages through??
 }
+
+void resetLoadSwitch(uint8_t loadSwitchNumber)
+{
+	// Send CAN message
+	CANMessage_t cmd = {0};
+	int i;
+	cmd.id = POW_TXID;
+	cmd.dlc = 2;
+	cmd.data[0] = POWER_RESET_LOAD_SWITCH_CMD;
+	cmd.data[1] = loadSwitchNumber;
+	CAN_transmit_message(&cmd);
+	vTaskDelay(50);
+	// "Push the message through"
+	cmd.dlc = 1;
+	cmd.id = POWER_READ_MSB_VOLTAGE_ID;
+	for(i=0; i < 5; i++)
+	{
+	CAN_transmit_message(&cmd);
+	vTaskDelay(10);
+	}
+}
+

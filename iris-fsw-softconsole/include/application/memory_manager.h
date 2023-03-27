@@ -24,10 +24,11 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define SC_STATUS_SIZE_BYTES 2
+#define SC_STATUS_SIZE_BYTES 3
 typedef struct  {
 	uint8_t deployment_state;
 	uint8_t detumble_state;
+	uint8_t last_reboot_reason;
 } ScStatus_t;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
@@ -49,6 +50,25 @@ typedef enum
 	TASK_ERROR,
 	TASK_SUCCESS
 } EventId_t;
+
+typedef enum
+{
+    REBOOT_UNKNOWN=0x1, //Default reason
+    REBOOT_INTERNAL_WD=0x2,
+    REBOOT_STACK_OVERFLOW=0x4,
+    REBOOT_USER_SOFT_RESET=0x8,
+    REBOOT_OTA_UPDATE=0x10,
+    REBOOT_POWER_REQUEST=0x20,
+
+} RebootReason_t;
+
+typedef enum{
+    MEM_MGR_OK=0,
+    MEM_MGR_NOT_INIT=-1,
+    MEM_MGR_READ_ERR=-2,
+    MEM_MGR_WRITE_ERR=-3,
+
+}MemManagerError_t;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // GLOBALS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -72,5 +92,8 @@ int setDeploymentStartupState(uint8_t state);
 // Detumbling status
 int getDetumblingStartupState(uint8_t * state);
 int setDetumblingStartupState(uint8_t state);
+//Reboot Reason
+int getLastRebootReason(uint8_t *reason);
+int setLastRebootReason(uint8_t  reason);
 
 #endif /* INCLUDE_APPLICATION_MEMORY_MANAGER_H_ */

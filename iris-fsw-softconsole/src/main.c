@@ -76,6 +76,7 @@
 #include "application/cdh.h"
 //#include "application/detumbling.h"
 #include "application/sun_pointing.h"
+#include "application/memory_manager.h"
 
 
 
@@ -102,6 +103,8 @@ TaskHandle_t vTestAdcsDriverInterface_h;
 //Debug Only:
 TaskHandle_t vTaskSpinLEDs_h;
 
+
+HardwareCheck_t setupHardwareStatus = {0};
 
 
 /*
@@ -139,9 +142,10 @@ int main( void )
 #ifdef MAKER2_DEVKIT_CONFIGURATION
     // Create LED spinning task
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
-    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",500,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
+    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",1000,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
+
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
 //	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
@@ -149,8 +153,9 @@ int main( void )
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
-//	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
-//    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
+	status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+
 
 //    status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",200,NULL,2,&vTestAdcsDriverInterface_h);
 
@@ -164,6 +169,10 @@ int main( void )
 //    vTaskSuspend(vCanServer_h);
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
+    //vTaskSuspend(vSunPointing_h);
+    vTaskSuspend(vFw_Update_Mgr_Task_h);
+    vTaskSuspend(vCanServer_h);
+
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
@@ -207,10 +216,12 @@ int main( void )
 
 /*-----------------------------------------------------------*/
 FlashStatus_t data_flash_status;
+FlashStatus_t program_flash_status;
 static void prvSetupHardware( void )
 {
 #ifdef MAKER2_DEVKIT_CONFIGURATION
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
+
     vInitializeLEDs();
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
@@ -220,18 +231,25 @@ static void prvSetupHardware( void )
     init_spi();
     init_rtc();
 //    init_mram();
-    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
 	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-#ifdef FLIGHT_MODEL_CONFIGURATION || ENGINEERING_MODEL_CONFIGURATION
+#if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
+    setupHardwareStatus.spi_init = init_spi();
+    //init_mram();
+    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
+//    adcs_init_driver();
     init_WD();
 #ifdef USING_DATA_FLASH
-	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
 #ifdef USING_PROGRAM_FLASH
-    flash_device_init(flash_devices[PROGRAM_FLASH]);
+    program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
+    setupHardwareStatus.data_flash_init = data_flash_status;
+    setupHardwareStatus.program_flash_init = program_flash_status;
 #endif
 #endif
+
+
 //    initADC();
 //    asMram_init();
 
@@ -415,6 +433,7 @@ void vApplicationMallocFailedHook( void )
 
 void vApplicationIdleHook( void )
 {
+
     /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
     to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
     task.  It is essential that code added to this hook function never attempts
@@ -428,6 +447,7 @@ void vApplicationIdleHook( void )
 }
 /*-----------------------------------------------------------*/
 
+
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 {
     ( void ) pcTaskName;
@@ -438,6 +458,17 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
     function is called if a stack overflow is detected. */
 
     // TODO - Log event!
+
+    //Try and log to Filesystem if it still works...
+    //It doesn't work since this is in an interrupt, so things like the mutex used by FS are broken.
+
+    //So the  flash_write()/flsh_erase() doesn't work either since it calls vTaskDelay.
+    //The drivers already skip the delay if the scheduler is not running but I guess that check fails
+    //It should definitely be possible to get this working...
+
+//    uint8_t reason=0;
+//    getLastRebootReason(&reason);
+//    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
 
     taskDISABLE_INTERRUPTS();
     for( ;; );

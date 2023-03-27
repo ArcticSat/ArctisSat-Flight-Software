@@ -11,6 +11,7 @@
 //#include <stdint.h>
 #include "drivers/device/rtc/rtc_common.h"
 #include <csp/csp.h>
+#include "tasks/telemetry.h"
 
 //Define the csp address of all devices in the network.
 #define POWER_CSP_ADDRESS	2
@@ -89,12 +90,17 @@ typedef enum
 	CDH_TTT_LIST_ID,
 	CDH_MSG_ID,
 	CDH_FW_STATE_ID,
+	CDH_FW_ACK_ID,
+	CDH_FW_RQST_ID,
+
 	// Memory manager telemetry
 	CDH_SPACECRAFT_STATUS_ID,
 	// Control telemetry
 	CDH_DETUMBLING_TM_ID,
 	CDH_SUN_POINTING_ID,
 	// CDH telemetry end
+	CDH_HW_STATUS_ID,
+
 	CDH_TELEMETRY_END,
 	/*** EVENT TELEMETRY ***/
 	EVENT_ID,
@@ -230,10 +236,24 @@ typedef enum
 	CDH_FW_SET_DESVER_CMD,
 	CDH_FORMAT_FS_CMD,
 	CDH_RESET_SYSTEM_CMD,
+	CDH_FW_RX_PROGRESS_CMD,
+	CDH_FW_PUT_DATA_2_CMD,
+	CDH_CHECKSUM_FILE_PART_CMD,
+	CDH_FILE_WRITE_CMD,
+	CDH_FILE_INSERT_CMD,
+	CDH_FILE_DELETE_CMD,
 	// Memory manager commands
 	CDH_GET_SPACECRAFT_STATUS_CMD,
 	CDH_SET_DEPLOYMENT_STARTUP_STATE_CMD,
 	CDH_SET_DETUMBLING_STARTUP_STATE_CMD,
+	CDH_CLEAR_REBOOT_REASON_CMD,
+	CDH_GET_HW_STATUS_CMD,
+	CDH_FORCE_FW_STATE_CMD,
+	//
+	CDH_SET_FW_ARM_TIMEOUT_CMD,
+	CDH_WATCHDOG_DISABLE_CMD,
+	CDH_RQST_PWR_RESET_LOAD_CMD,
+
 	CDH_COMMANDS_END,
 	/*** GROUND COMMANDS ***/
 	GND_TM_VERBOSITY_CMD,
@@ -311,6 +331,8 @@ void sendCommand(telemetryPacket_t * packet,uint8_t addr);//Sends a cmd packet t
 void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr); //Sends telemetry directly to a subsystem.
 void printMsg(char * msg);
 int printf(const char *fmt, ...);
+void set_csp_init(int state);
+int is_csp_up();
 
 /**********************************************************/
 

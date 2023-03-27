@@ -48,6 +48,16 @@ static FlashDev_t 	data_flash = {	.driver = &data_flash_driver,
 									.page_size = W25N_PAGE_SIZE,
 									.erase_size = W25N_BLOCK_SIZE,
 									.device_size = 1*W25N_DIE_SIZE	};
+#elif defined(AT25SF_DATA_FLASH)
+static AT25SF_Device_t data_flash_driver = {   .spi_read = data_flash_spi_read,
+                                            .spi_write=data_flash_spi_write,
+                                          };
+
+static FlashDev_t   data_flash = {  .driver = &data_flash_driver,
+                                    .id = PROGRAM_FLASH,
+                                    .page_size = AT25SF_PAGE_SIZE,
+                                    .erase_size = AT25SF_SUBSECTOR_SMALL_SIZE,
+                                    .device_size = 1*AT25SF_DIE_SIZE  };
 #endif
 
 //For testing only! TODO: put back proper driver when merging this.

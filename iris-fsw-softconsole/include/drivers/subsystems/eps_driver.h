@@ -74,5 +74,6 @@ extern volatile float sa_current_eclipse_threshold;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 void setLoadSwitch(uint8_t loadSwitchNumber, eSwitchState state);
 void pollBackSolarPanels(void);
+void resetLoadSwitch(uint8_t loadSwitchNumber);
 
 #endif /* INCLUDE_DRIVERS_SUBSYSTEMS_EPS_DRIVER_H_ */
