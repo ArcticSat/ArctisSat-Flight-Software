@@ -16,8 +16,9 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 {
 	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
 	uint8_t tx_buf[10];
-	uint8_t rx_buf[400];
+	uint8_t rx_buf[400] = {0};
 	telemetryPacket_t tm_pkt = {0};
+	uint8_t pkt_data[40];
 	int i;
 	// Perform Task
 	switch(cmd_pkt->telem_id)
@@ -107,33 +108,28 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 	case ADCS_GET_MEASUREMENT_SUN_CMD:
 		// Get reading
 		error_code = getSunSensorMeasurementsRaw(rx_buf);
-		// Send telemetry
-		tm_pkt.telem_id = ADCS_MESAUREMENT_SUN_ID;
-		/*
-		tm_pkt.length = ADCS_SUN_SENSOR_DATA_SIZE;
-		tm_pkt.data = &rx_buf[0];
-		// Log telemetry
-		log_telemetry(&tm_pkt);
-		// Send telemetry
-		tm_pkt.data = &rx_buf[164];
-		// Log telemetry
-		vTaskDelay(10);
-		log_telemetry(&tm_pkt);*/
-
-		// Debug
-		tm_pkt.length = 10;
-		// First 30 bytes of SS_X
-		for(i=0; i < 3*10+1; i+=10){
-			tm_pkt.data = &rx_buf[i];
-			log_telemetry(&tm_pkt);
-			vTaskDelay(10);
+		// Convert
+		float angle = AngleDecompose(rx_buf,3);
+		memcpy(&rx_buf[12],&angle,sizeof(angle));
+		// Send meta data
+		tm_pkt.telem_id = ADCS_SS_META_ID;
+		tm_pkt.length = 12;
+		tm_pkt.data = rx_buf;
+		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+		// Send raw telemetry
+		tm_pkt.telem_id = ADCS_SS_RAW_ID;
+		tm_pkt.length = 40;
+		tm_pkt.data = pkt_data;
+		for(i=12; i < 160; i+=40){
+			memcpy(pkt_data,&rx_buf[i],40);
+			sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
 		}
-//		// First 30 bytes of SS_X
-//		for(i=0; i < 3*10+1; i+=10){
-//			tm_pkt.data = &rx_buf[164+i];
-//			log_telemetry(&tm_pkt);
-//			vTaskDelay(10);
-//		}
+		// Send angle telemetry
+		tm_pkt.telem_id = ADCS_SS_ANGLE_ID;
+		tm_pkt.length = 4;
+		tm_pkt.data = pkt_data;
+		memcpy(&angle,pkt_data,sizeof(angle));
+		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
 		break;
 	default:
 		return;

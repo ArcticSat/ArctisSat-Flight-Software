@@ -19,6 +19,8 @@
 #include "tasks/telemetry.h"
 #include <stdlib.h>
 #include <math.h>
+#include "FreeRTOS.h"
+#include "task.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -536,7 +538,7 @@ float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 #ifdef GYRO_SIM_ENG_VALUE
 	return GYRO_SIM_ENG_VALUE;
 #else
-	return (float) (( (int16_t) rawGyro) * DPS_TO_RPS );
+	return (float) (( (int16_t) rawGyro) * A3G4250D_LSB_DPS * DPS_TO_RPS );
 #endif
 }
 
