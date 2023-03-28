@@ -161,7 +161,6 @@ int main( void )
 
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vDetumbleDriver_h);
-//    vTaskSuspend(vSunPointing_h);
 #ifdef INCLUDE_TASK_TTT
     vTaskSuspend(vTTTScheduler_h);
 #endif
@@ -169,7 +168,7 @@ int main( void )
 //    vTaskSuspend(vCanServer_h);
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
-    //vTaskSuspend(vSunPointing_h);
+    vTaskSuspend(vSunPointing_h);
     vTaskSuspend(vFw_Update_Mgr_Task_h);
     vTaskSuspend(vCanServer_h);
 
@@ -215,8 +214,8 @@ int main( void )
 
 
 /*-----------------------------------------------------------*/
-FlashStatus_t data_flash_status;
-FlashStatus_t program_flash_status;
+FlashStatus_t data_flash_status 	= FLASH_ERROR;
+FlashStatus_t program_flash_status	= FLASH_ERROR;
 static void prvSetupHardware( void )
 {
 #ifdef MAKER2_DEVKIT_CONFIGURATION
@@ -227,28 +226,24 @@ static void prvSetupHardware( void )
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
 #endif
-//
-    init_spi();
+
+    init_WD();
     init_rtc();
+    setupHardwareStatus.spi_init = init_spi();
+    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    init_mram();
 //    adcs_init_driver();
-	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
-    setupHardwareStatus.spi_init = init_spi();
     //init_mram();
-    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
-//    adcs_init_driver();
-    init_WD();
 #ifdef USING_DATA_FLASH
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
 #ifdef USING_PROGRAM_FLASH
     program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
+#endif
+#endif
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
-#endif
-#endif
-
 
 //    initADC();
 //    asMram_init();

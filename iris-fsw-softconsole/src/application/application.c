@@ -111,11 +111,13 @@ void InitMissionOperations(void)
 
 	// Resume tasks
 //	vTaskResume(vSunPointing_h);
-//	vTaskResume(vCanServer_h);
+	vTaskResume(vCanServer_h);
 #ifdef INCLUDE_TASK_TTT
 	vTaskResume(vTTTScheduler_h);
 #endif
-//	vTaskResume(vFw_Update_Mgr_Task_h);
+    if(get_fs_status() == FS_OK){
+    	vTaskResume(vFw_Update_Mgr_Task_h);
+    }
 }
 
 void InitNormalOperations(void)
