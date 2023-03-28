@@ -84,6 +84,7 @@ void InitMissionOperations(void)
 #ifdef INCLUDE_TASK_TTT
 	vTaskResume(vTTTScheduler_h);
 #endif
+	vTaskResume(vTestAdcsDriverInterface_h);
 //	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 

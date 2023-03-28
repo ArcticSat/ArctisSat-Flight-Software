@@ -62,66 +62,66 @@ void vTestAdcsDriverInterface(void * pvParameters)
 	float mag_data[3] = {0};
 	while(1)
 	{
-//		/*** Gyro data ***/
-//		// Get raw data
-//		driver_status = (uint8_t) getGyroMeasurementsRaw(gyro_id, gyro_buf);
-//		// Convert
-//		memcpy(gyro_data,0,3*sizeof(float));
-//		for(i=0; i < 3; i++){
-//			uint16_t gyro_raw;
-//			gyro_raw = ((uint16_t)  gyro_buf[2*i]);
-//			gyro_raw |= (((uint16_t) gyro_buf[2*i+1]) << 8);
-//			float_buf[i] = convertGyroDataRawToRadiansPerSecond(gyro_raw);
-//		}
-//		// Orient
-//		if(gyro_id == GYRO_1){
-//			gyro_data[0] = -float_buf[1]; // X <-- (-Y)
-//			gyro_data[1] =  float_buf[0]; // Y <--   X
-//			gyro_data[2] =  float_buf[2]; // Z <--   Z
-//		} else if(gyro_id == GYRO_2) {
-//			gyro_data[0] =  float_buf[0]; // X <--   X
-//			gyro_data[1] = -float_buf[1]; // Y <-- (-Y)
-//			gyro_data[2] =  float_buf[2]; // Z <--   Z
-//		}
-//		// Send telemetry
-//		memcpy(buf,0,20);
-//		tmpkt.telem_id = ADCS_GYROSCOPE_DATA_ID;
-//		tmpkt.length = 14;
-//		buf[0] = driver_status;
-//		buf[1] = gyro_id;
-//		memcpy(&buf[2],gyro_data,3*sizeof(float));
-//		tmpkt.data = buf;
-//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-//		int x = 7;
-//		vTaskDelay(1000);
-
-		/*** Mag data ***/
+		/*** Gyro data ***/
 		// Get raw data
-		driver_status = (uint8_t) getMagnetometerMeasurementsRaw(mag_id, mag_buf);
+		driver_status = (uint8_t) getGyroMeasurementsRaw(gyro_id, gyro_buf);
 		// Convert
-		memcpy(mag_buf,0,3*sizeof(float));
+		memcpy(gyro_data,0,3*sizeof(float));
 		for(i=0; i < 3; i++){
-			uint16_t mag_raw;
-			mag_raw = ((uint16_t)  mag_buf[2*i]);
-			mag_raw = (((uint16_t) mag_buf[2*i+1]) << 8);
-			float_buf[i] = convertMagDataRawToTeslas(mag_raw);
+			uint16_t gyro_raw;
+			gyro_raw = ((uint16_t)  gyro_buf[2*i]);
+			gyro_raw |= (((uint16_t) gyro_buf[2*i+1]) << 8);
+			float_buf[i] = convertGyroDataRawToRadiansPerSecond(gyro_raw);
 		}
 		// Orient
-		mag_data[0] =  float_buf[0]; // X <--   X
-		mag_data[1] = -float_buf[1]; // Y <-- (-Y)
-		mag_data[2] =  float_buf[2]; // Z <--   Z
+		if(gyro_id == GYRO_1){
+			gyro_data[0] = -float_buf[1]; // X <-- (-Y)
+			gyro_data[1] =  float_buf[0]; // Y <--   X
+			gyro_data[2] =  float_buf[2]; // Z <--   Z
+		} else if(gyro_id == GYRO_2) {
+			gyro_data[0] =  float_buf[0]; // X <--   X
+			gyro_data[1] = -float_buf[1]; // Y <-- (-Y)
+			gyro_data[2] =  float_buf[2]; // Z <--   Z
+		}
 		// Send telemetry
 		memcpy(buf,0,20);
-		tmpkt.telem_id = ADCS_MAGNETOMETER_DATA_ID;
+		tmpkt.telem_id = ADCS_GYROSCOPE_DATA_ID;
 		tmpkt.length = 14;
 		buf[0] = driver_status;
-		buf[1] = mag_id;
-		memcpy(&buf[2],mag_data,3*sizeof(float));
+		buf[1] = gyro_id;
+		memcpy(&buf[2],gyro_data,3*sizeof(float));
 		tmpkt.data = buf;
 		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-		int j = 7;
-
+		int x = 7;
 		vTaskDelay(1000);
+
+//		/*** Mag data ***/
+//		// Get raw data
+//		driver_status = (uint8_t) getMagnetometerMeasurementsRaw(mag_id, mag_buf);
+//		// Convert
+//		memcpy(mag_buf,0,3*sizeof(float));
+//		for(i=0; i < 3; i++){
+//			uint16_t mag_raw;
+//			mag_raw = ((uint16_t)  mag_buf[2*i]);
+//			mag_raw = (((uint16_t) mag_buf[2*i+1]) << 8);
+//			float_buf[i] = convertMagDataRawToTeslas(mag_raw);
+//		}
+//		// Orient
+//		mag_data[0] =  float_buf[0]; // X <--   X
+//		mag_data[1] = -float_buf[1]; // Y <-- (-Y)
+//		mag_data[2] =  float_buf[2]; // Z <--   Z
+//		// Send telemetry
+//		memcpy(buf,0,20);
+//		tmpkt.telem_id = ADCS_MAGNETOMETER_DATA_ID;
+//		tmpkt.length = 14;
+//		buf[0] = driver_status;
+//		buf[1] = mag_id;
+//		memcpy(&buf[2],mag_data,3*sizeof(float));
+//		tmpkt.data = buf;
+//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+//		int j = 7;
+//
+//		vTaskDelay(1000);
 	}
 }
 
@@ -536,7 +536,7 @@ float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 #ifdef GYRO_SIM_ENG_VALUE
 	return GYRO_SIM_ENG_VALUE;
 #else
-	return (float) (( (int16_t) rawGyro) * DPS_TO_RPS );
+	return (float) (( (int16_t) rawGyro * A3G4250D_LSB_DPS) * DPS_TO_RPS );
 #endif
 }
 
