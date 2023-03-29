@@ -696,8 +696,8 @@ bool spacecraftIsBackwards(void)
 	{
 		if(sa_current_eclipse_threshold < backpanel_sa_data[i])
 		{
-			return false;
+			return true;
 		}
 	}
-	return true;
+	return false;
 }

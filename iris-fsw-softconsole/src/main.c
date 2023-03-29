@@ -165,7 +165,7 @@ int main( void )
     vTaskSuspend(vTTTScheduler_h);
 #endif
 //    vTaskSuspend(xUART0RxTaskToNotify);
-//    vTaskSuspend(vCanServer_h);
+    vTaskSuspend(vCanServer_h);
 //    vTaskSuspend(vFw_Update_Mgr_Task_h);
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
     vTaskSuspend(vSunPointing_h);

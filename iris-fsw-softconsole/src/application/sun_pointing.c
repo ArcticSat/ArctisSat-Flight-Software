@@ -30,13 +30,13 @@
 #define SAMPLE_MAGS_CONTROL_DUR 5
 #define CYCLE_DUR 10
 // Number of samples by sensor type
-#define NUM_SAMPLE_LOOPS_SUN_SENSOR			5
-#define NUM_SAMPLE_LOOPS_GYROSCOPE			5
-#define NUM_SAMPLE_LOOPS_MAGNETOMETER		5
+#define NUM_SAMPLE_LOOPS_SUN_SENSOR			1
+#define NUM_SAMPLE_LOOPS_GYROSCOPE			1
+#define NUM_SAMPLE_LOOPS_MAGNETOMETER		1
 // Back panel polling
-#define BACKPANEL_SA_POLLING_LOOPS				10
+#define BACKPANEL_SA_POLLING_LOOPS			5
 // Telemetry rates
-#define SUN_POINTING_TM_RATE 5
+#define SUN_POINTING_TM_RATE 30
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ TimerHandle_t sunPointingTimer;
 // Back panel solar array poll loop counter
 uint8_t backpanel_loop_counter = 0;
 // Sensor select
-volatile enumSunSensor ss_x_select = SUN_SENSOR_1; // TODO: confirm value
-volatile enumSunSensor ss_z_select = SUN_SENSOR_2; // TODO: confirm value
+volatile enumSunSensor ss_x_select = SUN_SENSOR_PRIMARY_X; // TODO: confirm value
+volatile enumSunSensor ss_z_select = SUN_SENSOR_PRIMARY_Z; // TODO: confirm value
 volatile GyroId_t gyro_select = GYRO_1;
 volatile MagnetometerId_t mag_select = MAGNETOMETER_1;
 // Sensor raw data indices
@@ -164,15 +164,15 @@ void vSunPointing( void * pvParameters )
     	/*** Sun-pointing tasks ***/
         while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS)
         {
-            SunPointingP1();
+            SunPointingP1(); // 200ms
         }
         while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_MAGS_CONTROL)
         {
-            SunPointingP2();
+            SunPointingP2(); // 300ms
         }
         while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == COMMAND_TORQ_RODS)
         {
-            SunPointingP3();
+            SunPointingP3(); // 500ms
         }
         // Update counter
         num_sun_pointing_cycles++;
@@ -217,15 +217,15 @@ void SunPointingP1( void )
 	setTorqueRodPwm(MAGNETORQUER_Z,0);
 
 	/*** Poll the back panels to check if Y- is facing the sun ***/
-	if(backpanel_loop_counter == BACKPANEL_SA_POLLING_LOOPS)
-	{
-		pollBackSolarPanels();
-		backpanel_loop_counter = 0;
-	}
-	else
-	{
-		backpanel_loop_counter++;
-	}
+//	if(backpanel_loop_counter == BACKPANEL_SA_POLLING_LOOPS)
+//	{
+//		pollBackSolarPanels();
+//		backpanel_loop_counter = 0;
+//	}
+//	else
+//	{
+//		backpanel_loop_counter++;
+//	}
 
 	/*** Clear validity variables ***/
 	for(i=0; i < NUM_SAMPLE_LOOPS_SUN_SENSOR; i++) ss_sample_valid[i] = false;
@@ -240,10 +240,14 @@ void SunPointingP1( void )
 	for(i=0; i<NUM_SAMPLE_LOOPS_SUN_SENSOR; i++)
 	{
 		if(ADCS_DRIVER_NO_ERROR != sunSensorSelect(ss_x_select)) continue;
+		vTaskDelay(10);
 		if(ADCS_DRIVER_NO_ERROR != getSunSensorMeasurementsRaw(ss_x_buf[i])) continue;
+		vTaskDelay(10);
 		// Get Z-angle
 		if(ADCS_DRIVER_NO_ERROR != sunSensorSelect(ss_z_select)) continue;
+		vTaskDelay(10);
 		if(ADCS_DRIVER_NO_ERROR != getSunSensorMeasurementsRaw(ss_z_buf[i])) continue;
+		vTaskDelay(10);
 		// Update valid samples
 		ss_sample_valid[i] = true;
 		num_valid_ss_samples++;
@@ -251,7 +255,8 @@ void SunPointingP1( void )
 	// Sample gyroscope
 	for(i=0; i<NUM_SAMPLE_LOOPS_GYROSCOPE; i++)
 	{
-		if(ADCS_DRIVER_NO_ERROR != getMagnetometerMeasurementsRaw(gyro_select, gyro_buf[i])) continue;
+		if(ADCS_DRIVER_NO_ERROR != getGyroMeasurementsRaw(gyro_select,gyro_buf[i])) continue;
+		vTaskDelay(10);
 		// Update number of valid samples
 		gyro_sample_valid[i] = true;
 		num_valid_gyro_samples++;
@@ -283,7 +288,8 @@ void SunPointingP2( void )
 	/*** Sample magnetometers ***/
 	for(i=0; i<NUM_SAMPLE_LOOPS_MAGNETOMETER; i++)
 	{
-		if(ADCS_DRIVER_NO_ERROR != getGyroMeasurementsRaw(gyro_select,gyro_buf[i])) continue;
+		vTaskDelay(10);
+		if(ADCS_DRIVER_NO_ERROR != getMagnetometerMeasurementsRaw(mag_select, mag_buf[i])) continue;
 		// Update number of valid samples
 		mag_sample_valid[i] = true;
 		num_valid_mag_samples++;
@@ -296,10 +302,15 @@ void SunPointingP2( void )
 	{
 		if(ss_sample_valid[i])
 		{
+			float x_angle, z_angle;
 			// Convert X-angle
-			ss_x_sum += sin(AngleDecompose(ss_x_buf[i],3));
+			x_angle = AngleDecompose(ss_x_buf[i],3);
+			x_angle *= ss_x_sign_flip;
+			ss_x_sum += sin(x_angle);
 			// Convert Z-angle
-			ss_z_sum += sin(AngleDecompose(ss_z_buf[i],3));
+			z_angle = AngleDecompose(ss_z_buf[i],3);
+			z_angle *= ss_z_sign_flip;
+			ss_z_sum += sin(z_angle);
 		}
 	}
 
@@ -312,21 +323,25 @@ void SunPointingP2( void )
 		if(gyro_sample_valid[i])
 		{
 			uint16_t rawGyro;
+			int16_t rawGyroSigned;
 			// Gyro X conversion and sum
 			// NOTE: GYRO AXIS ALIGNMENT CORRECTED HERE
 			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[gyro_x_lsb_idx]);
-			rawGyro |= (((uint16_t) gyro_buf[gyro_x_msb_idx]) << 8);
+			rawGyro |=  ((uint16_t) gyro_buf[i][gyro_x_lsb_idx]);
+			rawGyro |= (((uint16_t) gyro_buf[i][gyro_x_msb_idx]) << 8);
+			rawGyroSigned = 0;
+			rawGyroSigned |=  ((int16_t) gyro_buf[i][gyro_x_lsb_idx]);
+			rawGyroSigned |= (((int16_t) gyro_buf[i][gyro_x_msb_idx]) << 8);
 			gyro_x_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
 			// Gyro Y conversion and sum
 			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[gyro_y_lsb_idx]);
-			rawGyro |= (((uint16_t) gyro_buf[gyro_y_msb_idx]) << 8);
+			rawGyro |=  ((uint16_t) gyro_buf[i][gyro_y_lsb_idx]);
+			rawGyro |= (((uint16_t) gyro_buf[i][gyro_y_msb_idx]) << 8);
 			gyro_y_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
 			// Gyro Z conversion and sum
 			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[gyro_z_lsb_idx]);
-			rawGyro |= (((uint16_t) gyro_buf[gyro_z_msb_idx]) << 8);
+			rawGyro |=  ((uint16_t) gyro_buf[i][gyro_z_lsb_idx]);
+			rawGyro |= (((uint16_t) gyro_buf[i][gyro_z_msb_idx]) << 8);
 			gyro_z_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
 		}
 	}
@@ -341,18 +356,18 @@ void SunPointingP2( void )
 			uint16_t rawMag;
 			// Mag X conversion and sum
 			rawMag = 0;
-			rawMag |=  ((uint16_t) mag_buf[0]);
-			rawMag |= (((uint16_t) mag_buf[1]) << 8);
+			rawMag |=  ((uint16_t) mag_buf[i][0]);
+			rawMag |= (((uint16_t) mag_buf[i][1]) << 8);
 			mag_x_sum += convertMagDataRawToTeslas(rawMag);
 			// Mag Y conversion and sum
 			rawMag = 0;
-			rawMag |=  ((uint16_t) mag_buf[2]);
-			rawMag |= (((uint16_t) mag_buf[3]) << 8);
+			rawMag |=  ((uint16_t) mag_buf[i][2]);
+			rawMag |= (((uint16_t) mag_buf[i][3]) << 8);
 			mag_y_sum += convertMagDataRawToTeslas(rawMag);
 			// Mag Z conversion and sum
 			rawMag = 0;
-			rawMag |=  ((uint16_t) mag_buf[4]);
-			rawMag |= (((uint16_t) mag_buf[5]) << 8);
+			rawMag |=  ((uint16_t) mag_buf[i][4]);
+			rawMag |= (((uint16_t) mag_buf[i][5]) << 8);
 			mag_z_sum += convertMagDataRawToTeslas(rawMag);
 		}
 	}
@@ -537,9 +552,9 @@ void SunPointingP3( void )
 	// Send telemetry
 	if((SUN_POINTING_TM_RATE - 1) == sun_pointing_pkt_count)
 	{
-		int float_size = sizeof(float);
-		int double_size = sizeof(double);
-		uint8_t scale = (uint8_t) ((2.0 / 5.0) * 255.0);
+//		int float_size = sizeof(float);
+//		int double_size = sizeof(double);
+//		uint8_t scale = (uint8_t) ((2.0 / 5.0) * 255.0);
 		sendTelemetryAddr(&sun_pointing_pkt, GROUND_CSP_ADDRESS);
 		sun_pointing_pkt_count = 0;
 	}
@@ -573,4 +588,40 @@ void vHandleTimer(TimerHandle_t xTimer)
     }
 
     vTimerSetTimerID(xTimer, currentID);
+}
+
+void SendSunPointingTelemetry(void)
+{
+	// Wait for P3
+//	while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) != COMMAND_TORQ_RODS);
+	// Format telemetry
+	telemetryPacket_t tmpkt = {0};
+	uint8_t data[58] = {0};
+	tmpkt.telem_id = CDH_SUN_POINTING_ID;
+	tmpkt.length = 58;
+	tmpkt.data = data;
+	// Backwards
+	memcpy(&data[0],&backwards,sizeof(uint8_t));
+	// Number of valid samples
+	memcpy(&data[1],&num_valid_ss_samples,sizeof(uint8_t));
+	memcpy(&data[2],&num_valid_gyro_samples,sizeof(uint8_t));
+	memcpy(&data[3],&num_valid_mag_samples,sizeof(uint8_t));
+	// Torque command
+	memcpy(&data[4],&torque_command_x,sizeof(torque_command_x));
+	memcpy(&data[12],&torque_command_y,sizeof(torque_command_y));
+	memcpy(&data[20],&torque_command_z,sizeof(torque_command_z));
+	// Dipole command
+	memcpy(&data[28],&dipole_cmd_x,sizeof(dipole_cmd_x));
+	memcpy(&data[36],&dipole_cmd_y,sizeof(dipole_cmd_y));
+	memcpy(&data[44],&dipole_cmd_z,sizeof(dipole_cmd_z));
+	// Actuation polarity
+	memcpy(&data[52],&polarity_x,sizeof(polarity_x));
+	memcpy(&data[53],&polarity_y,sizeof(polarity_y));
+	memcpy(&data[54],&polarity_z,sizeof(polarity_z));
+	// PWM
+	memcpy(&data[55],&pwm_x,sizeof(pwm_x));
+	memcpy(&data[56],&pwm_y,sizeof(pwm_y));
+	memcpy(&data[57],&pwm_z,sizeof(pwm_z));
+	// Send telemetry
+	sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 }

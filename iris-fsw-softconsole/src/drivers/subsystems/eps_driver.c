@@ -97,6 +97,7 @@ void pollBackSolarPanels(void)
 	cmd.data[0] = POWER_READ_SOLAR_CURRENT_CMD;
 	cmd.data[1] = SA_BACK_STATIONARY_TOP;
 	CAN_transmit_message(&cmd);
+	int x = 7;
 	// TODO: push messages through??
 }
 

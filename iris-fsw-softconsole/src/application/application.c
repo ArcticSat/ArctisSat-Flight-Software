@@ -110,7 +110,7 @@ void InitMissionOperations(void)
 
 
 	// Resume tasks
-//	vTaskResume(vSunPointing_h);
+	vTaskResume(vSunPointing_h);
 	vTaskResume(vCanServer_h);
 #ifdef INCLUDE_TASK_TTT
 	vTaskResume(vTTTScheduler_h);
@@ -119,7 +119,6 @@ void InitMissionOperations(void)
     	vTaskResume(vFw_Update_Mgr_Task_h);
     }
 	// vTaskResume(vTestAdcsDriverInterface_h);
-//	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 
 void InitNormalOperations(void)

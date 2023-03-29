@@ -43,9 +43,12 @@ const uint8_t sunDataRxSize[4] = {18,36,72,144};
 // Magnetometer calibration variables
 float mag_sign_flip[3] = {1.0,-1.0,1.0};
 float mag_offsets[3] = {0.0,0.0,0.0};
-//float mag_x_offset = 0.0;
-//float mag_y_offset = 0.0;
-//float mag_z_offset = 0.0;
+float mag_x_offset = 0.0;
+float mag_y_offset = 0.0;
+float mag_z_offset = 0.0;
+// Sun vector conversion
+volatile float ss_x_sign_flip =  1.0;
+volatile float ss_z_sign_flip = -1.0;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -184,17 +187,19 @@ void vTestAdcsDriverInterface(void * pvParameters)
 //		vTaskDelay(10);
 
 		// Unit vector
-		driver_status = sunSensorSelect(SUN_SENSOR_1);
+		driver_status = sunSensorSelect(SUN_SENSOR_PRIMARY_Z);
 		vTaskDelay(10);
 		driver_status = getSunSensorMeasurementsRaw(z_sun_buf);
 		vTaskDelay(10);
 		z_angle = AngleDecompose(z_sun_buf,3);
-		z_angle -= z_angle;
-		driver_status = sunSensorSelect(SUN_SENSOR_2);
+//		z_angle -= z_angle;
+		z_angle *= ss_z_sign_flip;
+		driver_status = sunSensorSelect(SUN_SENSOR_PRIMARY_X);
 		vTaskDelay(10);
 		driver_status = getSunSensorMeasurementsRaw(x_sun_buf);
 		vTaskDelay(10);
 		x_angle = AngleDecompose(x_sun_buf,3);
+		x_angle *= ss_x_sign_flip;
 
 		float unit_vector[2] = {0.0};
 		unit_vector[0] = sin(x_angle);
@@ -268,6 +273,7 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 				&rx_data[i],
 				1);
 	}
+	return ADCS_DRIVER_NO_ERROR;
 }
 #endif
 
@@ -550,10 +556,10 @@ AdcsDriverError_t sunSensorSelect(enumSunSensor sunSensor)
 	AdcsDriverError_t status;
 	switch(sunSensor)
 	{
-		case SUN_SENSOR_1:
+		case SUN_SENSOR_PRIMARY_Z:
 			cmd_id = ADCS_SELECT_SS1;
 			break;
-		case SUN_SENSOR_2:
+		case SUN_SENSOR_PRIMARY_X:
 			cmd_id = ADCS_SELECT_SS2;
 			break;
 		case SUN_SENSOR_3:
@@ -637,7 +643,7 @@ float convertMagDataRawToTeslas(uint16_t rawMag)
 	return MAG_SIM_ENG_VALUE;
 #else
 	return (float) ( ((-8) + (rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
-	return (float) ( ((rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
+//	return (float) ( ((rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
 #endif
 }
 
@@ -1018,6 +1024,11 @@ AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id)
 	// Calculate X offset
 	for(i=0; i < 3; i++)
 		mag_offsets[i] = (T_avg_pos[i] + T_avg_neg[i]) / 2;
+
+	// Store offsets
+	mag_x_offset = mag_offsets[0];
+	mag_y_offset = mag_offsets[1];
+	mag_z_offset = mag_offsets[2];
 
 	return status;
 }

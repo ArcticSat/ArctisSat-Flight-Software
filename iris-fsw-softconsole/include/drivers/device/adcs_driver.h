@@ -63,7 +63,7 @@
 // Axes
 #define NUM_MAG_AXES 3
 // Magnetometer calibration parameters
-#define MAGNETOMETER_CALIBRATION_CYCLES_SECONDS		30*60
+#define MAGNETOMETER_CALIBRATION_CYCLES_SECONDS		2*60
 // Torque rod parameters
 #define TORQUE_ROD_DECAY_TIME_MS 200
 #define DIPOLE_SLOPE 0.04
@@ -147,10 +147,10 @@ typedef enum
 
 typedef enum
 {
-	SUN_SENSOR_1=1,
-	SUN_SENSOR_2,		//2
-	SUN_SENSOR_3,		//3
-	SUN_SENSOR_4,		//4
+	SUN_SENSOR_PRIMARY_Z=1,
+	SUN_SENSOR_PRIMARY_X,		//2
+	SUN_SENSOR_3,				//3
+	SUN_SENSOR_4,				//4
 } enumSunSensor;
 
 // ADCS Command IDs
@@ -192,9 +192,13 @@ typedef enum
 // GLOBAL VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Magnetometer calibration variables
+extern float mag_offsets[3];
 extern float mag_x_offset;
 extern float mag_y_offset;
 extern float mag_z_offset;
+// Sun vector conversion
+extern volatile float ss_x_sign_flip;
+extern volatile float ss_z_sign_flip;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

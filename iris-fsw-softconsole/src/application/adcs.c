@@ -9,6 +9,7 @@
 #include "main.h"
 #include "tasks/telemetry.h"
 #include "drivers/device/adcs_driver.h"
+#include "application/sun_pointing.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -130,6 +131,9 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		tm_pkt.data = pkt_data;
 		memcpy(&angle,pkt_data,sizeof(angle));
 		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+		break;
+	case ADCS_GET_SUN_POINTING_TM_CMD:
+		SendSunPointingTelemetry();
 		break;
 	default:
 		return;
