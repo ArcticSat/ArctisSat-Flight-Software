@@ -233,6 +233,7 @@ AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber,
 AdcsDriverError_t getSunAngle(uint8_t * measurements);
 // Sensor calibration
 AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id);
+AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id);
 
 
 

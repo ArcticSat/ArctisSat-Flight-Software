@@ -15,6 +15,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "drivers/device/adcs_driver.h"
 #include "main.h"
+#include "drivers/subsystems/eps_driver.h"
 #include "board_definitions.h"
 #include "tasks/telemetry.h"
 #include <stdlib.h>
@@ -23,7 +24,7 @@
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // SPI parameters
-#define SPI_EFFICIENT
+//#define SPI_EFFICIENT
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
 // Magnetometer calibration parameters
@@ -38,9 +39,11 @@ const uint8_t sunDataOffset[3] = {1,0,0};
 const uint8_t RODiv[4] = {1,2,15,255};
 const uint8_t sunDataRxSize[4] = {18,36,72,144};
 // Magnetometer calibration variables
-float mag_x_offset = 0.0;
-float mag_y_offset = 0.0;
-float mag_z_offset = 0.0;
+float mag_sign_flip[3] = {1.0,-1.0,1.0};
+float mag_offsets[3] = {0.0,0.0,0.0};
+//float mag_x_offset = 0.0;
+//float mag_y_offset = 0.0;
+//float mag_z_offset = 0.0;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -56,60 +59,85 @@ void vTestAdcsDriverInterface(void * pvParameters)
 	uint8_t gyro_id = GYRO_1;
 	MagnetometerId_t mag_id = MAGNETOMETER_1;
 	uint8_t gyro_buf[6] = {0};
+	uint16_t gyro_raw16[3] = {0};
+	int16_t  gyro_raw_int16[3] = {0};
+	short  gyro_raw_short[3] = {0};
 	uint8_t mag_buf[6] = {0};
 	float float_buf[3];
 	float gyro_data[3] = {0};
 	float mag_data[3] = {0};
+
+	uint8_t sun_buf[164];
+	uint8_t x_sun_buf[164];
+	uint8_t z_sun_buf[164];
+	float sunAngle = 0.0;
+	float z_angle,x_angle;
+
+	setLoadSwitch(LS_ADCS,SWITCH_OFF);
+	vTaskDelay(1000);
+	setLoadSwitch(LS_ADCS,SWITCH_ON);
+	vTaskDelay(1000);
+	CalibrateMagnetometerSingleTorqueRod(MAGNETOMETER_1);
+
 	while(1)
 	{
-		/*** Gyro data ***/
-		// Get raw data
-		driver_status = (uint8_t) getGyroMeasurementsRaw(gyro_id, gyro_buf);
-		// Convert
-		memcpy(gyro_data,0,3*sizeof(float));
-		for(i=0; i < 3; i++){
-			uint16_t gyro_raw;
-			gyro_raw = ((uint16_t)  gyro_buf[2*i]);
-			gyro_raw |= (((uint16_t) gyro_buf[2*i+1]) << 8);
-			float_buf[i] = convertGyroDataRawToRadiansPerSecond(gyro_raw);
-		}
-		// Orient
-		if(gyro_id == GYRO_1){
-			gyro_data[0] = -float_buf[1]; // X <-- (-Y)
-			gyro_data[1] =  float_buf[0]; // Y <--   X
-			gyro_data[2] =  float_buf[2]; // Z <--   Z
-		} else if(gyro_id == GYRO_2) {
-			gyro_data[0] =  float_buf[0]; // X <--   X
-			gyro_data[1] = -float_buf[1]; // Y <-- (-Y)
-			gyro_data[2] =  float_buf[2]; // Z <--   Z
-		}
-		// Send telemetry
-		memcpy(buf,0,20);
-		tmpkt.telem_id = ADCS_GYROSCOPE_DATA_ID;
-		tmpkt.length = 14;
-		buf[0] = driver_status;
-		buf[1] = gyro_id;
-		memcpy(&buf[2],gyro_data,3*sizeof(float));
-		tmpkt.data = buf;
-		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-		int x = 7;
-		vTaskDelay(1000);
+//		/*** Gyro data ***/
+//		memcpy(gyro_buf,0,6*sizeof(uint8_t));
+//		// Get raw data
+//		driver_status = (uint8_t) getGyroMeasurementsRaw(gyro_id, gyro_buf);
+//		// Convert
+//		memcpy(gyro_data,0,3*sizeof(float));
+//		for(i=0; i < 3; i++){
+//			uint16_t gyro_raw;
+//			gyro_raw = ((uint16_t)  gyro_buf[2*i]);
+//			gyro_raw |= (((uint16_t) gyro_buf[2*i+1]) << 8);
+//			float_buf[i] = convertGyroDataRawToRadiansPerSecond(gyro_raw);
+//			gyro_raw16[i] = gyro_raw;
+//			gyro_raw_int16[i] = (int16_t) gyro_raw16[i];
+//			gyro_raw_short[i] = (short) gyro_raw16[i];
+//		}
+//		// Orient
+//		if(gyro_id == GYRO_1){
+//			gyro_data[0] = -float_buf[1]; // X <-- (-Y)
+//			gyro_data[1] =  float_buf[0]; // Y <--   X
+//			gyro_data[2] =  float_buf[2]; // Z <--   Z
+//		} else if(gyro_id == GYRO_2) {
+//			gyro_data[0] =  float_buf[0]; // X <--   X
+//			gyro_data[1] = -float_buf[1]; // Y <-- (-Y)
+//			gyro_data[2] =  float_buf[2]; // Z <--   Z
+//		}
+//		// Send telemetry
+//		memcpy(buf,0,20);
+//		tmpkt.telem_id = ADCS_GYROSCOPE_DATA_ID;
+//		tmpkt.length = 14;
+//		buf[0] = driver_status;
+//		buf[1] = gyro_id;
+//		memcpy(&buf[2],gyro_data,3*sizeof(float));
+//		tmpkt.data = buf;
+//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+//		int x = 7;
+//		vTaskDelay(10);
 
 //		/*** Mag data ***/
 //		// Get raw data
-//		driver_status = (uint8_t) getMagnetometerMeasurementsRaw(mag_id, mag_buf);
 //		// Convert
 //		memcpy(mag_buf,0,3*sizeof(float));
+//		driver_status = (uint8_t) getMagnetometerMeasurementsRaw(mag_id, mag_buf);
 //		for(i=0; i < 3; i++){
-//			uint16_t mag_raw;
-//			mag_raw = ((uint16_t)  mag_buf[2*i]);
-//			mag_raw = (((uint16_t) mag_buf[2*i+1]) << 8);
+//			uint16_t mag_raw = 0;
+//			mag_raw |= ((uint16_t)  mag_buf[2*i]);
+//			mag_raw |= (((uint16_t) mag_buf[2*i+1]) << 8);
 //			float_buf[i] = convertMagDataRawToTeslas(mag_raw);
 //		}
-//		// Orient
+//		// Orient, offset
 //		mag_data[0] =  float_buf[0]; // X <--   X
 //		mag_data[1] = -float_buf[1]; // Y <-- (-Y)
 //		mag_data[2] =  float_buf[2]; // Z <--   Z
+//		for(i=0; i < 3; i++)
+//		{
+//			mag_data[i] -= mag_offsets[i];
+//			mag_data[i] *= 1000000.0;
+//		}
 //		// Send telemetry
 //		memcpy(buf,0,20);
 //		tmpkt.telem_id = ADCS_MAGNETOMETER_DATA_ID;
@@ -120,8 +148,64 @@ void vTestAdcsDriverInterface(void * pvParameters)
 //		tmpkt.data = buf;
 //		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 //		int j = 7;
-//
-//		vTaskDelay(1000);
+
+//		vTaskDelay(10);
+
+		/*** Sun data ***/
+//		driver_status = sunSensorSelect(SUN_SENSOR_1);
+//		vTaskDelay(10);
+//		driver_status = getSunSensorMeasurementsRaw(sun_buf);
+//		// Send meta data
+//		tmpkt.telem_id = ADCS_SS_META_ID;
+//		tmpkt.length = 12;
+//		tmpkt.data = buf;
+//		buf[0] = (uint8_t) driver_status;
+//		memcpy(&buf[1],sun_buf,12);
+//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+//		vTaskDelay(10);
+//		// Send raw data
+//		tmpkt.telem_id = ADCS_SS_RAW_ID;
+//		tmpkt.length = 20;
+//		for(i=0; i < 124; i+=20){
+//			tmpkt.data = &sun_buf[i];
+//			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+//			vTaskDelay(10);
+//		}
+//		// Send angle
+//		sunAngle = AngleDecompose(sun_buf,3);
+//		tmpkt.telem_id = ADCS_SS_ANGLE_ID;
+//		tmpkt.length = 4;
+//		tmpkt.data = buf;
+//		memcpy(buf,&sunAngle,sizeof(sunAngle));
+//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+//		int x = 7;
+//		vTaskDelay(10);
+
+		// Unit vector
+		driver_status = sunSensorSelect(SUN_SENSOR_1);
+		vTaskDelay(10);
+		driver_status = getSunSensorMeasurementsRaw(z_sun_buf);
+		vTaskDelay(10);
+		z_angle = AngleDecompose(z_sun_buf,3);
+		z_angle -= z_angle;
+		driver_status = sunSensorSelect(SUN_SENSOR_2);
+		vTaskDelay(10);
+		driver_status = getSunSensorMeasurementsRaw(x_sun_buf);
+		vTaskDelay(10);
+		x_angle = AngleDecompose(x_sun_buf,3);
+
+		float unit_vector[2] = {0.0};
+		unit_vector[0] = sin(x_angle);
+		unit_vector[1] = sin(z_angle);
+
+		tmpkt.telem_id = ADCS_SS_UNIT_VECTOR_ID;
+		tmpkt.length = 8;
+		tmpkt.data = buf;
+		memcpy(buf,&unit_vector,sizeof(unit_vector));
+		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+
+		vTaskDelay(2000);
+
 	}
 }
 
@@ -158,7 +242,7 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 	return ADCS_DRIVER_NO_ERROR;
 #endif
 }
-#elif
+#else
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
 {
 	uint8_t i;
@@ -414,7 +498,9 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
     status = adcsSyncSpiCommand(cmd_id);
-	vTaskDelay(100);
+    if(status != ADCS_DRIVER_NO_ERROR)
+    	return status;
+	vTaskDelay(10);
     // Get measurements
 	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
 
@@ -490,7 +576,9 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
 	AdcsDriverError_t status;
 	status = adcsSyncSpiCommand(cmd_id);
-	vTaskDelay(30);
+	if(status != ADCS_DRIVER_NO_ERROR)
+		return status;
+	vTaskDelay(100);
 	status = adcsTxRx(NULL,0,&measurements[0],ADCS_SUN_SENSOR_DATA_SIZE);
 //	vTaskDelay(20);
 //	status = adcsTxRx(NULL,0,&measurements[164],ADCS_SUN_SENSOR_DATA_SIZE);
@@ -547,6 +635,7 @@ float convertMagDataRawToTeslas(uint16_t rawMag)
 	return MAG_SIM_ENG_VALUE;
 #else
 	return (float) ( ((-8) + (rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
+	return (float) ( ((rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
 #endif
 }
 
@@ -568,7 +657,7 @@ float AngleDecompose(uint8_t *RXBuff,uint8_t selec )
 	float FirstPxlFrac=0;
 	uint16_t AngFrac=0;
 
-	while(RXBuff[i] != 255)       //Skips the unilluminated pixels
+	while(RXBuff[i] != 255 && i < sunDataRxSize[selec])       //Skips the unilluminated pixels
 	{
 		i++;
 	}
@@ -835,6 +924,95 @@ AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id)
 	return status;
 }
 
+AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id)
+{
+	const TickType_t sample_delay_ms = 10;
+	const TickType_t command_delay_ms = 10;
+	const TickType_t activation_time_ms = 200;
+	const uint8_t calibration_pwm = 0;
+	const MagnetorquerID_t calibration_rod = MAGNETORQUER_Y;
+
+	uint8_t i,j;
+	uint8_t buf[6];
+	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
+
+	float 	 T_avg_pos[3] = {0.0};
+	float 	 T_avg_neg[3] = {0.0};
+
+	/*** Turn off all torque rods ***/
+	setTorqueRodPwm(MAGNETORQUER_X, 0);
+	setTorqueRodPwm(MAGNETORQUER_Y, 0);
+	setTorqueRodPwm(MAGNETORQUER_Z, 0);
+	vTaskDelay(TORQUE_ROD_DECAY_TIME_MS);
+
+	/*** Calibrate with torque rod X ***/
+	// Activate +X
+	setTorqueRodPolarity(calibration_rod, TR_POLARITY_POS);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(calibration_rod, calibration_pwm);
+	vTaskDelay(activation_time_ms);
+	// Sample Mags
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+
+		for(j=0; j < 3; j++)
+		{
+			uint16_t rawMag;
+			rawMag = 0;
+			rawMag |=  ((uint16_t) buf[2*j]);
+			rawMag |= (((uint16_t) buf[2*j+1]) << 8);
+			float magConv = convertMagDataRawToTeslas(rawMag);
+			T_avg_pos[j] += mag_sign_flip[i] * magConv;
+		}
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mags
+	for(i=0; i < 3; i++)
+	{
+		T_avg_pos[i] /= MAGNETOMETER_CALIBRATION_SAMPLES;
+	}
+	// De-activate +X
+	setTorqueRodPwm(calibration_rod,0);
+
+	// Activate -X
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPolarity(calibration_rod, TR_POLARITY_NEG);
+	vTaskDelay(command_delay_ms);
+	setTorqueRodPwm(calibration_rod,calibration_pwm);
+	vTaskDelay(activation_time_ms);
+	// Sample Mags
+	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
+	{
+		uint16_t rawMag;
+		getMagnetometerMeasurementsRaw(mag_id,buf);
+
+		for(j=0; j < 3; j++)
+		{
+			uint16_t rawMag;
+			rawMag = 0;
+			rawMag |=  ((uint16_t) buf[2*j]);
+			rawMag |= (((uint16_t) buf[2*j+1]) << 8);
+			float magConv = convertMagDataRawToTeslas(rawMag);
+			T_avg_neg[j] += mag_sign_flip[i] * magConv;
+		}
+
+		vTaskDelay(sample_delay_ms);
+	}
+	// Calculate average Mags
+	for(i=0; i < 3; i++)
+	{
+		T_avg_neg[i] /= MAGNETOMETER_CALIBRATION_SAMPLES;
+	}
+	// De-activate -X
+	setTorqueRodPwm(calibration_rod,0);
+
+	// Calculate X offset
+	for(i=0; i < 3; i++)
+		mag_offsets[i] = (T_avg_pos[i] + T_avg_neg[i]) / 2;
+
+	return status;
+}
 
 
 
