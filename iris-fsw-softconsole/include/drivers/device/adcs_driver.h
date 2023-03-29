@@ -72,7 +72,7 @@
 #define MAX_PWM 255.0
 #define MIN_DETUMBLE_ROTATION_RPS 0.5
 // Gyroscope data conversion
-#define A3G4250D_LSB_DPS 1.0/245.0
+#define A3G4250D_LSB_DPS 0.00875
 #define DPS_TO_RPS 0.017448
 // Magnetometer data conversion
 #define MAG_LSB 0.00025 //From datasheet - LSB is 0.25 miligauss
@@ -233,6 +233,7 @@ AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber,
 AdcsDriverError_t getSunAngle(uint8_t * measurements);
 // Sensor calibration
 AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id);
+AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id);
 
 
 

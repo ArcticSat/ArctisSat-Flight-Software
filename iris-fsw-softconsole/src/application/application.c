@@ -118,6 +118,8 @@ void InitMissionOperations(void)
     if(get_fs_status() == FS_OK){
     	vTaskResume(vFw_Update_Mgr_Task_h);
     }
+	// vTaskResume(vTestAdcsDriverInterface_h);
+//	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 
 void InitNormalOperations(void)

@@ -133,7 +133,7 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 	// Initialization
- 	 prvSetupHardware();
+ 	prvSetupHardware();
 
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
@@ -157,7 +157,7 @@ int main( void )
 	status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 
 
-//    status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",200,NULL,2,&vTestAdcsDriverInterface_h);
+    // status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",400,NULL,2,&vTestAdcsDriverInterface_h);
 
 //    //Suspend these because csp server will start once csp is up.
 //    vTaskSuspend(vDetumbleDriver_h);
