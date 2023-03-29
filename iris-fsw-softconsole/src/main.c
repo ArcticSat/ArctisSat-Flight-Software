@@ -148,7 +148,7 @@ int main( void )
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
+	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
 #ifdef INCLUDE_TASK_TTT
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif

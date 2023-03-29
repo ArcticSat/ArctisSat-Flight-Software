@@ -765,6 +765,12 @@ AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id)
 	float 	 T_avg_pos = {0.0};
 	float 	 T_avg_neg = {0.0};
 
+	/*** Power cycle the ADCS ***/
+    setLoadSwitch(LS_ADCS,SWITCH_OFF);
+    vTaskDelay(100);
+    setLoadSwitch(LS_ADCS,SWITCH_ON);
+    vTaskDelay(100);
+
 	/*** Turn off all torque rods ***/
 	setTorqueRodPwm(MAGNETORQUER_X, 0);
 	setTorqueRodPwm(MAGNETORQUER_Y, 0);

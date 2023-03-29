@@ -102,8 +102,6 @@ typedef enum
 	CDH_SUN_POINTING_ID,
 	CDH_HW_STATUS_ID,
 	// CDH telemetry end
-	CDH_HW_STATUS_ID,
-
 	CDH_TELEMETRY_END,
 	/*** EVENT TELEMETRY ***/
 	EVENT_ID,
