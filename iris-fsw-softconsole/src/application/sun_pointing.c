@@ -37,6 +37,8 @@
 #define BACKPANEL_SA_POLLING_LOOPS			5
 // Telemetry rates
 #define SUN_POINTING_TM_RATE 30
+// Number of missed samples before restting ADCS
+#define MISSED_SAMPLES_RESET_COUNT_MAX 		10
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -87,8 +89,9 @@ volatile bool mag_sample_valid[NUM_SAMPLE_LOOPS_MAGNETOMETER] = {false};
 volatile uint8_t num_valid_ss_samples = 0;
 volatile uint8_t num_valid_gyro_samples = 0;
 volatile uint8_t num_valid_mag_samples = 0;
-// Spacecraft is backwards variable
+// Spacecraft is backwards, eclipse variables
 volatile bool backwards = false;
+volatile bool inEclipse = false;
 // Control gains
 volatile const float rate_gain = 0.0004;
 volatile float sun_gain = 0.0;
@@ -101,6 +104,9 @@ volatile uint8_t polarity_x, polarity_y, polarity_z;
 volatile uint8_t pwm_x, pwm_y, pwm_z;
 // Saturation limit
 volatile const float magt_sat = 0.1731; // Amp-m^2
+// Missed samples counter
+volatile bool all_samples_valid = false;
+volatile uint32_t samples_missed_counter = 0;
 // Debugging telemetry
 #ifdef SUN_POINTING_DEBUG_TELEMETRY
 telemetryPacket_t sun_pointing_pkt = {0};
@@ -154,12 +160,17 @@ void vSunPointing( void * pvParameters )
     for(;;)
     {
     	/*** Magnetometer calibration ***/
-    	if(calibration_cycles >= MAGNETOMETER_CALIBRATION_CYCLES_SECONDS)
+    	if(samples_missed_counter >= MISSED_SAMPLES_RESET_COUNT_MAX)
     	{
-    		// Calibrate
-    		CalibrateMagnetometer(mag_select);
+    		/*** Power cycle the ADCS ***/
+    	    setLoadSwitch(LS_ADCS,SWITCH_OFF);
+    	    vTaskDelay(100);
+    	    setLoadSwitch(LS_ADCS,SWITCH_ON);
+    	    vTaskDelay(100);
     		// Wait till next sampling phase
     		while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) != SAMPLE_SUN_SENSOR_GYROS);
+    		// Reset counter
+    		samples_missed_counter = 0;
     	}
     	/*** Sun-pointing tasks ***/
         while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS)
@@ -314,205 +325,234 @@ void SunPointingP2( void )
 		}
 	}
 
-	// Convert gyroscope samples to radians per second
-	gyro_x_sum = 0.0;
-	gyro_y_sum = 0.0;
-	gyro_z_sum = 0.0;
-	for(i=0; i<NUM_SAMPLE_LOOPS_GYROSCOPE; i++)
+	// Check that we have valid readings
+	all_samples_valid = 	(num_valid_ss_samples > 0) 	 \
+						&&  (num_valid_gyro_samples > 0) \
+						&&  (num_valid_mag_samples > 0);
+	if(!all_samples_valid)
 	{
-		if(gyro_sample_valid[i])
+		samples_missed_counter++;
+	}
+	else
+	{
+		// Convert gyroscope samples to radians per second
+		gyro_x_sum = 0.0;
+		gyro_y_sum = 0.0;
+		gyro_z_sum = 0.0;
+		for(i=0; i<NUM_SAMPLE_LOOPS_GYROSCOPE; i++)
 		{
-			uint16_t rawGyro;
-			int16_t rawGyroSigned;
-			// Gyro X conversion and sum
-			// NOTE: GYRO AXIS ALIGNMENT CORRECTED HERE
-			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[i][gyro_x_lsb_idx]);
-			rawGyro |= (((uint16_t) gyro_buf[i][gyro_x_msb_idx]) << 8);
-			rawGyroSigned = 0;
-			rawGyroSigned |=  ((int16_t) gyro_buf[i][gyro_x_lsb_idx]);
-			rawGyroSigned |= (((int16_t) gyro_buf[i][gyro_x_msb_idx]) << 8);
-			gyro_x_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
-			// Gyro Y conversion and sum
-			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[i][gyro_y_lsb_idx]);
-			rawGyro |= (((uint16_t) gyro_buf[i][gyro_y_msb_idx]) << 8);
-			gyro_y_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
-			// Gyro Z conversion and sum
-			rawGyro = 0;
-			rawGyro |=  ((uint16_t) gyro_buf[i][gyro_z_lsb_idx]);
-			rawGyro |= (((uint16_t) gyro_buf[i][gyro_z_msb_idx]) << 8);
-			gyro_z_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
+			if(gyro_sample_valid[i])
+			{
+				uint16_t rawGyro;
+				int16_t rawGyroSigned;
+				// Gyro X conversion and sum
+				// NOTE: GYRO AXIS ALIGNMENT CORRECTED HERE
+				rawGyro = 0;
+				rawGyro |=  ((uint16_t) gyro_buf[i][gyro_x_lsb_idx]);
+				rawGyro |= (((uint16_t) gyro_buf[i][gyro_x_msb_idx]) << 8);
+				rawGyroSigned = 0;
+				rawGyroSigned |=  ((int16_t) gyro_buf[i][gyro_x_lsb_idx]);
+				rawGyroSigned |= (((int16_t) gyro_buf[i][gyro_x_msb_idx]) << 8);
+				gyro_x_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
+				// Gyro Y conversion and sum
+				rawGyro = 0;
+				rawGyro |=  ((uint16_t) gyro_buf[i][gyro_y_lsb_idx]);
+				rawGyro |= (((uint16_t) gyro_buf[i][gyro_y_msb_idx]) << 8);
+				gyro_y_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
+				// Gyro Z conversion and sum
+				rawGyro = 0;
+				rawGyro |=  ((uint16_t) gyro_buf[i][gyro_z_lsb_idx]);
+				rawGyro |= (((uint16_t) gyro_buf[i][gyro_z_msb_idx]) << 8);
+				gyro_z_sum += convertGyroDataRawToRadiansPerSecond(rawGyro);
+			}
 		}
-	}
-	// Convert magnetometer samples to Tesla
-	mag_x_sum = 0.0;
-	mag_y_sum = 0.0;
-	mag_z_sum = 0.0;
-	for(i=0; i<NUM_SAMPLE_LOOPS_MAGNETOMETER; i++)
-	{
-		if(mag_sample_valid[i])
+		// Convert magnetometer samples to Tesla
+		mag_x_sum = 0.0;
+		mag_y_sum = 0.0;
+		mag_z_sum = 0.0;
+		for(i=0; i<NUM_SAMPLE_LOOPS_MAGNETOMETER; i++)
 		{
-			uint16_t rawMag;
-			// Mag X conversion and sum
-			rawMag = 0;
-			rawMag |=  ((uint16_t) mag_buf[i][0]);
-			rawMag |= (((uint16_t) mag_buf[i][1]) << 8);
-			mag_x_sum += convertMagDataRawToTeslas(rawMag);
-			// Mag Y conversion and sum
-			rawMag = 0;
-			rawMag |=  ((uint16_t) mag_buf[i][2]);
-			rawMag |= (((uint16_t) mag_buf[i][3]) << 8);
-			mag_y_sum += convertMagDataRawToTeslas(rawMag);
-			// Mag Z conversion and sum
-			rawMag = 0;
-			rawMag |=  ((uint16_t) mag_buf[i][4]);
-			rawMag |= (((uint16_t) mag_buf[i][5]) << 8);
-			mag_z_sum += convertMagDataRawToTeslas(rawMag);
+			if(mag_sample_valid[i])
+			{
+				uint16_t rawMag;
+				// Mag X conversion and sum
+				rawMag = 0;
+				rawMag |=  ((uint16_t) mag_buf[i][0]);
+				rawMag |= (((uint16_t) mag_buf[i][1]) << 8);
+				mag_x_sum += convertMagDataRawToTeslas(rawMag);
+				// Mag Y conversion and sum
+				rawMag = 0;
+				rawMag |=  ((uint16_t) mag_buf[i][2]);
+				rawMag |= (((uint16_t) mag_buf[i][3]) << 8);
+				mag_y_sum += convertMagDataRawToTeslas(rawMag);
+				// Mag Z conversion and sum
+				rawMag = 0;
+				rawMag |=  ((uint16_t) mag_buf[i][4]);
+				rawMag |= (((uint16_t) mag_buf[i][5]) << 8);
+				mag_z_sum += convertMagDataRawToTeslas(rawMag);
+			}
 		}
-	}
 
-	/*** Calculate average converted values ***/
-	// TODO: error handling - what if no valid samples??? Reset ADCS and return to P1?
-	// Sun-sensor averages
-	if(num_valid_ss_samples > 0)
-	{
-#ifndef SUN_VECT_X_SIM_ENG_VALUE
-		ss_x = ss_x_sum / num_valid_ss_samples;
-#else
-		ss_x = SUN_VECT_X_SIM_ENG_VALUE;
-#endif
-#ifndef SUN_VECT_Z_SIM_ENG_VALUE
-		ss_z = ss_z_sum / num_valid_ss_samples;
-#else
-		ss_z = SUN_VECT_Z_SIM_ENG_VALUE;
-#endif
-	}
-	// Gyro average
-	if(num_valid_gyro_samples > 0)
-	{
-		// NOTE: GYRO ORIENTATION CORRECTED HERE
-#ifndef GYRO_X_SIM_ENG_VALUE
-		gyro_x = gyro_x_sum / num_valid_gyro_samples;
-		if(gyro_x_sign_flip)
-			gyro_x = -gyro_x;
-#else
-		gyro_x = GYRO_X_SIM_ENG_VALUE;
-#endif
-#ifndef GYRO_Y_SIM_ENG_VALUE
-		gyro_y = gyro_y_sum / num_valid_gyro_samples;
-		if(gyro_y_sign_flip)
-			gyro_y = -gyro_y;
-#else
-		gyro_y = GYRO_Y_SIM_ENG_VALUE;
-#endif
-#ifndef GYRO_Z_SIM_ENG_VALUE
-		gyro_z = gyro_z_sum / num_valid_gyro_samples;
-#else
-		gyro_z = GYRO_Z_SIM_ENG_VALUE;
-#endif
-	}
-	// Mag average
-	if(num_valid_mag_samples > 0)
-	{
-		// NOTE: MAG ORIENTATION CORRECTED HERE
-#ifndef MAG_X_SIM_ENG_VALUE
-		mag_x = mag_x_sum / num_valid_mag_samples;
-		mag_x += mag_x_offset;
-#else
-		mag_x = MAG_X_SIM_ENG_VALUE;
-#endif
-#ifndef MAG_Y_SIM_ENG_VALUE
-		mag_y = mag_y_sum / num_valid_mag_samples;
-		mag_y = -mag_y;
-		mag_y += mag_y_offset;
-#else
-		mag_y = MAG_Y_SIM_ENG_VALUE;
-#endif
-#ifndef MAG_Z_SIM_ENG_VALUE
-		mag_z = mag_z_sum / num_valid_mag_samples;
-		mag_z += mag_z_offset;
-#else
-		mag_z = MAG_Z_SIM_ENG_VALUE;
-#endif
-	}
+		/*** Calculate average converted values ***/
+		// TODO: error handling - what if no valid samples??? Reset ADCS and return to P1?
+		// Sun-sensor averages
+		if(num_valid_ss_samples > 0)
+		{
+	#ifndef SUN_VECT_X_SIM_ENG_VALUE
+			ss_x = ss_x_sum / num_valid_ss_samples;
+	#else
+			ss_x = SUN_VECT_X_SIM_ENG_VALUE;
+	#endif
+	#ifndef SUN_VECT_Z_SIM_ENG_VALUE
+			ss_z = ss_z_sum / num_valid_ss_samples;
+	#else
+			ss_z = SUN_VECT_Z_SIM_ENG_VALUE;
+	#endif
+		}
+		else
+		{
+			ss_x = 0.0;
+			ss_z = 0.0;
+		}
+		// Gyro average
+		if(num_valid_gyro_samples > 0)
+		{
+			// NOTE: GYRO ORIENTATION CORRECTED HERE
+	#ifndef GYRO_X_SIM_ENG_VALUE
+			gyro_x = gyro_x_sum / num_valid_gyro_samples;
+			if(gyro_x_sign_flip)
+				gyro_x = -gyro_x;
+	#else
+			gyro_x = GYRO_X_SIM_ENG_VALUE;
+	#endif
+	#ifndef GYRO_Y_SIM_ENG_VALUE
+			gyro_y = gyro_y_sum / num_valid_gyro_samples;
+			if(gyro_y_sign_flip)
+				gyro_y = -gyro_y;
+	#else
+			gyro_y = GYRO_Y_SIM_ENG_VALUE;
+	#endif
+	#ifndef GYRO_Z_SIM_ENG_VALUE
+			gyro_z = gyro_z_sum / num_valid_gyro_samples;
+	#else
+			gyro_z = GYRO_Z_SIM_ENG_VALUE;
+	#endif
+		}
+		else
+		{
+			gyro_x = 0.0;
+			gyro_y = 0.0;
+			gyro_z = 0.0;
+		}
+		// Mag average
+		if(num_valid_mag_samples > 0)
+		{
+			// NOTE: MAG ORIENTATION CORRECTED HERE
+	#ifndef MAG_X_SIM_ENG_VALUE
+			mag_x = mag_x_sum / num_valid_mag_samples;
+			mag_x += mag_x_offset;
+	#else
+			mag_x = MAG_X_SIM_ENG_VALUE;
+	#endif
+	#ifndef MAG_Y_SIM_ENG_VALUE
+			mag_y = mag_y_sum / num_valid_mag_samples;
+			mag_y = -mag_y;
+			mag_y += mag_y_offset;
+	#else
+			mag_y = MAG_Y_SIM_ENG_VALUE;
+	#endif
+	#ifndef MAG_Z_SIM_ENG_VALUE
+			mag_z = mag_z_sum / num_valid_mag_samples;
+			mag_z += mag_z_offset;
+	#else
+			mag_z = MAG_Z_SIM_ENG_VALUE;
+	#endif
+		}
+		else
+		{
+			mag_x = 0.0;
+			mag_y = 0.0;
+			mag_z = 0.0;
+		}
 
-	/*** Check to see if we are backwards (not needed) ***/
+		/*** Check to see if we are backwards (not needed) ***/
 
-	/*** Define the Sun gain ***/
-	// Note: we only need one valid ss sample
-	if(num_valid_ss_samples > 0)
-	{
-		sun_gain = 0.00001;
-	}
-	else
-	{
-		sun_gain = 0.0;
-	}
+		/*** Define the Sun gain ***/
+		// Note: we only need one valid ss sample
+		if(num_valid_ss_samples > 0)
+		{
+			sun_gain = 0.00001;
+		}
+		else
+		{
+			sun_gain = 0.0;
+		}
 
-	/*** Compute the rate error (rad/s) ***/
-	rate_error_x = -gyro_x;
-	rate_error_y = target_rate_y - gyro_y;
-	rate_error_z = -gyro_z;
+		/*** Compute the rate error (rad/s) ***/
+		rate_error_x = -gyro_x;
+		rate_error_y = target_rate_y - gyro_y;
+		rate_error_z = -gyro_z;
 
-	/*** Compute the sun error (unitless) ***/
-	sun_error_x = ss_z;
-	// Did not calculate sun_error_y because we don't need it
-	sun_error_z = -ss_x;
+		/*** Compute the sun error (unitless) ***/
+		sun_error_x = ss_z;
+		// Did not calculate sun_error_y because we don't need it
+		sun_error_z = -ss_x;
 
-	/*** Compute the torque command (Newton metres) ***/
-	torque_command_x = (rate_error_x * rate_gain) + (sun_error_x * sun_gain);
-	torque_command_y = (rate_error_y * rate_gain);
-	torque_command_z = (rate_error_z * rate_gain) + (sun_error_z * sun_gain);
+		/*** Compute the torque command (Newton metres) ***/
+		torque_command_x = (rate_error_x * rate_gain) + (sun_error_x * sun_gain);
+		torque_command_y = (rate_error_y * rate_gain);
+		torque_command_z = (rate_error_z * rate_gain) + (sun_error_z * sun_gain);
 
-	/*** Compute the dipole command ***/
-	B_scale = 1/(mag_x*mag_x + mag_y*mag_y + mag_z*mag_z); // 1/Tesla^2
-	dipole_cmd_x = B_scale*(mag_y*torque_command_z - mag_z*torque_command_y); // Amp-m^2
-	dipole_cmd_y = B_scale*(mag_z*torque_command_x - mag_x*torque_command_z); // Amp-m^2
-	dipole_cmd_z = B_scale*(mag_x*torque_command_y - mag_y*torque_command_x); // Amp-m^2
+		/*** Compute the dipole command ***/
+		B_scale = 1/(mag_x*mag_x + mag_y*mag_y + mag_z*mag_z); // 1/Tesla^2
+		dipole_cmd_x = B_scale*(mag_y*torque_command_z - mag_z*torque_command_y); // Amp-m^2
+		dipole_cmd_y = B_scale*(mag_z*torque_command_x - mag_x*torque_command_z); // Amp-m^2
+		dipole_cmd_z = B_scale*(mag_x*torque_command_y - mag_y*torque_command_x); // Amp-m^2
 
-	/*** Find the max abs dipole command ***/
-	max_cmd = abs(dipole_cmd_x);
-	if(abs(dipole_cmd_y) > max_cmd)
-	{
-		max_cmd = abs(dipole_cmd_y);
-	}
-	if(abs(dipole_cmd_z) > max_cmd)
-	{
-		max_cmd = abs(dipole_cmd_z);
-	}
+		/*** Find the max abs dipole command ***/
+		max_cmd = abs(dipole_cmd_x);
+		if(abs(dipole_cmd_y) > max_cmd)
+		{
+			max_cmd = abs(dipole_cmd_y);
+		}
+		if(abs(dipole_cmd_z) > max_cmd)
+		{
+			max_cmd = abs(dipole_cmd_z);
+		}
 
-	/*** Compute the scaling factor ***/
-	if(max_cmd > magt_sat)
-	{
-		magt_scale = magt_sat / max_cmd;
-	}
-	else
-	{
-		magt_scale = 1.0;
-	}
+		/*** Compute the scaling factor ***/
+		if(max_cmd > magt_sat)
+		{
+			magt_scale = magt_sat / max_cmd;
+		}
+		else
+		{
+			magt_scale = 1.0;
+		}
 
-	/*** Scale the commands ***/
-	scaled_dipole_cmd_x = dipole_cmd_x*magt_scale;
-	scaled_dipole_cmd_y = dipole_cmd_y*magt_scale;
-	scaled_dipole_cmd_z = dipole_cmd_z*magt_scale;
+		/*** Scale the commands ***/
+		scaled_dipole_cmd_x = dipole_cmd_x*magt_scale;
+		scaled_dipole_cmd_y = dipole_cmd_y*magt_scale;
+		scaled_dipole_cmd_z = dipole_cmd_z*magt_scale;
 
-	/*** Calculate the scaled commands to magnetorquers (based on backwards) ***/
-	backwards = spacecraftIsBackwards();
-#ifdef BACKWARDS_SIM_ENG_VALUE
-	backwards = BACKWARDS_SIM_ENG_VALUE;
-#endif
-	if(backwards)
-	{
-		MapTorqueRodCommand(magt_sat/2, &polarity_x, &pwm_x);
-		MapTorqueRodCommand(magt_sat/2, &polarity_y, &pwm_y);
-		MapTorqueRodCommand((magt_sat/2)*mag_z/mag_y, &polarity_z, &pwm_z);
-	}
-	else
-	{
-		MapTorqueRodCommand(scaled_dipole_cmd_x, &polarity_x, &pwm_x);
-		MapTorqueRodCommand(scaled_dipole_cmd_y, &polarity_y, &pwm_y);
-		MapTorqueRodCommand(scaled_dipole_cmd_z, &polarity_z, &pwm_z);
+		/*** Calculate the scaled commands to magnetorquers (based on backwards) ***/
+	//	backwards = spacecraftIsBackwards();
+		backwards = !spacecraftIsNotBackwards(ss_x,ss_z);
+	#ifdef BACKWARDS_SIM_ENG_VALUE
+		backwards = BACKWARDS_SIM_ENG_VALUE;
+	#endif
+		if(backwards)
+		{
+			MapTorqueRodCommand(magt_sat/2, &polarity_x, &pwm_x);
+			MapTorqueRodCommand(magt_sat/2, &polarity_y, &pwm_y);
+			MapTorqueRodCommand((magt_sat/2)*mag_z/mag_y, &polarity_z, &pwm_z);
+		}
+		else
+		{
+			MapTorqueRodCommand(scaled_dipole_cmd_x, &polarity_x, &pwm_x);
+			MapTorqueRodCommand(scaled_dipole_cmd_y, &polarity_y, &pwm_y);
+			MapTorqueRodCommand(scaled_dipole_cmd_z, &polarity_z, &pwm_z);
+		}
 	}
 
     /*** Wait ***/
@@ -564,15 +604,19 @@ void SunPointingP3( void )
 	}
 #endif
 
-	/*** Send the scaled commands to magnetorquers ***/
-	// Set polarity
-	setTorqueRodPolarity(MAGNETORQUER_X,polarity_x);
-	setTorqueRodPolarity(MAGNETORQUER_Y,polarity_y);
-	setTorqueRodPolarity(MAGNETORQUER_Z,polarity_z);
-	// Set PWM
-	setTorqueRodPwm(MAGNETORQUER_X,pwm_x);
-	setTorqueRodPwm(MAGNETORQUER_Y,pwm_y);
-	setTorqueRodPwm(MAGNETORQUER_Z,pwm_z);
+	/*** Send the scaled commands to magnetorquers IF NOT IN ECLIPSE***/
+	inEclipse = spacecraftInEclipse();
+	if(!inEclipse && all_samples_valid)
+	{
+		// Set polarity
+		setTorqueRodPolarity(MAGNETORQUER_X,polarity_x);
+		setTorqueRodPolarity(MAGNETORQUER_Y,polarity_y);
+		setTorqueRodPolarity(MAGNETORQUER_Z,polarity_z);
+		// Set PWM
+		setTorqueRodPwm(MAGNETORQUER_X,pwm_x);
+		setTorqueRodPwm(MAGNETORQUER_Y,pwm_y);
+		setTorqueRodPwm(MAGNETORQUER_Z,pwm_z);
+	}
 
     /*** Wait ***/
     while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == COMMAND_TORQ_RODS);

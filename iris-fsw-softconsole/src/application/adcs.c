@@ -12,6 +12,9 @@
 #include "application/sun_pointing.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "drivers/device/rtc/rtc_common.h"
+//#include "drivers/mss_rtc/mss_rtc.h"
+//#include "drivers/device/rtc/rtc_time.h"
 
 void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 {
@@ -134,6 +137,17 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		break;
 	case ADCS_GET_SUN_POINTING_TM_CMD:
 		SendSunPointingTelemetry();
+		break;
+	case ADCS_GET_ECLIPSE_TIME_CMD:
+		getEclipseBounds(&pkt_data[0],&pkt_data[sizeof(Calendar_t)]);
+//		// Send Telemetry
+		tm_pkt.telem_id = ADCS_GET_ECLIPSE_TIME_ID;
+		tm_pkt.length = 2*sizeof(Calendar_t);
+		tm_pkt.data = pkt_data;
+		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+		break;
+	case ADCS_SET_ECLIPSE_TIME_CMD:
+		setEclipseBounds((Calendar_t *) &tm_pkt.data[0],(Calendar_t *) &tm_pkt.data[sizeof(Calendar_t)])
 		break;
 	default:
 		return;

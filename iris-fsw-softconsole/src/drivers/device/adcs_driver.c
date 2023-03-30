@@ -14,7 +14,6 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "drivers/device/adcs_driver.h"
-#include "main.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "board_definitions.h"
 #include "tasks/telemetry.h"
@@ -22,6 +21,8 @@
 #include <math.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "drivers/device/rtc/rtc_time.h"
+#include "drivers/mss_rtc/mss_rtc.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -31,6 +32,8 @@
 #define MAX_SYNC_CYCLES 180
 // Magnetometer calibration parameters
 #define MAGNETOMETER_CALIBRATION_SAMPLES	5
+// Sun sensor parameters
+#define SUN_MAX_DETECTABLE_ANGLE 50.0
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -49,6 +52,10 @@ float mag_z_offset = 0.0;
 // Sun vector conversion
 volatile float ss_x_sign_flip =  1.0;
 volatile float ss_z_sign_flip = -1.0;
+// Eclipse variables
+volatile Calendar_t eclipseBounds[2] = {0};
+// Backwards variables
+volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -480,7 +487,17 @@ AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements)
 	vTaskDelay(100);
     // Get measurements
 	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
-
+	// Check valid data
+	int i;
+	uint32_t data_sum = 0;
+	for(i=0; i < ADCS_GYRO_RAW_DATA_SIZE_BYTES; i++)
+	{
+		data_sum += (uint32_t) gyroMeasurements[i];
+	}
+	if(data_sum == 0)
+	{
+		return ADCS_ERROR_BAD_DATA;
+	}
 	return status;
 }
 
@@ -511,6 +528,17 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
 	vTaskDelay(10);
     // Get measurements
 	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
+	// Check valid data
+	int i;
+	uint32_t data_sum = 0;
+	for(i=0; i < ADCS_GYRO_RAW_DATA_SIZE_BYTES; i++)
+	{
+		data_sum += (uint32_t) gyroMeasurements[i];
+	}
+	if(data_sum == 0)
+	{
+		return ADCS_ERROR_BAD_DATA;
+	}
 
 	return status;
 #endif
@@ -541,6 +569,17 @@ AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNu
 	vTaskDelay(10);
     // Get measurements
 	status = adcsTxRx(NULL,0,magnetometerMeasurements,ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES);
+	// Check valid data
+	int i;
+	uint32_t data_sum = 0;
+	for(i=0; i < ADCS_MAGNETOMETER_RAW_DATA_SIZE_BYTES; i++)
+	{
+		data_sum += (uint32_t) magnetometerMeasurements[i];
+	}
+	if(data_sum == 0)
+	{
+		return ADCS_ERROR_BAD_DATA;
+	}
 
 	return status;
 #endif
@@ -1034,10 +1073,34 @@ AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id)
 }
 
 
+void getEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound)
+{
+	memcpy(lowerBound,&eclipseBounds[0],sizeof(Calendar_t));
+	memcpy(upperBound,&eclipseBounds[1],sizeof(Calendar_t));
+}
+
+void setEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound)
+{
+	memcpy(&eclipseBounds[0],lowerBound,sizeof(Calendar_t));
+	memcpy(&eclipseBounds[1],upperBound,sizeof(Calendar_t));
+}
 
 
+bool spacecraftInEclipse(void)
+{
+	Calendar_t current_time = {0};
+	MSS_RTC_get_calendar_count(&current_time); // get current time
+	int after_lower_bound  = compare_time(&current_time,&eclipseBounds[0]);
+	int before_upper_bound = compare_time(&eclipseBounds[1],&current_time);
+	return after_lower_bound && before_upper_bound;
+}
 
-
+bool spacecraftIsNotBackwards(double x_comp, double z_comp)
+{
+	bool x_is_in_range = abs(x_comp) < sun_angle_max_vector_length;
+	bool z_is_in_range = abs(z_comp) < sun_angle_max_vector_length;
+	return x_is_in_range || z_is_in_range;
+}
 
 
 

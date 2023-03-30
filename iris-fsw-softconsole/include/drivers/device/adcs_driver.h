@@ -17,6 +17,8 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "drivers/protocol/spi.h"
+#include "main.h"
+#include "drivers/device/rtc/rtc_common.h"
 #include <math.h> //If someone can implement an arctan without math.h that would be sweet.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -104,7 +106,8 @@
 typedef enum {
 	ADCS_DRIVER_NO_ERROR,
 	ADCS_ERROR_BAD_ACK,
-	ADCS_ERROR_BAD_ID
+	ADCS_ERROR_BAD_ID,
+	ADCS_ERROR_BAD_DATA
 } AdcsDriverError_t;
 
 typedef enum{
@@ -238,6 +241,11 @@ AdcsDriverError_t getSunAngle(uint8_t * measurements);
 // Sensor calibration
 AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id);
 AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id);
+// Eclipse checking
+void getEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound);
+void setEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound);
+bool spacecraftInEclipse(void);
+bool spacecraftIsNotBackwards(double x_comp, double z_comp);
 
 
 
