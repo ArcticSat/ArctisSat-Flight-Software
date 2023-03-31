@@ -60,7 +60,7 @@ void InitMissionOperations(void)
 	getDeploymentStartupState(&deployment_state);
 	if(deployment_state == DPL_STATE_STOWED)
 	{
-//		InitiateSpacecraftDeployment();
+		InitiateSpacecraftDeployment();
 		setDeploymentStartupState(DPL_STATE_DEPLOYED);
 	}
 
