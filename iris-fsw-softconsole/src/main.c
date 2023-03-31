@@ -142,7 +142,7 @@ int main( void )
 #ifdef MAKER2_DEVKIT_CONFIGURATION
     // Create LED spinning task
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
-    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",1000,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
+    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
     status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
 
@@ -153,7 +153,7 @@ int main( void )
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
-	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,3,&vCanServer_h);
+	status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
 	status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 
 

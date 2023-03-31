@@ -38,7 +38,7 @@
 // Telemetry rates
 #define SUN_POINTING_TM_RATE 30
 // Number of missed samples before restting ADCS
-#define MISSED_SAMPLES_RESET_COUNT_MAX 		10
+#define MISSED_SAMPLES_RESET_COUNT_MAX 		10*60
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -326,9 +326,13 @@ void SunPointingP2( void )
 	}
 
 	// Check that we have valid readings
+#if defined(SIM_VALUES_1) || defined(SIM_VALUES_2)
+	all_samples_valid = true;
+#else
 	all_samples_valid = 	(num_valid_ss_samples > 0) 	 \
 						&&  (num_valid_gyro_samples > 0) \
 						&&  (num_valid_mag_samples > 0);
+#endif
 	if(!all_samples_valid)
 	{
 		samples_missed_counter++;
@@ -563,39 +567,10 @@ void SunPointingP3( void )
 {
 
 #ifdef SUN_POINTING_DEBUG_TELEMETRY
-	uint8_t data[58] = {0};
-	sun_pointing_pkt.telem_id = CDH_SUN_POINTING_ID;
-	sun_pointing_pkt.length = 58;
-	sun_pointing_pkt.data = data;
-	// Backwards
-	memcpy(&data[0],&backwards,sizeof(uint8_t));
-	// Number of valid samples
-	memcpy(&data[1],&num_valid_ss_samples,sizeof(uint8_t));
-	memcpy(&data[2],&num_valid_gyro_samples,sizeof(uint8_t));
-	memcpy(&data[3],&num_valid_mag_samples,sizeof(uint8_t));
-	// Torque command
-	memcpy(&data[4],&torque_command_x,sizeof(torque_command_x));
-	memcpy(&data[12],&torque_command_y,sizeof(torque_command_y));
-	memcpy(&data[20],&torque_command_z,sizeof(torque_command_z));
-	// Dipole command
-	memcpy(&data[28],&dipole_cmd_x,sizeof(dipole_cmd_x));
-	memcpy(&data[36],&dipole_cmd_y,sizeof(dipole_cmd_y));
-	memcpy(&data[44],&dipole_cmd_z,sizeof(dipole_cmd_z));
-	// Actuation polarity
-	memcpy(&data[52],&polarity_x,sizeof(polarity_x));
-	memcpy(&data[53],&polarity_y,sizeof(polarity_y));
-	memcpy(&data[54],&polarity_z,sizeof(polarity_z));
-	// PWM
-	memcpy(&data[55],&pwm_x,sizeof(pwm_x));
-	memcpy(&data[56],&pwm_y,sizeof(pwm_y));
-	memcpy(&data[57],&pwm_z,sizeof(pwm_z));
 	// Send telemetry
 	if((SUN_POINTING_TM_RATE - 1) == sun_pointing_pkt_count)
 	{
-//		int float_size = sizeof(float);
-//		int double_size = sizeof(double);
-//		uint8_t scale = (uint8_t) ((2.0 / 5.0) * 255.0);
-		sendTelemetryAddr(&sun_pointing_pkt, GROUND_CSP_ADDRESS);
+		SendSunPointingTelemetry()
 		sun_pointing_pkt_count = 0;
 	}
 	else
@@ -642,7 +617,7 @@ void SendSunPointingTelemetry(void)
 	telemetryPacket_t tmpkt = {0};
 	uint8_t data[58] = {0};
 	tmpkt.telem_id = CDH_SUN_POINTING_ID;
-	tmpkt.length = 58;
+	tmpkt.length = 59;
 	tmpkt.data = data;
 	// Backwards
 	memcpy(&data[0],&backwards,sizeof(uint8_t));
@@ -666,6 +641,8 @@ void SendSunPointingTelemetry(void)
 	memcpy(&data[55],&pwm_x,sizeof(pwm_x));
 	memcpy(&data[56],&pwm_y,sizeof(pwm_y));
 	memcpy(&data[57],&pwm_z,sizeof(pwm_z));
+	// Eclipse
+	memcpy(&data[58],(uint8_t *) &inEclipse, sizeof(uint8_t));
 	// Send telemetry
 	sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
 }

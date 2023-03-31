@@ -25,7 +25,7 @@
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Debug settings
-//#define SIM_VALUES_1
+#define SIM_VALUES_1
 //#define SIM_VALUES_2
 
 #ifdef SIM_VALUES_1

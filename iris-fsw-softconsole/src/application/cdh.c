@@ -17,6 +17,7 @@
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/protocol/can.h"
 #include "drivers/subsystems/eps_driver.h"
+#include "drivers/device/adcs_driver.h"
 #include "tasks/scheduler.h"
 #include "application/memory_manager.h"
 #include "drivers/device/watchdog.h"
@@ -104,6 +105,10 @@ int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
     int result =0;
     switch(cmd_pkt->telem_id)
     {
+		case ADCS_SET_ECLIPSE_TIME_CMD:{
+			setEclipseBounds((Calendar_t *) &cmd_pkt->data[0],(Calendar_t *) &cmd_pkt->data[sizeof(Calendar_t)]);
+			break;
+		}
         case CDH_SET_TIME_CMD:{
             //They send us a Calendar_t
             Calendar_t *newTime = (Calendar_t *) cmd_pkt->data;

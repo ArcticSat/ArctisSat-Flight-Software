@@ -76,20 +76,19 @@ void vCSP_Server(void * pvParameters){
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
-    InitMissionOperations();
 	//Make sure FS is up before all tasks
 #ifdef FLIGHT_MODEL_CONFIGURATION
 	filesystem_initialization();
 	// Initialize Mission-level Operations (requires FS init)
 	InitMissionOperations();
 #else
-	vTaskResume(vCanServer_h);
-//	vTaskResume(xUART0RxTaskToNotify);
+//	vTaskResume(vCanServer_h);
+	vTaskResume(xUART0RxTaskToNotify);
 #ifdef INCLUDE_TASK_TTT
 	vTaskResume(vTTTScheduler_h);
 #endif
+	vTaskResume(vSunPointing_h);
 #endif
-//	vTaskResume(vSunPointing_h);
 //	vTaskResume(vTestAdcsDriverInterface_h);
 
     //TODO: Check return of csp_bind and listen, then handle errors.
@@ -200,6 +199,7 @@ uint8_t configure_csp(){
 	}
 #endif
 
+#ifdef FLIGHT_MODEL_CONFIGURATION
     /* Setup default route to CAN interface */
     //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
     // char* canRoute = "0/0 CAN";
@@ -212,7 +212,7 @@ uint8_t configure_csp(){
         result = 0;
         return result;
     }
-
+#endif
 
     /* Start router task with 100 word stack, OS task priority 1 */
     status = csp_route_start_task(4*CSP_DEFAULT_ROUTER_STACK_SIZE, CSP_DEFAULT_ROUTER_PRIORITY);

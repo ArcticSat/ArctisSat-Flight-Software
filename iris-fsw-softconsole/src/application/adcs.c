@@ -16,6 +16,10 @@
 //#include "drivers/mss_rtc/mss_rtc.h"
 //#include "drivers/device/rtc/rtc_time.h"
 
+
+Calendar_t * lowerBound;
+Calendar_t * upperBound;
+
 void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 {
 	AdcsDriverError_t error_code = ADCS_ERROR_BAD_ACK;
@@ -145,9 +149,6 @@ void HandleAdcsCommand(telemetryPacket_t * cmd_pkt)
 		tm_pkt.length = 2*sizeof(Calendar_t);
 		tm_pkt.data = pkt_data;
 		sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
-		break;
-	case ADCS_SET_ECLIPSE_TIME_CMD:
-		setEclipseBounds((Calendar_t *) &tm_pkt.data[0],(Calendar_t *) &tm_pkt.data[sizeof(Calendar_t)])
 		break;
 	default:
 		return;

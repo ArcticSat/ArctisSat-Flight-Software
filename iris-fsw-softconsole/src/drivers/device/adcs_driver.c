@@ -34,6 +34,10 @@
 #define MAGNETOMETER_CALIBRATION_SAMPLES	5
 // Sun sensor parameters
 #define SUN_MAX_DETECTABLE_ANGLE 50.0
+// Orbit time
+#define SPACECRAFT_ORBIT_TIME_HOURS 	1
+#define SPACECRAFT_ORBIT_TIME_MINUTES 	32
+#define SPACECRAFT_ORBIT_TIME_SECONDS 	18
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1081,6 +1085,7 @@ void getEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound)
 
 void setEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound)
 {
+
 	memcpy(&eclipseBounds[0],lowerBound,sizeof(Calendar_t));
 	memcpy(&eclipseBounds[1],upperBound,sizeof(Calendar_t));
 }
@@ -1090,8 +1095,34 @@ bool spacecraftInEclipse(void)
 {
 	Calendar_t current_time = {0};
 	MSS_RTC_get_calendar_count(&current_time); // get current time
-	int after_lower_bound  = compare_time(&current_time,&eclipseBounds[0]);
-	int before_upper_bound = compare_time(&eclipseBounds[1],&current_time);
+	bool after_lower_bound  = compare_time(&current_time,&eclipseBounds[0]) == 1;
+	bool before_upper_bound = compare_time(&eclipseBounds[1],&current_time) == 1;
+	// Update if eclipse passed
+	if(!before_upper_bound)
+	{
+		eclipseBounds[0].hour 	+= SPACECRAFT_ORBIT_TIME_HOURS;
+		eclipseBounds[0].minute += SPACECRAFT_ORBIT_TIME_MINUTES;
+		eclipseBounds[0].second += SPACECRAFT_ORBIT_TIME_SECONDS;
+        eclipseBounds[0].minute += eclipseBounds[0].second/60;
+        eclipseBounds[0].hour   += eclipseBounds[0].minute/60;
+        eclipseBounds[0].day    += eclipseBounds[0].hour/24;
+        eclipseBounds[0].second %= 60;
+        eclipseBounds[0].minute %= 60;
+        eclipseBounds[0].hour   %= 60;
+        eclipseBounds[0].day    %= 24;
+
+		eclipseBounds[1].hour 	+= SPACECRAFT_ORBIT_TIME_HOURS;
+		eclipseBounds[1].minute += SPACECRAFT_ORBIT_TIME_MINUTES;
+		eclipseBounds[1].second += SPACECRAFT_ORBIT_TIME_SECONDS;
+        eclipseBounds[1].minute += eclipseBounds[1].second/60;
+        eclipseBounds[1].hour   += eclipseBounds[1].minute/60;
+        eclipseBounds[1].day    += eclipseBounds[1].hour/24;
+        eclipseBounds[1].second %= 60;
+        eclipseBounds[1].minute %= 60;
+        eclipseBounds[1].hour   %= 60;
+        eclipseBounds[1].day    %= 24;
+
+	}
 	return after_lower_bound && before_upper_bound;
 }
 
