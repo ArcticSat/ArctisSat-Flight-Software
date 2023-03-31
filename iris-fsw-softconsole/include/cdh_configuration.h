@@ -21,6 +21,6 @@
 
 
 /*** Optional parameters ***/
-#define BACKWARD_POLL_BACK_PANELS
+//#define BACKWARD_POLL_BACK_PANELS
 
 #endif /* INCLUDE_CDH_CONFIGURATION_H_ */
