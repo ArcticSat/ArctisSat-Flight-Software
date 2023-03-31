@@ -63,8 +63,8 @@ TimerHandle_t sunPointingTimer;
 // Back panel solar array poll loop counter
 uint8_t backpanel_loop_counter = 0;
 // Sensor select
-volatile enumSunSensor ss_x_select = SUN_SENSOR_PRIMARY_X; // TODO: confirm value
-volatile enumSunSensor ss_z_select = SUN_SENSOR_PRIMARY_Z; // TODO: confirm value
+volatile enumSunSensor ss_x_select = SUN_SENSOR_PRIMARY_X;
+volatile enumSunSensor ss_z_select = SUN_SENSOR_PRIMARY_Z;
 volatile GyroId_t gyro_select = GYRO_1;
 volatile MagnetometerId_t mag_select = MAGNETOMETER_1;
 // Sensor raw data indices
@@ -374,7 +374,6 @@ void SunPointingP2( void )
 		}
 
 		/*** Calculate average converted values ***/
-		// TODO: error handling - what if no valid samples??? Reset ADCS and return to P1?
 		// Sun-sensor averages
 		if(num_valid_ss_samples > 0)
 		{

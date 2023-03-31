@@ -1139,26 +1139,10 @@ bool spacecraftInEclipse(void)
 		eclipseBounds[0].second += SPACECRAFT_ORBIT_TIME_SECONDS;
 		calendarRollOver(&eclipseBounds[0]);
 
-//        eclipseBounds[0].minute += eclipseBounds[0].second/60;
-//        eclipseBounds[0].hour   += eclipseBounds[0].minute/60;
-//        eclipseBounds[0].day    += eclipseBounds[0].hour/24;
-//        eclipseBounds[0].second %= 60;
-//        eclipseBounds[0].minute %= 60;
-//        eclipseBounds[0].hour   %= 60;
-//        eclipseBounds[0].day    %= 24;
-
 		eclipseBounds[1].hour 	+= SPACECRAFT_ORBIT_TIME_HOURS;
 		eclipseBounds[1].minute += SPACECRAFT_ORBIT_TIME_MINUTES;
 		eclipseBounds[1].second += SPACECRAFT_ORBIT_TIME_SECONDS;
 		calendarRollOver(&eclipseBounds[1]);
-//        eclipseBounds[1].minute += eclipseBounds[1].second/60;
-//        eclipseBounds[1].hour   += eclipseBounds[1].minute/60;
-//        eclipseBounds[1].day    += eclipseBounds[1].hour/24;
-//        eclipseBounds[1].second %= 60;
-//        eclipseBounds[1].minute %= 60;
-//        eclipseBounds[1].hour   %= 60;
-//        eclipseBounds[1].day    %= 24;
-		int x = 7;
 
 	}
 	return after_lower_bound && before_upper_bound;

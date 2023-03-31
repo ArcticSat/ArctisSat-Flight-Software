@@ -11,13 +11,13 @@
 /*** Flight parameters ***/
 // Set these
 #define FLIGHT_MODEL_CONFIGURATION
-//#define INIT_COMMS
-//#define DEPLOYMENT_CONFIG
+#define INIT_COMMS
+#define DEPLOYMENT_CONFIG
 
 #define INCLUDE_TASK_SUN_POINTING
 #define INCLUDE_TASK_TTT
-#define INCLUDE_CAN_SERVER
-#define INCLUDE_FW_MANAGER
+#define INCLUDE_TASK_CAN_SERVER
+#define INCLUDE_TASK_FW_MANAGER
 
 // Un-set these
 //#define ENGINEERING_MODEL_CONFIGURATION

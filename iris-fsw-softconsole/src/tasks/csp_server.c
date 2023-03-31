@@ -82,7 +82,7 @@ void vCSP_Server(void * pvParameters){
 	// Initialize Mission-level Operations (requires FS init)
 	InitMissionOperations();
 #else
-#ifdef INCLUDE_CAN_SERVER
+#ifdef INCLUDE_TASK_CAN_SERVER
 //	vTaskResume(vCanServer_h);
 #endif
 //	vTaskResume(xUART0RxTaskToNotify);

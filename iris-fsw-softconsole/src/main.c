@@ -153,10 +153,10 @@ int main( void )
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
-#ifdef CAN_SERVER_TASK
+#ifdef INCLUDE_TASK_CAN_SERVER
     status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
 #endif
-#ifdef FW_MANAGER_TASK
+#ifdef INCLUDE_TASK_FW_MANAGER
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 #endif
 
@@ -168,10 +168,10 @@ int main( void )
     vTaskSuspend(vTTTScheduler_h);
 #endif
 //    vTaskSuspend(xUART0RxTaskToNotify);
-#ifdef INCLUDE_CAN_SERVER
+#ifdef INCLUDE_TASK_CAN_SERVER
     vTaskSuspend(vCanServer_h);
 #endif
-#ifdef INCLUDE_FW_MANAGER
+#ifdef INCLUDE_TASK_FW_MANAGER
     vTaskSuspend(vFw_Update_Mgr_Task_h);
 #endif
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
