@@ -92,6 +92,7 @@ volatile uint8_t num_valid_mag_samples = 0;
 // Spacecraft is backwards, eclipse variables
 volatile bool backwards = false;
 volatile bool inEclipse = false;
+volatile bool sunSensorsInRange = false;
 // Control gains
 volatile const float rate_gain = 0.0004;
 volatile float sun_gain = 0.0;
@@ -519,6 +520,7 @@ void SunPointingP2( void )
 		backwards = spacecraftIsBackwards();
 #else
 		backwards = sunSensorsOutOfRange(ss_x,ss_z);
+		sunSensorsInRange = !sunSensorsOutOfRange(ss_x,ss_z);
 #endif
 	#ifdef BACKWARDS_SIM_ENG_VALUE
 		backwards = BACKWARDS_SIM_ENG_VALUE;
@@ -559,7 +561,7 @@ void SunPointingP3( void )
 
 	/*** Send the scaled commands to magnetorquers IF NOT IN ECLIPSE***/
 #ifdef BACKWARD_POLL_BACK_PANELS
-	inEclipse = !backwards && sunSensorsOutOfRange(ss_x,ss_z);
+	inEclipse = !backwards && !sunSensorsInRange;
 #else
 	inEclipse = spacecraftInEclipse();
 #endif
