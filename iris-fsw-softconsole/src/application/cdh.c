@@ -686,9 +686,10 @@ void vCanServer(void * pvParameters)
 				}
 				memcpy(&backpanel_sa_data[backpanel_data_count++],tmpkt.data,sizeof(float));
 			}
-
+#ifdef DEBUG_TELEMETRY
 			// TODO: log telemetry
 			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+#endif
 		}
 		vTaskDelay(1100);
 	}

@@ -559,9 +559,9 @@ void SunPointingP3( void )
 
 	/*** Send the scaled commands to magnetorquers IF NOT IN ECLIPSE***/
 #ifdef BACKWARD_POLL_BACK_PANELS
-	inEclipse = spacecraftInEclipse();
-#else
 	inEclipse = !backwards && sunSensorsOutOfRange(ss_x,ss_z);
+#else
+	inEclipse = spacecraftInEclipse();
 #endif
 	if(!inEclipse && all_samples_valid)
 	{

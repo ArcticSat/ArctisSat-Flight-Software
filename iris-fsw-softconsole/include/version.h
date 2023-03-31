@@ -17,7 +17,7 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #define CDH_SW_MAJOR_VERSION "1"
-#define CDH_SW_MINOR_VERSION "0"
+#define CDH_SW_MINOR_VERSION "00"
 
 #define CDH_SW_VERSION_STRING ("\r\nCDH IRIS v" CDH_SW_MAJOR_VERSION "." CDH_SW_MINOR_VERSION "\r\n")
 

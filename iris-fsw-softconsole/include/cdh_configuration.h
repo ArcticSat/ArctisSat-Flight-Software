@@ -9,11 +9,15 @@
 #define INCLUDE_CDH_CONFIGURATION_H_
 
 /*** Flight parameters ***/
+// Set these
+#define FLIGHT_MODEL_CONFIGURATION
 //#define INIT_COMMS
 
-#define FLIGHT_MODEL_CONFIGURATION
+// Un-set these
 //#define ENGINEERING_MODEL_CONFIGURATION
 //#define MAKER2_DEVKIT_CONFIGURATION
+#define DEBUG_TELEMETRY
+//#define SUN_POINTING_DEBUG_TELEMETRY
 
 
 /*** Optional parameters ***/
