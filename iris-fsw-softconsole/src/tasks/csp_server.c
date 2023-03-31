@@ -88,8 +88,8 @@ void vCSP_Server(void * pvParameters){
 	vTaskResume(vTTTScheduler_h);
 #endif
 	vTaskResume(vSunPointing_h);
-#endif
 //	vTaskResume(vTestAdcsDriverInterface_h);
+#endif
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {

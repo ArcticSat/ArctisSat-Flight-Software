@@ -25,7 +25,7 @@
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Debug settings
-#define SIM_VALUES_1
+//#define SIM_VALUES_1
 //#define SIM_VALUES_2
 
 #ifdef SIM_VALUES_1
@@ -245,7 +245,7 @@ AdcsDriverError_t CalibrateMagnetometerSingleTorqueRod(MagnetometerId_t mag_id);
 void getEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound);
 void setEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound);
 bool spacecraftInEclipse(void);
-bool spacecraftIsNotBackwards(double x_comp, double z_comp);
+bool sunSensorsOutOfRange(double x_comp, double z_comp);
 
 
 

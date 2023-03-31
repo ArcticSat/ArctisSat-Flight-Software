@@ -46,6 +46,10 @@
 
 void InitMissionOperations(void)
 {
+#ifdef INIT_COMMS
+    // Turn on comms
+    setLoadSwitch(LS_COMS, SWITCH_ON);
+#endif
 	// Initialize the memory manager
 	init_memory_manager();
 	// Initialize the spacecraft's status
@@ -104,11 +108,6 @@ void InitMissionOperations(void)
     sendTelemetryAddr(&hwStatPkt, GROUND_CSP_ADDRESS);
 
 
-//	int ping_result = -1;
-//	ping_result = csp_ping(10, 5000, 50, 0);
-//	int x = 7;
-
-
 	// Resume tasks
 	vTaskResume(vSunPointing_h);
 	vTaskResume(vCanServer_h);
@@ -118,7 +117,7 @@ void InitMissionOperations(void)
     if(get_fs_status() == FS_OK){
     	vTaskResume(vFw_Update_Mgr_Task_h);
     }
-	// vTaskResume(vTestAdcsDriverInterface_h);
+    vTaskSuspend(vCanServer_h);
 }
 
 void InitNormalOperations(void)

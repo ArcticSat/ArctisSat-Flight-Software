@@ -1126,7 +1126,7 @@ bool spacecraftInEclipse(void)
 	return after_lower_bound && before_upper_bound;
 }
 
-bool spacecraftIsNotBackwards(double x_comp, double z_comp)
+bool sunSensorsOutOfRange(double x_comp, double z_comp)
 {
 	bool x_is_in_range = abs(x_comp) < sun_angle_max_vector_length;
 	bool z_is_in_range = abs(z_comp) < sun_angle_max_vector_length;

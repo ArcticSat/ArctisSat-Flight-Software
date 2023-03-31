@@ -193,33 +193,6 @@ void vSunPointing( void * pvParameters )
 
 void SunPointingP1( void )
 {
-    // Gyro Measurements & Conversion
-    /*
-        - Measurement (using adcs_driver.c function getGyroMeasurements) "returns" a 6-element array of uint8_ts (done)
-        - Create another function, which will convert the above array, into 3 floats in units of mdps
-            - Concatenate the high/low bytes for x,y,z (first into a uint16_t? or directly into a float) (a3g4250d_angular_rate_raw_get from ADCS code)
-            - Convert to mdps (a3g4250d_from_fs245dps_to_mdps from ADCS code)
-        - Result from this, should be a direct input into the control equation
-    */
-
-    // Sun Sensor Measurements & Conversion
-    /*
-        - Measurement (using adcs_driver.c function getSunSensorMeasurements) "returns" a 6-element array of uint8_ts (done)
-            - Add function to pull out solely pixel data
-        - What is the input to the control equation, and how to we convert from raw data??
-    */
-
-
-    // Main body
-    /*
-        - Turn the torque rods off
-        - Loop SAMPLING_LOOPS (100 for now) times
-        - In each loop:
-            - Do 1 gyro measurement and conversion
-            - Do 1 mag measurement and conversion
-            - Do 1 sun sensor measurement and conversion
-    */
-
 	int i;
 
 	/*** Turn off torque rods ***/
@@ -228,15 +201,17 @@ void SunPointingP1( void )
 	setTorqueRodPwm(MAGNETORQUER_Z,0);
 
 	/*** Poll the back panels to check if Y- is facing the sun ***/
-//	if(backpanel_loop_counter == BACKPANEL_SA_POLLING_LOOPS)
-//	{
-//		pollBackSolarPanels();
-//		backpanel_loop_counter = 0;
-//	}
-//	else
-//	{
-//		backpanel_loop_counter++;
-//	}
+#ifdef BACKWARD_POLL_BACK_PANELS
+	if(backpanel_loop_counter == BACKPANEL_SA_POLLING_LOOPS)
+	{
+		pollBackSolarPanels();
+		backpanel_loop_counter = 0;
+	}
+	else
+	{
+		backpanel_loop_counter++;
+	}
+#endif
 
 	/*** Clear validity variables ***/
 	for(i=0; i < NUM_SAMPLE_LOOPS_SUN_SENSOR; i++) ss_sample_valid[i] = false;
@@ -540,8 +515,11 @@ void SunPointingP2( void )
 		scaled_dipole_cmd_z = dipole_cmd_z*magt_scale;
 
 		/*** Calculate the scaled commands to magnetorquers (based on backwards) ***/
-	//	backwards = spacecraftIsBackwards();
-		backwards = !spacecraftIsNotBackwards(ss_x,ss_z);
+#ifdef BACKWARD_POLL_BACK_PANELS
+		backwards = spacecraftIsBackwards();
+#else
+		backwards = sunSensorsOutOfRange(ss_x,ss_z);
+#endif
 	#ifdef BACKWARDS_SIM_ENG_VALUE
 		backwards = BACKWARDS_SIM_ENG_VALUE;
 	#endif
@@ -580,7 +558,11 @@ void SunPointingP3( void )
 #endif
 
 	/*** Send the scaled commands to magnetorquers IF NOT IN ECLIPSE***/
+#ifdef BACKWARD_POLL_BACK_PANELS
 	inEclipse = spacecraftInEclipse();
+#else
+	inEclipse = !backwards && sunSensorsOutOfRange(ss_x,ss_z);
+#endif
 	if(!inEclipse && all_samples_valid)
 	{
 		// Set polarity
