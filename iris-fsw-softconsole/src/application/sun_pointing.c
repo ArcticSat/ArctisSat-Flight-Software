@@ -168,10 +168,10 @@ void vSunPointing( void * pvParameters )
     	    vTaskDelay(100);
     	    setLoadSwitch(LS_ADCS,SWITCH_ON);
     	    vTaskDelay(100);
-    		// Wait till next sampling phase
-    		while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) != SAMPLE_SUN_SENSOR_GYROS);
     		// Reset counter
     		samples_missed_counter = 0;
+    		// Wait till next sampling phase
+    		while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) != SAMPLE_SUN_SENSOR_GYROS);
     	}
     	/*** Sun-pointing tasks ***/
         while(determineSunPointingState(pvTimerGetTimerID(sunPointingTimer)) == SAMPLE_SUN_SENSOR_GYROS)
@@ -282,25 +282,6 @@ void SunPointingP2( void )
 		num_valid_mag_samples++;
 	}
 
-	/*** Convert all sensor samples from raw to proper units ***/
-	ss_x_sum = 0.0;
-	ss_z_sum = 0.0;
-	for(i=0; i<NUM_SAMPLE_LOOPS_SUN_SENSOR; i++)
-	{
-		if(ss_sample_valid[i])
-		{
-			float x_angle, z_angle;
-			// Convert X-angle
-			x_angle = AngleDecompose(ss_x_buf[i],3);
-			x_angle *= ss_x_sign_flip;
-			ss_x_sum += sin(x_angle);
-			// Convert Z-angle
-			z_angle = AngleDecompose(ss_z_buf[i],3);
-			z_angle *= ss_z_sign_flip;
-			ss_z_sum += sin(z_angle);
-		}
-	}
-
 	// Check that we have valid readings
 #if defined(SIM_VALUES_1) || defined(SIM_VALUES_2)
 	all_samples_valid = true;
@@ -315,6 +296,25 @@ void SunPointingP2( void )
 	}
 	else
 	{
+
+		/*** Convert all sensor samples from raw to proper units ***/
+		ss_x_sum = 0.0;
+		ss_z_sum = 0.0;
+		for(i=0; i<NUM_SAMPLE_LOOPS_SUN_SENSOR; i++)
+		{
+			if(ss_sample_valid[i])
+			{
+				float x_angle, z_angle;
+				// Convert X-angle
+				x_angle = AngleDecompose(ss_x_buf[i],3);
+				x_angle *= ss_x_sign_flip;
+				ss_x_sum += sin(x_angle);
+				// Convert Z-angle
+				z_angle = AngleDecompose(ss_z_buf[i],3);
+				z_angle *= ss_z_sign_flip;
+				ss_z_sum += sin(z_angle);
+			}
+		}
 		// Convert gyroscope samples to radians per second
 		gyro_x_sum = 0.0;
 		gyro_y_sum = 0.0;

@@ -153,9 +153,12 @@ int main( void )
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
-	status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
-	status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-
+#ifdef CAN_SERVER_TASK
+    status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
+#endif
+#ifdef FW_MANAGER_TASK
+    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
+#endif
 
     // status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",400,NULL,2,&vTestAdcsDriverInterface_h);
 
@@ -165,12 +168,14 @@ int main( void )
     vTaskSuspend(vTTTScheduler_h);
 #endif
 //    vTaskSuspend(xUART0RxTaskToNotify);
+#ifdef INCLUDE_CAN_SERVER
     vTaskSuspend(vCanServer_h);
-//    vTaskSuspend(vFw_Update_Mgr_Task_h);
+#endif
+#ifdef INCLUDE_FW_MANAGER
+    vTaskSuspend(vFw_Update_Mgr_Task_h);
+#endif
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
     vTaskSuspend(vSunPointing_h);
-    vTaskSuspend(vFw_Update_Mgr_Task_h);
-    vTaskSuspend(vCanServer_h);
 
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);

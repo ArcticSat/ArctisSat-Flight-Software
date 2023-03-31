@@ -3,8 +3,6 @@
 
 #include "task.h"
 
-//#define INCLUDE_TASK_SUN_POINTING
-#define INCLUDE_TASK_TTT
 
 extern TaskHandle_t xUART0RxTaskToNotify;
 extern TaskHandle_t vTTTScheduler_h;

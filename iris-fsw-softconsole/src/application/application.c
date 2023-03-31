@@ -60,7 +60,9 @@ void InitMissionOperations(void)
 	getDeploymentStartupState(&deployment_state);
 	if(deployment_state == DPL_STATE_STOWED)
 	{
+#ifdef DEPLOYMENT_CONFIG
 		InitiateSpacecraftDeployment();
+#endif
 		setDeploymentStartupState(DPL_STATE_DEPLOYED);
 	}
 
@@ -110,14 +112,17 @@ void InitMissionOperations(void)
 
 	// Resume tasks
 	vTaskResume(vSunPointing_h);
+#ifdef INCLUDE_CAN_SERVER
 	vTaskResume(vCanServer_h);
+#endif
 #ifdef INCLUDE_TASK_TTT
 	vTaskResume(vTTTScheduler_h);
 #endif
+#ifdef INCLUDE_FW_MANAGER
     if(get_fs_status() == FS_OK){
     	vTaskResume(vFw_Update_Mgr_Task_h);
     }
-    vTaskSuspend(vCanServer_h);
+#endif
 }
 
 void InitNormalOperations(void)

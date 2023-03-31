@@ -101,10 +101,20 @@ void HandleCdhCommand(telemetryPacket_t * cmd_pkt)
 
 
 int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn){
-
+	// TAKE OUT ADCS_GET_ECLIPSE_TIME_CMD
+	telemetryPacket_t tm_pkt = {0};
+	uint8_t pkt_data[80] = {0};
     int result =0;
     switch(cmd_pkt->telem_id)
     {
+		case ADCS_GET_ECLIPSE_TIME_CMD:
+			getEclipseBounds(&pkt_data[0],&pkt_data[sizeof(Calendar_t)]);
+	//		// Send Telemetry
+			tm_pkt.telem_id = ADCS_GET_ECLIPSE_TIME_ID;
+			tm_pkt.length = 2*sizeof(Calendar_t);
+			tm_pkt.data = pkt_data;
+			sendTelemetryAddr(&tm_pkt, GROUND_CSP_ADDRESS);
+			break;
 		case ADCS_SET_ECLIPSE_TIME_CMD:{
 			setEclipseBounds((Calendar_t *) &cmd_pkt->data[0],(Calendar_t *) &cmd_pkt->data[sizeof(Calendar_t)]);
 			break;
@@ -685,6 +695,9 @@ void vCanServer(void * pvParameters)
 					backpanel_data_count = 0;
 				}
 				memcpy(&backpanel_sa_data[backpanel_data_count++],tmpkt.data,sizeof(float));
+#ifdef BACKPANEL_DEBUG_TELEMETRY
+				sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
+#endif
 			}
 #ifdef DEBUG_TELEMETRY
 			// TODO: log telemetry

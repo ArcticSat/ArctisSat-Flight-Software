@@ -57,7 +57,7 @@ float mag_z_offset = 0.0;
 volatile float ss_x_sign_flip =  1.0;
 volatile float ss_z_sign_flip = -1.0;
 // Eclipse variables
-volatile Calendar_t eclipseBounds[2] = {0};
+volatile Calendar_t eclipseBounds[2] = {0xFF};
 // Backwards variables
 volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1090,6 +1090,40 @@ void setEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound)
 	memcpy(&eclipseBounds[1],upperBound,sizeof(Calendar_t));
 }
 
+const uint8_t num_days_per_month[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+
+void calendarRollOver(Calendar_t * time)
+{
+	uint8_t rollOver = 0;
+	// seconds
+	rollOver 		= time->second / 60;
+	time->second 	= time->second % 60;
+	time->minute 	+= rollOver;
+	// minutes
+	rollOver 		= time->minute / 60;
+	time->minute 	= time->minute % 60;
+	time->hour 		+= rollOver;
+	// hour
+	rollOver 		= time->hour / 24;
+	time->hour 		= time->hour % 24;
+	time->day 		+= rollOver;
+	// day
+	uint8_t days_max = num_days_per_month[time->day-1];
+	if(time->month == 2 && time->year == 24)
+		days_max = 29;
+	rollOver 		= time->day / (days_max + 1);
+	time->day 		= time->day % (days_max + 1);
+	if(time->day == 0)
+		time->day = 1;
+	time->month 	+= rollOver;
+	// month
+	rollOver 		= time->month / 13;
+	time->month 	= time->month % 13;
+	if(time->month == 0)
+		time->month = 1;
+	time->year 		+= rollOver;
+
+}
 
 bool spacecraftInEclipse(void)
 {
@@ -1103,24 +1137,28 @@ bool spacecraftInEclipse(void)
 		eclipseBounds[0].hour 	+= SPACECRAFT_ORBIT_TIME_HOURS;
 		eclipseBounds[0].minute += SPACECRAFT_ORBIT_TIME_MINUTES;
 		eclipseBounds[0].second += SPACECRAFT_ORBIT_TIME_SECONDS;
-        eclipseBounds[0].minute += eclipseBounds[0].second/60;
-        eclipseBounds[0].hour   += eclipseBounds[0].minute/60;
-        eclipseBounds[0].day    += eclipseBounds[0].hour/24;
-        eclipseBounds[0].second %= 60;
-        eclipseBounds[0].minute %= 60;
-        eclipseBounds[0].hour   %= 60;
-        eclipseBounds[0].day    %= 24;
+		calendarRollOver(&eclipseBounds[0]);
+
+//        eclipseBounds[0].minute += eclipseBounds[0].second/60;
+//        eclipseBounds[0].hour   += eclipseBounds[0].minute/60;
+//        eclipseBounds[0].day    += eclipseBounds[0].hour/24;
+//        eclipseBounds[0].second %= 60;
+//        eclipseBounds[0].minute %= 60;
+//        eclipseBounds[0].hour   %= 60;
+//        eclipseBounds[0].day    %= 24;
 
 		eclipseBounds[1].hour 	+= SPACECRAFT_ORBIT_TIME_HOURS;
 		eclipseBounds[1].minute += SPACECRAFT_ORBIT_TIME_MINUTES;
 		eclipseBounds[1].second += SPACECRAFT_ORBIT_TIME_SECONDS;
-        eclipseBounds[1].minute += eclipseBounds[1].second/60;
-        eclipseBounds[1].hour   += eclipseBounds[1].minute/60;
-        eclipseBounds[1].day    += eclipseBounds[1].hour/24;
-        eclipseBounds[1].second %= 60;
-        eclipseBounds[1].minute %= 60;
-        eclipseBounds[1].hour   %= 60;
-        eclipseBounds[1].day    %= 24;
+		calendarRollOver(&eclipseBounds[1]);
+//        eclipseBounds[1].minute += eclipseBounds[1].second/60;
+//        eclipseBounds[1].hour   += eclipseBounds[1].minute/60;
+//        eclipseBounds[1].day    += eclipseBounds[1].hour/24;
+//        eclipseBounds[1].second %= 60;
+//        eclipseBounds[1].minute %= 60;
+//        eclipseBounds[1].hour   %= 60;
+//        eclipseBounds[1].day    %= 24;
+		int x = 7;
 
 	}
 	return after_lower_bound && before_upper_bound;
