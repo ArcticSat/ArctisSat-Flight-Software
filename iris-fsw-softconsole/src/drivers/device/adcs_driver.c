@@ -13,7 +13,7 @@
 #include "drivers/device/adcs_driver.h"
 #include "board_definitions.h"
 
-#define SPI_EFFICIENT
+//#define SPI_EFFICIENT
 
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
@@ -75,7 +75,7 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 			rx_size);
 	return ADCS_DRIVER_NO_ERROR;
 }
-#elif
+#else
 AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_data, uint16_t rx_size)
 {
 	uint8_t i;

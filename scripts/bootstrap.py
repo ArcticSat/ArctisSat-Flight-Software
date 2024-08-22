@@ -161,7 +161,7 @@ if(patch_path):
     print(f"patch.exe found... {patch_path[0]}")
     subprocess.run(f"{patch_path[0]} -d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch", shell=True, cwd=os.path.dirname(os.path.realpath(__file__)))
 else:
-    printf("Could not find patch program! Please apply the patch yourself in gitbash, wsl or other linux environment.\n Command run from the scripts dir should be:\n\tpatch-d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch")
+    print("Could not find patch program! Please apply the patch yourself in gitbash, wsl or other linux environment.\n Command run from the scripts dir should be:\n\tpatch-d ../iris-fsw-softconsole/Libraries/ -p2 < littlefs.patch")
 
 # libcrc
 print("Downloading libcrc...")

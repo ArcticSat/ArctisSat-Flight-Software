@@ -16,7 +16,7 @@
 
 void vTestCANTx(void *pvParameters)
 {
-    const TickType_t delay = pdMS_TO_TICKS(100);
+    const TickType_t delay = pdMS_TO_TICKS(1000);
     CANMessage_t msg = {
                         0x321,
                         8,

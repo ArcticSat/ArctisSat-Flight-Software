@@ -18,6 +18,8 @@ double getBoardTemp(){
 
     readADC(&m);
 
+    double voltage_TP23 = (double)m.value/AD7928_RESOLUTION*3;
+
     double voltage = ((double)m.value/AD7928_RESOLUTION*3 - ADC_OFFSET)/ADC_GAIN;
 
     double resistance = ((30000-20000*voltage)/(30000+20000*voltage) )* 10000;
