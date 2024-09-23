@@ -13,7 +13,7 @@
 #define PAGE_SIZE MT25Q_PAGE_SIZE
 #define BLOCK_SIZE MT25Q_SUBSECTOR_SMALL_SIZE
 
-static bool verbosity = true;
+static bool verbosity = false;
 
 // Telemetry channel sizes
 uint32_t channel_sizes[NUM_TLM_CHANNELS] = {

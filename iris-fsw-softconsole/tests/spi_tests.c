@@ -20,20 +20,20 @@
 void vTestSPI(void *pvParameters)
 {
     uint8_t test_cmd[] = {};
-    uint8_t test_wr[] = {'A', 'r', 'e', 'f', ' ', 'Y', 'o'};
+    uint8_t test_wr[] = {0x01, 0x02, 0x03};
     uint8_t test_rd[7];
-    uint32_t i, useless_number;
+//    uint32_t i, useless_number;
 
     const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
 
-
+//    SPI_enable(&g_mss_spi1);
     for (;;)
     {
 //        vTaskSuspendAll();
 //        xTaskResumeAll();
-    	adcsTxRx(test_wr, 7, NULL, 0);
-    	vTaskDelay(pdMS_TO_TICKS(10));
-    	adcsTxRx(NULL, 0, test_rd, 7);
+    	adcsTxRx(test_wr, 3, NULL, 0);
+    	vTaskDelay(pdMS_TO_TICKS(50));
+    	adcsTxRx(NULL, 0, test_rd, 1);
     	vTaskDelay(xDelay1000ms);
 
 
@@ -75,7 +75,7 @@ void vTestSPI(void *pvParameters)
 //                );
 //		}
 //        xTaskResumeAll();
-        vTaskDelay(xDelay1000ms);
+//        vTaskDelay(xDelay1000ms);
 
 //        for( i = 0; i < 250000; i++)
 //		{
