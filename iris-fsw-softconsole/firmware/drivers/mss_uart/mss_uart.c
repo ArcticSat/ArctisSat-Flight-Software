@@ -363,8 +363,8 @@ custom_MSS_UART_polled_tx_string
          * has been transferred to the UART.
          */
 
-        while(0u != data_byte)
-        {
+//        while(0u != data_byte)
+//        {
             /* Wait until TX FIFO is empty. */
             do {
                 status = this_uart->hw_reg->LSR;
@@ -384,7 +384,7 @@ custom_MSS_UART_polled_tx_string
                 /* Get the next data byte from the input buffer */
                 data_byte = p_sz_string[char_idx];
             }
-        }
+//        }
     }
 }
 

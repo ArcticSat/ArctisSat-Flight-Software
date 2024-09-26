@@ -57,9 +57,10 @@ void vInitializeUARTs(uint32_t ulBaud0)
 					ulBaud0,
 					MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-//	MSS_UART_init(&g_mss_uart1,
-//						ulBaud0,
-//						MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+	/* Initialize UART 0 */
+	MSS_UART_init(&g_mss_uart1,
+					ulBaud0,
+					MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
 	/* Create a mutex that will allow the UART to be accessed by multiple tasks
 	 * Most likely will not be necessary, but just in case */
@@ -75,8 +76,6 @@ void vInitializeUARTs(uint32_t ulBaud0)
 
 	/* Set the UART Rx notification function to trigger after a single byte is received. */
 //	MSS_UART_set_rx_handler(&g_mss_uart0, prvUARTRxNotificationHandler, MSS_UART_FIFO_SINGLE_BYTE );
-//	MSS_UART_set_rx_handler(&g_mss_uart1, prvUARTRxNotificationHandler, MSS_UART_FIFO_SINGLE_BYTE );
-
 }
 
 void vTaskUARTBridge(void *pvParameters)
