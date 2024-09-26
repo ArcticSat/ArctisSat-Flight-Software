@@ -150,7 +150,7 @@ int main( void )
 //    // increasing heap space or managing memory in a smarter manner. First step would be looking
 //    // at the FreeRTOS configurations and the linker file *.ld.
 //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
@@ -190,7 +190,7 @@ static void prvSetupHardware( void )
 //
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-//    vInitializeUARTs(MSS_UART_115200_BAUD);
+    vInitializeUARTs(MSS_UART_115200_BAUD);
 //
 //    init_WD();
     init_spi();
@@ -198,16 +198,16 @@ static void prvSetupHardware( void )
 //    init_mram();
 //    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
-#ifdef USING_DATA_FLASH
-	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-#endif
-#ifdef USING_PROGRAM_FLASH
-    flash_device_init(flash_devices[PROGRAM_FLASH]);
-#endif
+//#ifdef USING_DATA_FLASH
+//	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+//#endif
+//#ifdef USING_PROGRAM_FLASH
+//    flash_device_init(flash_devices[PROGRAM_FLASH]);
+//#endif
 //    initADC();
 //    asMram_init();
 
-//    vTestUARTTx();
+    vTestUARTTx();
 //    vTestSPI();
 
 }

@@ -20,7 +20,7 @@
 void vTestSPI(void *pvParameters)
 {
     uint8_t test_cmd[] = {};
-    uint8_t test_wr[] = {0x01, 0x02, 0x03};
+    uint8_t test_wr[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
     uint8_t test_rd[7];
 //    uint32_t i, useless_number;
 
@@ -31,9 +31,9 @@ void vTestSPI(void *pvParameters)
     {
 //        vTaskSuspendAll();
 //        xTaskResumeAll();
-    	adcsTxRx(test_wr, 3, NULL, 0);
+    	adcsTxRx(test_wr, 7, NULL, 0);
     	vTaskDelay(pdMS_TO_TICKS(50));
-    	adcsTxRx(NULL, 0, test_rd, 1);
+    	adcsTxRx(NULL, 0, test_rd, 7);
     	vTaskDelay(xDelay1000ms);
 
 
