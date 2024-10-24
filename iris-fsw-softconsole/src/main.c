@@ -133,56 +133,25 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 	// Initialization
- 	prvSetupHardware();
 
+ 	 prvSetupHardware();
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
 	BaseType_t status;
-
-#ifdef MAKER2_DEVKIT_CONFIGURATION
-    // Create LED spinning task
-    status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
-    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
-#endif
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
-
-
-//	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
-#ifdef INCLUDE_TASK_TTT
-    status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
-#endif
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
-#ifdef INCLUDE_TASK_CAN_SERVER
-    status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
-#endif
-#ifdef INCLUDE_TASK_FW_MANAGER
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-#endif
-
-    // status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",400,NULL,2,&vTestAdcsDriverInterface_h);
-
+//    status = xTaskCreate(vTTT_Scheduler,"TTT",1000,NULL,2,&vTTTScheduler_h);
+//    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 2, &vCSP_Server_h);
+//	status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,1,&vTestWD_h);
+//    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
 //    //Suspend these because csp server will start once csp is up.
-//    vTaskSuspend(vDetumbleDriver_h);
-#ifdef INCLUDE_TASK_TTT
-    vTaskSuspend(vTTTScheduler_h);
-#endif
-//    vTaskSuspend(xUART0RxTaskToNotify);
-#ifdef INCLUDE_TASK_CAN_SERVER
-    vTaskSuspend(vCanServer_h);
-#endif
-#ifdef INCLUDE_TASK_FW_MANAGER
-    vTaskSuspend(vFw_Update_Mgr_Task_h);
-#endif
-//    vTaskSuspend(vTestAdcsDriverInterface_h);
-    vTaskSuspend(vSunPointing_h);
-
+//    vTaskSuspend(vFw_Update_Mgr_Task_h);
+//    vTaskSuspend(vTTTScheduler_h);
+//    vTaskSuspend(vCanServer_h);
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
-	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+//	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
-    // Create UART0 RX Task
-    vTaskStartScheduler();
+//    vTaskStartScheduler();
 
 
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
@@ -191,7 +160,7 @@ int main( void )
 //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-//    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,1,NULL);
+//    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCspClient,"Test CSP Client",160,NULL,1,NULL);
 //    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
@@ -203,7 +172,7 @@ int main( void )
 //    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
 //    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
 //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-//	status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+	//status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
 //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
@@ -212,7 +181,9 @@ int main( void )
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
+    vTaskStartScheduler();
 
     return 0;
 }
@@ -230,28 +201,24 @@ static void prvSetupHardware( void )
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
-#endif
-
-    init_WD();
-    init_rtc();
-    setupHardwareStatus.spi_init = init_spi();
-    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
+//
+//    init_WD();
+    init_spi();
+//    init_rtc();
 //    init_mram();
+//    init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    adcs_init_driver();
-#if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
-    //init_mram();
-#ifdef USING_DATA_FLASH
-    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-#endif
-#ifdef USING_PROGRAM_FLASH
-    program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
-#endif
-#endif
-    setupHardwareStatus.data_flash_init = data_flash_status;
-    setupHardwareStatus.program_flash_init = program_flash_status;
-
+//#ifdef USING_DATA_FLASH
+//	data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+//#endif
+//#ifdef USING_PROGRAM_FLASH
+//    flash_device_init(flash_devices[PROGRAM_FLASH]);
+//#endif
 //    initADC();
 //    asMram_init();
+
+    vTestUARTTx();
+//    vTestSPI();
 
 }
 

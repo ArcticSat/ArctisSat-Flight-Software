@@ -19,11 +19,14 @@
 //-------------------------------------------------------------------------------------------------
 
 //FreeRTOS Test task for CoreSPI
-void vTestSPI(void *pvParameters);
+void vTestSPI();
 
 //FreeRTOS Test task for CAN
 void vTestCANTx(void *pvParameters);
 void vTestCANRx(void *pvParameters);
+
+//FreeRTOS Test task for UART
+void vTestUARTTx();
 
 
 //FreeRTOS Test task for Watchdog.

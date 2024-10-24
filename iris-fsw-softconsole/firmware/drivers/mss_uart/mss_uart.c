@@ -331,6 +331,64 @@ MSS_UART_polled_tx_string
     }
 }
 
+
+/***************************************************************************//**
+* Changed function MSS_UART_polled_Tx_string to take buffer length instead of
+* expecting a 00 as end of Tx message
+*/
+void
+custom_MSS_UART_polled_tx_string
+(
+    mss_uart_instance_t * this_uart,
+    const uint8_t * p_sz_string,
+	const uint8_t buf_length
+)
+{
+    uint32_t char_idx = 0u;
+    uint32_t fill_size;
+    uint8_t data_byte;
+    uint8_t status;
+
+    ASSERT((this_uart == &g_mss_uart0) || (this_uart == &g_mss_uart1));
+    ASSERT(p_sz_string != ((uint8_t *)0));
+
+    if(((this_uart == &g_mss_uart0) || (this_uart == &g_mss_uart1)) &&
+       (p_sz_string != ((uint8_t *)0)))
+    {
+        /* Get the first data byte from the input buffer */
+        data_byte = p_sz_string[char_idx];
+
+        /* First check for the NULL terminator byte.
+         * Then remain in this loop until the entire string in the input buffer
+         * has been transferred to the UART.
+         */
+
+//        while(0u != data_byte)
+//        {
+            /* Wait until TX FIFO is empty. */
+            do {
+                status = this_uart->hw_reg->LSR;
+                this_uart->status |= status;
+            } while (0u == (status & MSS_UART_THRE));
+
+            /* Send bytes from the input buffer until the TX FIFO is full
+             * or we reach the NULL terminator byte.
+             */
+            fill_size = 0u;
+            while((char_idx < buf_length) && (fill_size < TX_FIFO_SIZE))
+            {
+                /* Send the data byte */
+                this_uart->hw_reg->THR = data_byte;
+                ++fill_size;
+                char_idx++;
+                /* Get the next data byte from the input buffer */
+                data_byte = p_sz_string[char_idx];
+            }
+//        }
+    }
+}
+
+
 /***************************************************************************//**
  * See mss_uart.h for details of how to use this function.
  */
