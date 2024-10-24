@@ -20,20 +20,24 @@ void vTestRTC(void *pvParameters)
     static volatile int error_occurred = 0;
 
     static Calendar_t buffer = {
-            00u, // seconds
-            57u, // minutes
-            11u, // hours
-            24u, // day
-            3u, // February
-            21u, // year (2020)
-            4u, // weekday
-            1u, // week (not used), HOWEVER it must be 1 or greater.
+            00, // seconds
+            32, // minutes
+            15, // hours
+            9, // day
+            8, // August
+            24, // year (2024)
+            5, // weekday (Thursday)
+            1, // week (not used), HOWEVER it must be 1 or greater.
     };
+//    uint8_t buf_readreg[1];
 
     static Calendar_t buffer2;
 
     vTaskSuspendAll();
-    ds1393_write_time(&buffer);
+//    ds1393_write_reg(0x8d, 0x38);
+//    ds1393_read_reg(0x0d, buf_readreg);
+
+//    ds1393_write_time(&buffer);
     if (TIME_SUCCESS != resync_rtc())
     {
         error_occurred = 1;
