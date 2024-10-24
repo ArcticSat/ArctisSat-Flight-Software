@@ -69,8 +69,8 @@ void initiate_firmware_update(uint8_t version){
 		initialized = 1;
 	}
 
-	printf("Initiating Firmware Upgrade (IAP)...\n");
-	printf("System will reboot in 5 seconds!\n");
+	//printf("Initiating Firmware Upgrade (IAP)...\n");
+	//printf("System will reboot in 5 seconds!\n");
 	vTaskDelay(5000);
 
 	MSS_SPI_set_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
@@ -79,7 +79,7 @@ void initiate_firmware_update(uint8_t version){
 	MSS_SPI_clear_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
 
 	//If we get here the IAP failed...
-	printf("Firmware Upgrade Failed: System did not reboot (%d)\n",result);
+	//printf("Firmware Upgrade Failed: System did not reboot (%d)\n",result);
 
 }
 

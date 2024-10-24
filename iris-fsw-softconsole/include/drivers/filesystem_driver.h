@@ -105,6 +105,9 @@ int fs_file_size_from_path(char * path);
 //Copy a file. This will overwrite/truncate the destination file!
 int fs_copy_file(char * filePath, char * newPath);
 
+//Return 1 if file is already open, or 0 if closed?
+int fs_is_open(lfs_file_t * file);
+
 //Get free space in file system. Given in bytes
 uint32_t fs_free_space();
 

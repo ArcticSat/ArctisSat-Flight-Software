@@ -14,9 +14,11 @@
 #define TELEM_HEADER_SIZE   (sizeof(Calendar_t)+2)
 
 uint8_t tempBuff[256]={0};
+int csp_init_done =0;
 
 void unpackTelemetry(uint8_t * data, telemetryPacket_t* output){
 
+    memset(tempBuff,0,256);
     memcpy((void*)&output->timestamp,&data[0],sizeof(Calendar_t));
     memcpy(&output->telem_id, &data[sizeof(Calendar_t)],1);
     memcpy(&output->length, &data[sizeof(Calendar_t)+1],1);
@@ -149,6 +151,10 @@ int printf(const char *fmt, ...){
     //Based on stuff in this thread:https://electronics.stackexchange.com/questions/206113/how-do-i-use-the-printf-function-on-stm32
     char str[256];
 
+    if(!is_csp_up()){
+        return 0;
+    }
+
     va_list argp;
     va_start(argp, fmt);
 
@@ -167,5 +173,17 @@ int printf(const char *fmt, ...){
     }
 
     va_end(argp);
+    vTaskDelay(100);
     return (strlen(str)>255?255:strlen(str));
 }
+
+int is_csp_up(){
+
+    return csp_init_done;
+}
+
+void set_csp_init(int state){
+
+    csp_init_done=state;
+}
+

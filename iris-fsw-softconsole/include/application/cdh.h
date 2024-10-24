@@ -15,8 +15,13 @@
 
 
 void HandleCdhCommand(telemetryPacket_t * cmd_pkt);
-void vCanServerBasic(void * pvParameters);
+//This will try and run an immediate command.
+//return:   0  > command executed.
+//         -1 -> Not an immediate command. So the sche
+int handleCdhImmediateCommand(telemetryPacket_t * cmd_pkt, csp_conn_t * conn);
+
 void vCanServer(void * pvParameters);
+bool spacecraftIsBackwards(void);
 
 
 #endif /* INCLUDE_APPLICATION_CDH_H_ */

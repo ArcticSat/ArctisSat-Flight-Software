@@ -109,6 +109,7 @@ static uint8_t file_buffers[FS_MAX_OPEN_FILES][FS_CACHE_SIZE];
 static struct lfs_file_config file_configs[FS_MAX_OPEN_FILES];
 static uint8_t open_files;
 
+
 static lfs_t lfs;
 static struct lfs_config config = {	.read  = fs_read,
 											.prog  = fs_prog,
@@ -198,6 +199,11 @@ int fs_list_dir(char * path,int recursive){
         return err;
     }
     return err;
+}
+
+int fs_is_open(lfs_file_t * file){
+
+    return lfs_mlist_isopen(lfs.mlist, (struct lfs_mlist*)file);
 }
 
 int fs_file_exist(char * path){

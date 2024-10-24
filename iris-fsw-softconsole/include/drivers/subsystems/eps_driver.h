@@ -1,26 +1,65 @@
 /*
- * application.h
+ * eps_driver.h
  *
- *  Created on: Jul. 4, 2022
- *      Author: jpmck
+ *  Created on: Mar. 3, 2023
+ *      Author: Jayden McKoy
  */
+
+#ifndef INCLUDE_DRIVERS_SUBSYSTEMS_EPS_DRIVER_H_
+#define INCLUDE_DRIVERS_SUBSYSTEMS_EPS_DRIVER_H_
+
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-#include "csp/csp.h"
-#include "tasks/telemetry.h"
-
-#include "drivers/subsystems/eps_driver.h"
-
+#include "main.h"
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+// Back solar panels
+#define NUM_BACK_SOLAR_STRINGS 2
+#define NUM_MSVB_POLLS_FOR_BACK_SA_PANELS 2
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+typedef enum
+{
+	SWITCH_OFF = 0,
+	SWITCH_ON
+} eSwitchState;
+typedef enum
+{
+    LS_HTR,
+    LS_ADCS,
+    LS_COMS,
+    LS_CDH,
+    LS_PLD,
+    LS_DPL_A,
+    LS_DPL_S,
+    NUM_LOAD_SWITCHES
+} eLoadSwitchNumbers;
+typedef enum
+{
+    LC_MINCO,
+    LC_ANT_DPL,
+    LC_COMS,
+    LC_ADCS,
+    LC_DATEC,
+    LC_PLD,
+    LC_CDH,
+    NUM_LOAD_CURRENTS,
+} eLoadCurrentNumbers;
+typedef enum
+{
+	SA_FRONT_STATIONARY = 0,
+	SA_WING_RIGHT_TOP = 1,
+	SA_WING_RIGHT_BOTTOM = 2,
+	SA_WING_LEFT_TOP = 3,
+	SA_WING_LEFT_BOTTOM = 4,
+	SA_BACK_STATIONARY_BOTTOM = 5,
+	SA_BACK_STATIONARY_TOP = 6,
+} eSolaryArrayStrings;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -28,12 +67,13 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // GLOBALS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+// Solar array current threshold
+extern volatile float sa_current_eclipse_threshold;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void setLoadSwitch(uint8_t loadSwitchNumber, eSwitchState state);
+void pollBackSolarPanels(void);
+void resetLoadSwitch(uint8_t loadSwitchNumber);
 
-void InitMissionOperations(void);
-void InitNormalOperations(void);
-void HandleTm(csp_conn_t * conn, csp_packet_t * packet);
+#endif /* INCLUDE_DRIVERS_SUBSYSTEMS_EPS_DRIVER_H_ */

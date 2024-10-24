@@ -8,8 +8,8 @@
 #ifndef INCLUDE_APPLICATION_ADCS_H_
 #define INCLUDE_APPLICATION_ADCS_H_
 
+#include <application/memory_manager.h>
 #include "main.h"
-#include "application/telemetry_manager.h"
 
 void HandleAdcsCommand(telemetryPacket_t * cmd_pkt);
 

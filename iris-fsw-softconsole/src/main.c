@@ -74,6 +74,9 @@
 #include "tasks/fw_update_mgr.h"
 #include "drivers/device/adc/AD7928.h"
 #include "application/cdh.h"
+//#include "application/detumbling.h"
+#include "application/sun_pointing.h"
+#include "application/memory_manager.h"
 
 
 
@@ -88,15 +91,20 @@
 
 //TaskHandles
 //This is how we are able to disable/enable tasks, either for operations managment or proper startup order.
+TaskHandle_t xUART0RxTaskToNotify;
 TaskHandle_t vTTTScheduler_h;
 TaskHandle_t vFw_Update_Mgr_Task_h;
 TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
+//TaskHandle_t vDetumbleDriver_h;
+TaskHandle_t vSunPointing_h;
+TaskHandle_t vTestAdcsDriverInterface_h;
 //Debug Only:
 TaskHandle_t vTaskSpinLEDs_h;
 
-extern TaskHandle_t xUART0RxTaskToNotify;
+
+HardwareCheck_t setupHardwareStatus = {0};
 
 
 /*
@@ -182,12 +190,14 @@ int main( void )
 
 
 /*-----------------------------------------------------------*/
-FlashStatus_t data_flash_status;
+FlashStatus_t data_flash_status 	= FLASH_ERROR;
+FlashStatus_t program_flash_status	= FLASH_ERROR;
 static void prvSetupHardware( void )
 {
+#ifdef MAKER2_DEVKIT_CONFIGURATION
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
-//    vInitializeLEDs();
-//
+
+    vInitializeLEDs();
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
@@ -390,6 +400,7 @@ void vApplicationMallocFailedHook( void )
 
 void vApplicationIdleHook( void )
 {
+
     /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
     to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
     task.  It is essential that code added to this hook function never attempts
@@ -403,6 +414,7 @@ void vApplicationIdleHook( void )
 }
 /*-----------------------------------------------------------*/
 
+
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 {
     ( void ) pcTaskName;
@@ -413,6 +425,17 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
     function is called if a stack overflow is detected. */
 
     // TODO - Log event!
+
+    //Try and log to Filesystem if it still works...
+    //It doesn't work since this is in an interrupt, so things like the mutex used by FS are broken.
+
+    //So the  flash_write()/flsh_erase() doesn't work either since it calls vTaskDelay.
+    //The drivers already skip the delay if the scheduler is not running but I guess that check fails
+    //It should definitely be possible to get this working...
+
+//    uint8_t reason=0;
+//    getLastRebootReason(&reason);
+//    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
 
     taskDISABLE_INTERRUPTS();
     for( ;; );

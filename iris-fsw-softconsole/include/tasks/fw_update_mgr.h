@@ -22,7 +22,7 @@
 //With this we don't keep backup of the firmware, to reduce flash needed.
 //#define NO_FW_BACKUP
 
-#define FW_CHUNK_SIZE   150
+#define FW_CHUNK_SIZE   70
 #define NUM_FIRMWARES       2 //We keep a golden image and an update image.
 #define FW_ARMED_TIMEOUT_MS  (2 * 60*1000) //10 minutes
 
@@ -46,6 +46,11 @@ typedef enum{
 
 } fwMgrState_t;
 
+enum{
+    FW_UPLOAD_REV1,
+    FW_UPLOAD_REV2
+
+};
 
 extern QueueHandle_t fwDataQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -92,12 +97,19 @@ int updateFwMetaData(Fw_metadata_t* data);
 
 int getFwManagerState();
 int setFwManagerState(int state);
+void forceFwManagerState(uint8_t state);
 
 //Saves a chunk of data to one of the firmware files
 void uploadFwChunk(uint8_t * data, uint16_t length);//Will length ever be larger than 256? should be smaller than chunk size...
 
+//Improved version...
+void uploadFwChunk2(uint8_t * data, uint16_t length);
+
 //Computes the checksum of a file.
 void checksum_file(uint32_t * out, char * filename);
+
+//Computes the checksum of part of a file.
+void checksum_file_area(uint32_t* out, char * filename, uint32_t start_byte, uint32_t len,int quiet);
 
 //Will run the checksum algorithm on the program flash, starting at the specified address and using "size" bytes.
 void checksum_program_flash_area(uint32_t *out,uint32_t address, uint32_t size);
@@ -121,6 +133,12 @@ void setFwChecksum(uint8_t slot, uint32_t check);
 //In case we need to manually assign the design version for the firmware.
 //Slot  is 0(golden), 1(update).
 void setFwDesignVer(uint8_t slot, uint8_t ver);
+
+//Gets the current number of bytes uploaded and the total expected for the current upload.
+void fw_mgr_get_rx_progress(int* curr,uint32_t* total );
+
+//Change the value of the arming timeout. returns the value. must be greater than 1000 (1 second)
+int fw_mgr_set_arm_timeout(int msec);
 
 
 #endif // FW_UPDATE_MGR_H
