@@ -259,7 +259,7 @@ static void prvSetupHardware( void )
 
 /*-----------------------------------------------------------*/
 static void vTestCspServer(void * pvParameters){
-
+    //bruh
 	struct csp_can_config can_conf = {0};
     csp_conn_t * conn = NULL;
     csp_packet_t * packet= NULL;
