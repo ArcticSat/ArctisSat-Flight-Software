@@ -51,6 +51,7 @@ void ds1393_read_time(Calendar_t * read_buffer)
 			buffer,
 			sizeof(buffer));
 
+
 	read_buffer->second = bcd2bin(buffer[0]);
 	read_buffer->minute = bcd2bin(buffer[1]);
 	read_buffer->hour = bcd2bin(buffer[2]);
@@ -58,6 +59,30 @@ void ds1393_read_time(Calendar_t * read_buffer)
 	read_buffer->day = bcd2bin(buffer[4]);
 	read_buffer->month = bcd2bin(buffer[5]);
 	read_buffer->year = bcd2bin(buffer[6]);
+
+	uint8_t cmdBuff = {0x8E, 0x00};
+
+
+
+	address = 0x8E;
+	spi_transaction_block_write_without_toggle(
+			RTC_SPI_CORE,
+			RTC_SLAVE_CORE,
+			&cmdBuff,
+			2,
+			buffer,
+			1);
+
+	address = 0x0D;
+	spi_transaction_block_read_without_toggle(
+			RTC_SPI_CORE,
+			RTC_SLAVE_CORE,
+			&address,
+			1,
+			buffer,
+			1);
+	volatile int J = sizeof(buffer);
+
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -179,7 +179,7 @@ int main( void )
 
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
-	//status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+//	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     // Create UART0 RX Task
     vTaskStartScheduler();
@@ -191,7 +191,7 @@ int main( void )
 //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-//    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,1,NULL);
+//    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCspClient,"Test CSP Client",160,NULL,1,NULL);
 //    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
@@ -203,7 +203,7 @@ int main( void )
 //    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
 //    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
 //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-//	status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+	//status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
 //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
@@ -212,7 +212,9 @@ int main( void )
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
+    vTaskStartScheduler();
 
     return 0;
 }
@@ -252,6 +254,9 @@ static void prvSetupHardware( void )
 
 //    initADC();
 //    asMram_init();
+
+    vTestUARTTx();
+//    vTestSPI();
 
 }
 

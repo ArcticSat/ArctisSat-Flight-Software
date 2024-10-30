@@ -16,18 +16,9 @@
 #include "drivers/device/adcs_driver.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "board_definitions.h"
-#include "tasks/telemetry.h"
-#include <stdlib.h>
-#include <math.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "drivers/device/rtc/rtc_time.h"
-#include "drivers/mss_rtc/mss_rtc.h"
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// DEFINITIONS AND MACROS
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------
-// SPI parameters
+
 //#define SPI_EFFICIENT
+
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
 // Magnetometer calibration parameters
@@ -682,12 +673,10 @@ float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 // Mag
 float convertMagDataRawToTeslas(uint16_t rawMag)
 {
-#ifdef MAG_SIM_ENG_VALUE
-	return MAG_SIM_ENG_VALUE;
-#else
-	return (float) ( ((-8) + (rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
-//	return (float) ( ((rawMag * MAG_LSB)) * GAUSS_TO_TESLA_CONVERSION );
-#endif
+	uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
+//	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
+//	return magnetic_field
+	return 0.0;
 }
 
 // Sun
@@ -786,7 +775,7 @@ AdcsDriverError_t getMagnetometerDataTeslas(MagnetometerId_t magnetometerNumber,
 		magRaw16 |= (uint16_t) magRaw8[2*i];				// LSB transferred first
 		magRaw16 |= (((uint16_t) magRaw8[2*i+1]) << 8);
 		// Convert raw sample to Teslas
-		magDataTeslas[i] = convertMagDataRawToTeslas(magRaw16);
+//		magDataTeslas[i] = ((-8) + (magRaw16 * MAG_LSB)) * MILLIGAUSS_TO_TESLA_CONVERSION;
 	}
 
 	return status;

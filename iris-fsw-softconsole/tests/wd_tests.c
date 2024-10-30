@@ -64,56 +64,9 @@ void vTestWD(void *pvParameters)
 
         if(last_reboot_wd){
 
-            //If we reset because internal WD, we can try to get the sc status.
-            //If it works we can add this to the reboot reason. If read fails then we can try again later.
-            uint8_t rebootReason;
-            int res = getLastRebootReason(&rebootReason);
-
-            if(res == MEM_MGR_OK){
-                setLastRebootReason(REBOOT_INTERNAL_WD|rebootReason);
-                last_reboot_wd =0;
-            }
-
-        }
-
-      if(external_wd_state){
-
-          if(external_wd_state_prev == 0){
-               MSS_GPIO_set_output(MSS_GPIO_19, 1);
-          }
-
-          MSS_GPIO_set_output(MSS_GPIO_18, pinState);
-          pinState = ~pinState;
-
-
-          external_wd_state_prev = external_wd_state;
-      }
-      else if(external_wd_state == 0){
-
-          //Disable wd timeout
-          MSS_GPIO_set_output(MSS_GPIO_19, 0);
-          MSS_GPIO_set_output(MSS_GPIO_18, 0);
-          external_wd_state_prev = external_wd_state;
-      }
-
-
-      service_WD();//Internal WD can't be stopped, but won't interfere with IAP.
-      vTaskDelay(pdMS_TO_TICKS(500));
-
-//        //For testing, toggle every 500msec, to avoid wd reset?
-//    	for (int ix=0; ix<6; ix+=1)
-//    	{
-//    		MSS_GPIO_set_output(MSS_GPIO_18, pinState);
-//    		pinState = ~pinState;
-//    		service_WD();
-//            vTaskDelay(pdMS_TO_TICKS(500));
-//    	}
-//
-//    	//Now let the wd go and check it resets?
-//    	MSS_GPIO_set_output(MSS_GPIO_18, pinState);
-//		pinState = ~pinState;
-//		service_WD();
-//        vTaskDelay(pdMS_TO_TICKS(1650));
-
+		MSS_GPIO_set_output(MSS_GPIO_18, pinState);
+		pinState = ~pinState;
+		service_WD();
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }

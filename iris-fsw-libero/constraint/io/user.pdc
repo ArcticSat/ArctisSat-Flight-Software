@@ -2,11 +2,11 @@
 
 # User I/O Constraints file 
 
-# Version: 2022.1 2022.1.0.10
+# Version: 2022.2 2022.2.0.10
 
 # Family: SmartFusion2 , Die: M2S010 , Package: 144 TQ
 
-# Date generated: Tue Oct 25 00:21:13 2022 
+# Date generated: Fri Mar 24 20:38:53 2023 
 
 
 # 
@@ -271,15 +271,17 @@ set_io RTC_SPI_SCK     \
     -DIRECTION OUTPUT
 
 
-set_io WDI             \
-    -pinname 56        \
-    -fixed yes         \
+set_io WDI                   \
+    -pinname 56              \
+    -fixed yes               \
+    -FF_IO_STATE LAST_VALUE  \
     -DIRECTION OUTPUT
 
 
-set_io WDSEL           \
-    -pinname 55        \
-    -fixed yes         \
+set_io WDSEL                 \
+    -pinname 55              \
+    -fixed yes               \
+    -FF_IO_STATE LAST_VALUE  \
     -DIRECTION OUTPUT
 
 
