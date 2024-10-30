@@ -31,9 +31,10 @@ void vTestSPI(void *pvParameters)
     {
 //        vTaskSuspendAll();
 //        xTaskResumeAll();
-    	adcsTxRx(test_wr, 7, NULL, 0);
-    	vTaskDelay(pdMS_TO_TICKS(50));
-    	adcsTxRx(NULL, 0, test_rd, 7);
+//    	adcsTxRx(test_wr, 7, NULL, 0);
+//    	vTaskDelay(pdMS_TO_TICKS(50));
+//    	adcsTxRx(NULL, 0, test_rd, 7);
+        getGyroMeasurementsRaw(GYRO_1, test_rd);
     	vTaskDelay(xDelay1000ms);
 
 

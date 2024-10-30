@@ -188,12 +188,12 @@ int main( void )
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
 //    // increasing heap space or managing memory in a smarter manner. First step would be looking
 //    // at the FreeRTOS configurations and the linker file *.ld.
-//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-//    status = xTaskCreate(vTestCspClient,"Test CSP Client",160,NULL,1,NULL);
+    status = xTaskCreate(vTestCspClient,"Test CSP Client",500,NULL,1,NULL);
 //    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
@@ -255,7 +255,7 @@ static void prvSetupHardware( void )
 //    initADC();
 //    asMram_init();
 
-    vTestUARTTx();
+//    vTestUARTTx();
 //    vTestSPI();
 
 }
@@ -279,14 +279,14 @@ static void vTestCspServer(void * pvParameters){
 	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
 
 	/* Init CSP with address 0 */
-	csp_init(CDH_CSP_ADDRESS);
+	csp_init(0);
 
 
 	/* Init the CAN interface with hardware filtering */
 	csp_can_init(CSP_CAN_MASKED, &can_conf);
 
 	/* Setup default route to CAN interface */
-	csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
+	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
 
 	size_t freSpace = xPortGetFreeHeapSize();
 	/* Start router task with 100 word stack, OS task priority 1 */
@@ -331,33 +331,38 @@ static void vTestCspClient(void * pvParameters){
 	can_conf.clock_speed=250000;
 	can_conf.ifc = "CAN";
 
-	/* Init buffer system with 5 packets of maximum 256 bytes each */
-	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
+//	/* Init buffer system with 5 packets of maximum 256 bytes each */
+//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
+//
+//	/* Init CSP with address 1 */
+//	csp_init(1);
+//
+//	/* Init the CAN interface with hardware filtering */
+//	csp_can_init(CSP_CAN_MASKED, &can_conf);
+//
+//	/* Setup address 0 to route to CAN interface */
+//	csp_rtable_set(4,0, &csp_if_can,0);
+//
+//	size_t freSpace = xPortGetFreeHeapSize();
+//	/* Start router task with 100 word stack, OS task priority 1 */
+//	csp_route_start_task(200, 1);
 
-	/* Init CSP with address 1 */
-	csp_init(1);
-
-	/* Init the CAN interface with hardware filtering */
-	csp_can_init(CSP_CAN_MASKED, &can_conf);
-
-	/* Setup address 0 to route to CAN interface */
-	csp_rtable_set(4,0, &csp_if_can,0);
-
-	size_t freSpace = xPortGetFreeHeapSize();
-	/* Start router task with 100 word stack, OS task priority 1 */
-	csp_route_start_task(200, 1);
-
-
+	int allowChange = 0;
 	while(1){
 		csp_conn_t * conn;
 		csp_packet_t * packet;
-		conn = csp_connect(2,4,4,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
-		packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
-		sprintf(packet->data,"Hello World");
-		packet->length=strlen("Hello World");
+		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
+		if(allowChange) {
+		    packet = csp_buffer_get(sizeof(uint8_t));
+            packet->data[0] = 0;
+		} else {
+            packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
+            sprintf(packet->data,"Hello World");
+            packet->length=strlen("Hello World");
+		}
 		csp_send(conn,packet,0);
 		csp_close(conn);
-		vTaskDelay(10000);
+		vTaskDelay(1000);
 
 //		CANMessage_t msg = {0};
 //		msg.id = 0x144;
