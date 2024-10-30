@@ -31,10 +31,10 @@ typedef enum
 	TASK_SUCCESS
 } EventId_t;
 
-void init_telemetry_manager(void);
-void set_telemetry_verbose(bool verbose);
-void log_telemetry(telemetryPacket_t * pkt);
-void get_telemetry(TelemetryChannel_t channel_id);
-void log_event(telemetryPacket_t * pkt);
+//void init_telemetry_manager(void);
+//void set_telemetry_verbose(bool verbose);
+//void log_telemetry(telemetryPacket_t * pkt);
+//void get_telemetry(TelemetryChannel_t channel_id);
+//void log_event(telemetryPacket_t * pkt);
 
 #endif /* INCLUDE_APPLICATION_TELEMETRY_MANAGER_H_ */

@@ -203,7 +203,7 @@ int fs_list_dir(char * path,int recursive){
 
 int fs_is_open(lfs_file_t * file){
 
-    return lfs_mlist_isopen(lfs.mlist, (struct lfs_mlist*)file);
+    return -1; //lfs_mlist_isopen(lfs.mlist, (struct lfs_mlist*)file);
 }
 
 int fs_file_exist(char * path){
