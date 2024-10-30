@@ -77,21 +77,15 @@ void vCSP_Server(void * pvParameters){
     csp_listen(socket,4);
 
 	//Make sure FS is up before all tasks
-#ifdef FLIGHT_MODEL_CONFIGURATION
-	filesystem_initialization();
-	// Initialize Mission-level Operations (requires FS init)
-	InitMissionOperations();
-#else
-#ifdef INCLUDE_TASK_CAN_SERVER
-//	vTaskResume(vCanServer_h);
-#endif
-//	vTaskResume(xUART0RxTaskToNotify);
-#ifdef INCLUDE_TASK_TTT
-	vTaskResume(vTTTScheduler_h);
-#endif
-	vTaskResume(vSunPointing_h);
-//	vTaskResume(vTestAdcsDriverInterface_h);
-#endif
+//	filesystem_initialization();
+
+    //Start up any tasks that depend on CSP, FS.
+    vTaskResume(vCanServer_h);
+//    vTaskResume(vTTTScheduler_h);
+//    if(get_fs_status() == FS_OK){
+//    	vTaskResume(vFw_Update_Mgr_Task_h);
+//    }
+
 
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
@@ -203,13 +197,13 @@ uint8_t configure_csp(){
 
 #ifdef FLIGHT_MODEL_CONFIGURATION
     /* Setup default route to CAN interface */
-    //status = csp_rtable_set(CSP_DEFAULT_ROUTE,0, &csp_if_can,CSP_NODE_MAC);
-    // char* canRoute = "0/0 CAN";
-//    char* canRoute = "9/5 CAN 3";
-//    char* canRoute = "9/5 CAN 3, 0/0 CAN";
-   char* canRoute = "4/5 LOOP, 9/5 CAN 3, 0/0 CAN";
-   csp_rtable_load(canRoute);
+    status = csp_rtable_set(4,0, &csp_if_can,CSP_NODE_MAC);
+    //char* canRoute = "0/0 CAN";
 
+//    char* gndRoute = "9/5 KISS";
+
+//   csp_rtable_load(canRoute);
+//   csp_rtable_load(gndRoute);
     if(status != CSP_ERR_NONE){
         result = 0;
         return result;

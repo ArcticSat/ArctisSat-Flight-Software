@@ -16,6 +16,7 @@
 #include "drivers/device/adcs_driver.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "board_definitions.h"
+#include "application/telemetry_manager.h"
 
 //#define SPI_EFFICIENT
 
@@ -673,7 +674,7 @@ float convertGyroDataRawToRadiansPerSecond(uint16_t rawGyro)
 // Mag
 float convertMagDataRawToTeslas(uint16_t rawMag)
 {
-	uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
+	//uint16_t full_scale_normalized = mag_fs_raw - UINT16_MAX / 2;
 //	float magnetic_field = ((float)full_scale_normalized) * A3G4250D_FULL_SCALE_MAX;
 //	return magnetic_field
 	return 0.0;
