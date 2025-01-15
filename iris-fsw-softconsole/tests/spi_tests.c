@@ -22,6 +22,7 @@ void vTestSPI(void *pvParameters)
     uint8_t test_cmd[] = {};
     uint8_t test_wr[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
     uint8_t test_rd[7];
+    uint8_t sunData[255];
 //    uint32_t i, useless_number;
 
     const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
@@ -34,7 +35,10 @@ void vTestSPI(void *pvParameters)
 //    	adcsTxRx(test_wr, 7, NULL, 0);
 //    	vTaskDelay(pdMS_TO_TICKS(50));
 //    	adcsTxRx(NULL, 0, test_rd, 7);
-        getGyroMeasurementsRaw(GYRO_1, test_rd);
+        sunSensorSelect(SUN_SENSOR_PRIMARY_Z);
+        getSunSensorMeasurementsRaw(sunData);
+//        getMagnetometerMeasurementsRaw(MAGNETOMETER_1, sunData);
+//        getGyroMeasurementsRaw(GYRO_1, test_rd);
     	vTaskDelay(xDelay1000ms);
 
 

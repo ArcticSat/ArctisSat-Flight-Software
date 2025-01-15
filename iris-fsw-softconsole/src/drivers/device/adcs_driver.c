@@ -302,7 +302,7 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 //	uint8_t cmd[2] = {cmd_id,cmd_id};
 //	status = adcsTxRx(cmd,2,NULL,0);
 	status = adcsTxRx(&cmd_id,1,NULL,0);
-	vTaskDelay(10);
+	vTaskDelay(1);
 	status = adcsTxRx(NULL,0,&cmd_ack,1);
 	// Verify result
 	if(cmd_id == cmd_ack)
@@ -521,7 +521,7 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
     status = adcsSyncSpiCommand(cmd_id);
     if(status != ADCS_DRIVER_NO_ERROR)
     	return status;
-	vTaskDelay(10);
+	vTaskDelay(1);
     // Get measurements
 	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
 	// Check valid data

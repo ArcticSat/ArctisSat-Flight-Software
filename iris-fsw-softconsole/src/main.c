@@ -144,11 +144,11 @@ int main( void )
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
+//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
+//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
 #ifdef INCLUDE_TASK_TTT
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
@@ -175,14 +175,13 @@ int main( void )
     vTaskSuspend(vFw_Update_Mgr_Task_h);
 #endif
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
-    vTaskSuspend(vSunPointing_h);
+//    vTaskSuspend(vSunPointing_h);
 
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 //	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     // Create UART0 RX Task
-    vTaskStartScheduler();
 
 
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
@@ -194,7 +193,7 @@ int main( void )
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
     status = xTaskCreate(vTestCspClient,"Test CSP Client",500,NULL,1,NULL);
-//    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestFS,"Test FS",5000,NULL,2,NULL);
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
@@ -219,7 +218,8 @@ int main( void )
     return 0;
 }
 
-
+#define USING_DATA_FLASH
+#define USING_PROGRAM_FLASH
 /*-----------------------------------------------------------*/
 FlashStatus_t data_flash_status 	= FLASH_ERROR;
 FlashStatus_t program_flash_status	= FLASH_ERROR;
@@ -234,14 +234,14 @@ static void prvSetupHardware( void )
     vInitializeUARTs(MSS_UART_115200_BAUD);
 #endif
 
-    init_WD();
-    init_rtc();
+//    init_WD();
+//    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    init_mram();
 //    adcs_init_driver();
 #if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
-    //init_mram();
+//    init_mram();
 #ifdef USING_DATA_FLASH
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
@@ -270,27 +270,27 @@ static void vTestCspServer(void * pvParameters){
     csp_packet_t * packet= NULL;
     csp_socket_t * socket  = NULL;
 
-
-	can_conf.bitrate=250000;
-	can_conf.clock_speed=250000;
-	can_conf.ifc = "CAN";
-
-	/* Init buffer system with 5 packets of maximum 256 bytes each */
-	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
-
-	/* Init CSP with address 0 */
-	csp_init(0);
-
-
-	/* Init the CAN interface with hardware filtering */
-	csp_can_init(CSP_CAN_MASKED, &can_conf);
-
-	/* Setup default route to CAN interface */
-	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
-
-	size_t freSpace = xPortGetFreeHeapSize();
-	/* Start router task with 100 word stack, OS task priority 1 */
-	csp_route_start_task(200, 1);
+//
+//	can_conf.bitrate=250000;
+//	can_conf.clock_speed=250000;
+//	can_conf.ifc = "CAN";
+//
+//	/* Init buffer system with 5 packets of maximum 256 bytes each */
+//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
+//
+//	/* Init CSP with address 0 */
+//	csp_init(0);
+//
+//
+//	/* Init the CAN interface with hardware filtering */
+//	csp_can_init(CSP_CAN_MASKED, &can_conf);
+//
+//	/* Setup default route to CAN interface */
+//	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
+//
+//	size_t freSpace = xPortGetFreeHeapSize();
+//	/* Start router task with 100 word stack, OS task priority 1 */
+//	csp_route_start_task(200, 1);
 
 
 	 conn = NULL;
@@ -323,53 +323,28 @@ static void vTestCspServer(void * pvParameters){
 			}
 	}
 }
+#define CSP_DEFAULT_PRIORITY 2
+#define DEST_ADDRESS 0
+#define DEST_PORT 1
+#define TIMEOUT_MS 1000
+#define OPTIONAL_PARAMS 0
+
 /*-----------------------------------------------------------*/
 static void vTestCspClient(void * pvParameters){
-
-	struct csp_can_config can_conf;
-	can_conf.bitrate=250000;
-	can_conf.clock_speed=250000;
-	can_conf.ifc = "CAN";
-
-//	/* Init buffer system with 5 packets of maximum 256 bytes each */
-//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
-//
-//	/* Init CSP with address 1 */
-//	csp_init(1);
-//
-//	/* Init the CAN interface with hardware filtering */
-//	csp_can_init(CSP_CAN_MASKED, &can_conf);
-//
-//	/* Setup address 0 to route to CAN interface */
-//	csp_rtable_set(4,0, &csp_if_can,0);
-//
-//	size_t freSpace = xPortGetFreeHeapSize();
-//	/* Start router task with 100 word stack, OS task priority 1 */
-//	csp_route_start_task(200, 1);
-
-	int allowChange = 0;
-	while(1){
+    int result = -1;
+    while(1){
 		csp_conn_t * conn;
 		csp_packet_t * packet;
-		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
-		if(allowChange) {
-		    packet = csp_buffer_get(sizeof(uint8_t));
-            packet->data[0] = 0;
-		} else {
-            packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
-            sprintf(packet->data,"Hello World");
-            packet->length=strlen("Hello World");
-		}
-		csp_send(conn,packet,0);
+
+		//Create a connection. This tells CSP where to send the data (address and destination port).
+		conn = csp_connect(CSP_DEFAULT_PRIORITY,DEST_ADDRESS,DEST_PORT,TIMEOUT_MS,OPTIONAL_PARAMS);
+        packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
+        sprintf(packet->data,"Hello World");
+        packet->length=strlen("Hello World");
+
+		result = csp_send(conn,packet,0);
 		csp_close(conn);
 		vTaskDelay(1000);
-
-//		CANMessage_t msg = {0};
-//		msg.id = 0x144;
-//		msg.dlc = 8;
-//		sprintf(msg.data,"SHEEEESH");
-//		CAN_transmit_message(&msg);
-//		vTaskDelay(5000);
 	}
 }
 
