@@ -12,7 +12,8 @@
 #include "tests.h"
 
 #include <string.h>
-
+#include <csp/csp.h>
+#include "csp/interfaces/csp_if_can.h"
 #include "drivers/protocol/uart.h"
 
 
@@ -36,6 +37,9 @@ void vTestUARTTx()
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));
 
+    vTaskDelay(2000);
+
+
     for (;;)
     {
     	Tx_Success = 0;
@@ -45,24 +49,35 @@ void vTestUARTTx()
 //        vTaskDelay(delay);
 
 //    	MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx);
-    	custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
-    	for( i = 0; i < 2500000; i++)
-    	{
-    		useless_number = 182121*406;
+    	i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+    	if(i > 0) {
+    	    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+    	    csp_conn_t * conn;
+            csp_packet_t * packet;
+            conn = csp_connect(2,0,2,1000,0);   //Create a connection. This tells CSP where to send the data (address and destination port).
+            packet = csp_buffer_get(sizeof(i)); // Get a buffer large enough to fit our data. Max size is 256.
+            sprintf(packet->data, buf_Rx0);
+            packet->length=i;
+
+            csp_send(conn,packet,0);
+            csp_close(conn);
+            csp_buffer_free(packet);
+            vTaskDelay(100);
     	}
-    	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
 
-    	for( i = 0; i < 2500000; i++)
-		{
-			useless_number = 182121*406;
-		}
 
-    	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx1, sizeof(buf_Tx1));
-		for( i = 0; i < 2500000; i++)
-		{
-			useless_number = 182121*406;
-		}
-		MSS_UART_get_rx(&g_mss_uart1, buf_Rx1, sizeof(buf_Rx1));
+//    	for( i = 0; i < 2500000; i++)
+//		{
+//			useless_number = 182121*406;
+//		}
+//
+//    	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx1, sizeof(buf_Tx1));
+//		for( i = 0; i < 2500000; i++)
+//		{
+//			useless_number = 182121*406;
+//		}
+//		MSS_UART_get_rx(&g_mss_uart1, buf_Rx1, sizeof(buf_Rx1));
+        vTaskDelay(100);
 
 
     }

@@ -133,7 +133,7 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 	// Initialization
- 	prvSetupHardware();
+    prvSetupHardware();
 
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
@@ -144,7 +144,7 @@ int main( void )
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
+//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
@@ -182,13 +182,13 @@ int main( void )
 //	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     // Create UART0 RX Task
-    vTaskStartScheduler();
+//    vTaskStartScheduler();
 
 
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
 //    // increasing heap space or managing memory in a smarter manner. First step would be looking
 //    // at the FreeRTOS configurations and the linker file *.ld.
-    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
@@ -212,7 +212,7 @@ int main( void )
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
     vTaskStartScheduler();
 
@@ -225,17 +225,13 @@ FlashStatus_t data_flash_status 	= FLASH_ERROR;
 FlashStatus_t program_flash_status	= FLASH_ERROR;
 static void prvSetupHardware( void )
 {
-#ifdef MAKER2_DEVKIT_CONFIGURATION
-    /* Perform any configuration necessary to use the hardware peripherals on the board. */
 
-    vInitializeLEDs();
-//    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
-//     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
-#endif
+//    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-    init_WD();
-    init_rtc();
+
+//    init_WD();
+//    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    init_mram();
@@ -326,6 +322,7 @@ static void vTestCspServer(void * pvParameters){
 /*-----------------------------------------------------------*/
 static void vTestCspClient(void * pvParameters){
 
+    vTaskDelay(2000);
 	struct csp_can_config can_conf;
 	can_conf.bitrate=250000;
 	can_conf.clock_speed=250000;
@@ -349,20 +346,21 @@ static void vTestCspClient(void * pvParameters){
 
 	int allowChange = 0;
 	while(1){
-		csp_conn_t * conn;
-		csp_packet_t * packet;
-		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
-		if(allowChange) {
-		    packet = csp_buffer_get(sizeof(uint8_t));
-            packet->data[0] = 0;
-		} else {
-            packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
-            sprintf(packet->data,"Hello World");
-            packet->length=strlen("Hello World");
-		}
-		csp_send(conn,packet,0);
-		csp_close(conn);
-		vTaskDelay(1000);
+//		csp_conn_t * conn;
+//		csp_packet_t * packet;
+//		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
+//		if(allowChange) {
+//		    packet = csp_buffer_get(sizeof(uint8_t));
+//            packet->data[0] = 0;
+//		} else {
+//            packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
+//            sprintf(packet->data,"Hello World");
+//            packet->length=strlen("Hello World");
+//		}
+//		csp_send(conn,packet,0);
+//		csp_close(conn);
+//        csp_buffer_free(packet);
+//		vTaskDelay(1000);
 
 //		CANMessage_t msg = {0};
 //		msg.id = 0x144;
