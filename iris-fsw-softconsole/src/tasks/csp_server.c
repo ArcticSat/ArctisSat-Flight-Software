@@ -34,6 +34,8 @@
 #include "csp/interfaces/csp_if_kiss.h"
 #include "drivers/uart_driver_csp.h"
 #include "taskhandles.h"
+#include "drivers/protocol/uart.h"
+
 //#include "version.h"
 
 #include "FreeRTOS.h"
@@ -109,6 +111,7 @@ void vCSP_Server(void * pvParameters){
 					break;
 				} // case CSP_CMD_PORT
 				case CSP_TELEM_PORT:{
+		            custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
 				    csp_buffer_free(packet);
 				    break;
 				}
