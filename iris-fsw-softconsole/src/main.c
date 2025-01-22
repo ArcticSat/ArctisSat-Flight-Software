@@ -149,7 +149,7 @@ int main( void )
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
 //    // increasing heap space or managing memory in a smarter manner. First step would be looking
 //    // at the FreeRTOS configurations and the linker file *.ld.
-//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
@@ -173,7 +173,7 @@ int main( void )
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",5000,NULL,1,NULL);
 
     vTaskStartScheduler();
 
@@ -207,7 +207,7 @@ static void prvSetupHardware( void )
 //    initADC();
 //    asMram_init();
 
-    vTestUARTTx();
+//    vTestUARTTx();
 //    vTestSPI();
 
 }
