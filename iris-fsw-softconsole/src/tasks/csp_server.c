@@ -57,6 +57,19 @@
 //------------------------------------------------------------------------------
 uint8_t configure_csp();
 
+void sendData(char* buffer, int len, int dest) {
+    csp_packet_t *newPacket = csp_buffer_get(len); // Get a buffer large enough to fit our data. Max size is 256.
+    satPacket myPacket;
+    if(newPacket) {
+//              test = &CCLSM_DATA[i];
+        memcpy(newPacket->data, buffer, len);
+        newPacket->length = len;
+        myPacket.packet = newPacket;
+        myPacket.dest = dest;
+        xQueueSendToBack(txQueue, &myPacket, 0);
+    }
+}
+
 //------------------------------------------------------------------------------
 // FUNCTIONS
 //------------------------------------------------------------------------------
@@ -82,16 +95,17 @@ void vCSP_Server(void * pvParameters){
 //	filesystem_initialization();
 
     //Start up any tasks that depend on CSP, FS.
-    vTaskResume(vCanServer_h);
+//    vTaskResume(vCanServer_h);
 //    vTaskResume(vTTTScheduler_h);
 //    if(get_fs_status() == FS_OK){
 //    	vTaskResume(vFw_Update_Mgr_Task_h);
 //    }
 
-
+    int misses = 0;
+    int lockout = 0;
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
-		conn = csp_accept(socket, 1000);
+		conn = csp_accept(socket, 250);
 		if(conn){
 			packet = csp_read(conn,0);
             #ifdef DEBUG
@@ -110,9 +124,18 @@ void vCSP_Server(void * pvParameters){
 					csp_buffer_free(packet);
 					break;
 				} // case CSP_CMD_PORT
-				case CSP_TELEM_PORT:{
+				case CSP_COMMS_PASSTHROUGH:{
 		            custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
-				    csp_buffer_free(packet);
+//				    csp_buffer_free(packet);
+				    break;
+				}
+				case 0x04: {
+                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
+				    if(lockout) {
+			            custom_MSS_UART_polled_tx_string(&g_mss_uart0, "POWER COMM RESTORED\n", strlen("POWER COMM RESTORED\n"));
+				    }
+				    lockout = 0;
+				    misses = 0;
 				    break;
 				}
 				default:{
@@ -121,9 +144,16 @@ void vCSP_Server(void * pvParameters){
 					}
 				} // case CSP_TELEM_PORT
 				//Should buffer free be here? Example doesn't call this after csp_service handler.
-
+                csp_buffer_free(packet);
 				csp_close(conn);
-		} // if(conn)
+		} else {
+		    misses++;
+		}
+
+		if(misses > 5 && !lockout) {
+		    lockout = 1;
+            custom_MSS_UART_polled_tx_string(&g_mss_uart0, "POWER COMM LOST\n", strlen("POWER COMM LOST\n"));
+		}
 //		vTaskDelay(500);
 	} // while(1)
 } // End of vCSP_Server

@@ -77,6 +77,7 @@
 //#include "application/detumbling.h"
 #include "application/sun_pointing.h"
 #include "application/memory_manager.h"
+#include "tasks/comms_handler.h"
 
 
 
@@ -177,6 +178,9 @@ int main( void )
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
     vTaskSuspend(vSunPointing_h);
 
+    txQueue = xQueueCreate(25, sizeof(satPacket));
+
+
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 //	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
@@ -194,6 +198,8 @@ int main( void )
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
     status = xTaskCreate(vTestCspClient,"Test CSP Client",500,NULL,1,NULL);
+    status = xTaskCreate(commsHandlerTask,"Test CSP Client",1000,NULL,1,NULL);
+
 //    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
@@ -203,16 +209,18 @@ int main( void )
 //    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
 //    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
 //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-	//status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
+//	status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
 //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
 //    // Task for testing time tagged task queue.
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
-//    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+
+
 
     vTaskStartScheduler();
 
@@ -345,7 +353,19 @@ static void vTestCspClient(void * pvParameters){
 //	csp_route_start_task(200, 1);
 
 	int allowChange = 0;
+    satPacket packet;
+    csp_conn_t *txconn;
+    csp_packet_t *cspPacket;
+    uint8_t dest;
 	while(1){
+        if(xQueueReceive(txQueue, &packet, 1000) == pdTRUE) {
+            dest = packet.dest;
+            cspPacket = packet.packet;
+            txconn = csp_connect(2, 0, dest, 1000, 0);
+            csp_send(txconn, cspPacket, 0);
+            csp_close(txconn);
+            csp_buffer_free(cspPacket);
+        }
 //		csp_conn_t * conn;
 //		csp_packet_t * packet;
 //		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).

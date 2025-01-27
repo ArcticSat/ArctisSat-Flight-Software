@@ -23,6 +23,7 @@
 
 //Define the ports we're using
 #define CSP_CMD_PORT	7
+#define CSP_COMMS_PASSTHROUGH 11
 #define CSP_TELEM_PORT	8
 #define CSP_UPDATE_PORT	9
 

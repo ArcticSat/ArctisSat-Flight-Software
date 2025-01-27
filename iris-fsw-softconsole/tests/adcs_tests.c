@@ -12,8 +12,35 @@
 #include "tests.h"
 
 #include "drivers/device/adcs_driver.h"
+#include "drivers/protocol/uart.h"
 
 void vTestAdcsDriver(void * pvParameters){
+    int status = 0;
+    int misses = 0;
+    int lockout = 1;
+    uint8_t *buf[6];
+    while(1){
+//        getGyroMeasurementsGenericRaw(buf);
+        status = pingAdcs();
+        if(status != ADCS_DRIVER_NO_ERROR) {
+            misses++;
+        } else {
+            if(lockout == 1) {
+                lockout = 0;
+                char* msg = "ADCS COMM RESTORED\n";
+                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
+            }
+            misses = 0;
+            lockout = 0;
+        }
+
+        if(misses > 3 && lockout == 0) {
+            lockout = 1;
+            char* msg = "ADCS COMM LOST\n";
+            custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
+        }
+        vTaskDelay(1000);
+    }
 
 
 //    uint8_t telemetryData [ADCS_TELEMETRY_TOTAL_SIZE] = {0xFF};

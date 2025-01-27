@@ -17,6 +17,7 @@
 #include "drivers/subsystems/eps_driver.h"
 #include "board_definitions.h"
 #include "application/telemetry_manager.h"
+#include "task.h"
 
 //#define SPI_EFFICIENT
 
@@ -302,7 +303,7 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 //	uint8_t cmd[2] = {cmd_id,cmd_id};
 //	status = adcsTxRx(cmd,2,NULL,0);
 	status = adcsTxRx(&cmd_id,1,NULL,0);
-	vTaskDelay(10);
+	vTaskDelay(5);
 	status = adcsTxRx(NULL,0,&cmd_ack,1);
 	// Verify result
 	if(cmd_id == cmd_ack)
