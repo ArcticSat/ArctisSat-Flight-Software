@@ -42,7 +42,6 @@
 #include "queue.h"
 #include "task.h"
 
-
 //------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES
 //------------------------------------------------------------------------------
@@ -74,19 +73,20 @@ void sendData(char* buffer, int len, int dest) {
 // FUNCTIONS
 //------------------------------------------------------------------------------
 
-void vCSP_Server(void * pvParameters){
-
-    InputQueues_t * queues = (InputQueues_t *) pvParameters;
+void vCSP_Server(void *pvParameters) {
 
     uint8_t result = configure_csp();
-    if(result)set_csp_init(1);
+    if (result) {
+        set_csp_init(1);
+    }
 
-    csp_conn_t * conn = NULL;
-	csp_packet_t * packet= NULL;
-	csp_socket_t * socket = csp_socket(0);
+    csp_conn_t *conn = NULL;
+    csp_packet_t *packet = NULL;
+    csp_socket_t *socket = csp_socket(0);
 
-    //Listen for messages to all ports.
-    csp_bind(socket, CSP_ANY);
+    csp_bind(socket, CSP_ANY); //bind to all ports, listen to anything set to this destination address
+    csp_listen(socket, 4); //have up to 4 backlog connections for testing
+    vTaskResume(vCanServer_h); //resume CAN rx handler
 
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
@@ -158,7 +158,7 @@ void vCSP_Server(void * pvParameters){
 	} // while(1)
 } // End of vCSP_Server
 
-void csp_debug_hook(csp_debug_level_t level, const char *format, va_list args){
+void csp_debug_hook(csp_debug_level_t level, const char *format, va_list args) {
     //Only for debug purpose! We must be careful because this function
     // is called when there is a problem with csp, but then we go and use csp to log the error...
     //Can lead to stack overflow if the error being logged is critical, like running out of connections or buffer.
@@ -166,24 +166,23 @@ void csp_debug_hook(csp_debug_level_t level, const char *format, va_list args){
     //We should instead log the csp errors to a file and can hopefully then recover csp and download the file to learn more.
     char str[256];
 
-       if(0 < vsnprintf(str,255,format,args)) // build string
-       {
-           telemetryPacket_t t;
-           Calendar_t now = {0}; //Set to zero, since payload does not keep track of time. CDH will timestamp on receipt.
+    if (0 < vsnprintf(str, 255, format, args)) // build string
+            {
+        telemetryPacket_t t;
+        Calendar_t now = { 0 }; //Set to zero, since payload does not keep track of time. CDH will timestamp on receipt.
 
-   //      t.telem_id = PAYLOAD_ERROR_ID;
-           t.telem_id = CDH_MSG_ID;
-           t.timestamp = now;
-           t.length = strlen(str) + 1;
-           t.data = (uint8_t*)str;
+        //      t.telem_id = PAYLOAD_ERROR_ID;
+        t.telem_id = CDH_MSG_ID;
+        t.timestamp = now;
+        t.length = strlen(str) + 1;
+        t.data = (uint8_t*) str;
 
-           sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
-       }
-
+        sendTelemetryAddr(&t, GROUND_CSP_ADDRESS);
+    }
 
 }
 
-uint8_t configure_csp(){
+uint8_t configure_csp() {
 
     //csp_debug_hook_set(&csp_debug_hook);
     csp_debug_set_level(CSP_ERROR, false);
@@ -193,65 +192,44 @@ uint8_t configure_csp(){
     // CAN parameters are not actually used. Need to decide where we are doing
     // CAN init. Right now the csp driver does this, but uses hard coded params.
     struct csp_can_config can_conf;
-    can_conf.bitrate=250000;
-    can_conf.clock_speed=250000;
+    can_conf.bitrate = 250000;
+    can_conf.clock_speed = 250000;
     can_conf.ifc = "CAN";
 
     /* Init buffer system with 5 packets of maximum 256 bytes each */
     int status = csp_buffer_init(CSP_DEFAULT_NUM_BUFFERS, CSP_DEFAULT_SIZE_BUFFER);
-    if(status != CSP_ERR_NONE){
+    if (status != CSP_ERR_NONE) {
         result = 0;
         return result;
     }
     /* Init CSP with address 0 */
     status = csp_init(CDH_CSP_ADDRESS);
-    if(status != CSP_ERR_NONE){
+    if (status != CSP_ERR_NONE) {
         result = 0;
         return result;
     }
 
     /* Init the CAN interface with hardware filtering */
     status = csp_can_init(CSP_CAN_MASKED, &can_conf);
-    if(status != CSP_ERR_NONE){
+    if (status != CSP_ERR_NONE) {
         result = 0;
         return result;
     }
 
-
-#ifdef MAKER2_DEVKIT_CONFIGURATION
-    csp_kiss_init(&uartInterface, &uartHandle, uartPutChar, NULL, "KISS");
-    char* gndRoute = "9/5 KISS";
-    csp_rtable_load(gndRoute);
-	if(status != CSP_ERR_NONE){
-		result = 0;
-		return result;
-	}
-#endif
-
-#ifdef FLIGHT_MODEL_CONFIGURATION
     /* Setup default route to CAN interface */
-    status = csp_rtable_set(4,0, &csp_if_can,CSP_NODE_MAC);
-    //char* canRoute = "0/0 CAN";
-
-//    char* gndRoute = "9/5 KISS";
-
-//   csp_rtable_load(canRoute);
-//   csp_rtable_load(gndRoute);
-    if(status != CSP_ERR_NONE){
+    status = csp_rtable_set(4, 0, &csp_if_can, CSP_NODE_MAC);
+    if (status != CSP_ERR_NONE) {
         result = 0;
         return result;
     }
-#endif
 
     /* Start router task with 100 word stack, OS task priority 1 */
-    status = csp_route_start_task(4*CSP_DEFAULT_ROUTER_STACK_SIZE, CSP_DEFAULT_ROUTER_PRIORITY);
-    if(status != CSP_ERR_NONE){
+    status = csp_route_start_task(4 * CSP_DEFAULT_ROUTER_STACK_SIZE, CSP_DEFAULT_ROUTER_PRIORITY);
+    if (status != CSP_ERR_NONE) {
         result = 0;
         return result;
     }
 
     return result;
 }
-
-
 

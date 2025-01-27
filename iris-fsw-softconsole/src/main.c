@@ -149,7 +149,7 @@ int main( void )
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
+//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
 #ifdef INCLUDE_TASK_TTT
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
@@ -176,7 +176,7 @@ int main( void )
     vTaskSuspend(vFw_Update_Mgr_Task_h);
 #endif
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
-    vTaskSuspend(vSunPointing_h);
+//    vTaskSuspend(vSunPointing_h);
 
     txQueue = xQueueCreate(25, sizeof(satPacket));
 
@@ -186,7 +186,6 @@ int main( void )
 //	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     // Create UART0 RX Task
-//    vTaskStartScheduler();
 
 
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
@@ -227,7 +226,8 @@ int main( void )
     return 0;
 }
 
-
+#define USING_DATA_FLASH
+#define USING_PROGRAM_FLASH
 /*-----------------------------------------------------------*/
 FlashStatus_t data_flash_status 	= FLASH_ERROR;
 FlashStatus_t program_flash_status	= FLASH_ERROR;
@@ -245,7 +245,7 @@ static void prvSetupHardware( void )
 //    init_mram();
 //    adcs_init_driver();
 #if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
-    //init_mram();
+//    init_mram();
 #ifdef USING_DATA_FLASH
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
@@ -274,27 +274,27 @@ static void vTestCspServer(void * pvParameters){
     csp_packet_t * packet= NULL;
     csp_socket_t * socket  = NULL;
 
-
-	can_conf.bitrate=250000;
-	can_conf.clock_speed=250000;
-	can_conf.ifc = "CAN";
-
-	/* Init buffer system with 5 packets of maximum 256 bytes each */
-	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
-
-	/* Init CSP with address 0 */
-	csp_init(0);
-
-
-	/* Init the CAN interface with hardware filtering */
-	csp_can_init(CSP_CAN_MASKED, &can_conf);
-
-	/* Setup default route to CAN interface */
-	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
-
-	size_t freSpace = xPortGetFreeHeapSize();
-	/* Start router task with 100 word stack, OS task priority 1 */
-	csp_route_start_task(200, 1);
+//
+//	can_conf.bitrate=250000;
+//	can_conf.clock_speed=250000;
+//	can_conf.ifc = "CAN";
+//
+//	/* Init buffer system with 5 packets of maximum 256 bytes each */
+//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
+//
+//	/* Init CSP with address 0 */
+//	csp_init(0);
+//
+//
+//	/* Init the CAN interface with hardware filtering */
+//	csp_can_init(CSP_CAN_MASKED, &can_conf);
+//
+//	/* Setup default route to CAN interface */
+//	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
+//
+//	size_t freSpace = xPortGetFreeHeapSize();
+//	/* Start router task with 100 word stack, OS task priority 1 */
+//	csp_route_start_task(200, 1);
 
 
 	 conn = NULL;
@@ -327,6 +327,12 @@ static void vTestCspServer(void * pvParameters){
 			}
 	}
 }
+#define CSP_DEFAULT_PRIORITY 2
+#define DEST_ADDRESS 0
+#define DEST_PORT 1
+#define TIMEOUT_MS 1000
+#define OPTIONAL_PARAMS 0
+
 /*-----------------------------------------------------------*/
 static void vTestCspClient(void * pvParameters){
 
