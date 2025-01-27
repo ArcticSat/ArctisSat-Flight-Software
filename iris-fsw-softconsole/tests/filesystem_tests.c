@@ -62,45 +62,45 @@ void vTestFS(void *pvParams) {
 
     char readResult[25];
 
-    while (1) {
-
-        uint32_t boot_count = 0;
-        result = fs_file_open(&BOOTCOUNT, "boot_count",
-                LFS_O_RDWR | LFS_O_CREAT);
-        if (result < 0)
-            while (1) {
-            }
-
-        result = fs_file_read(&BOOTCOUNT, &boot_count, sizeof(boot_count));
-        if (result < 0)
-            while (1) {
-            }
-        printf("CDH has started for the %dth time\n", boot_count);
-        // update boot count
-        boot_count += 1;
-        result = fs_file_rewind(&BOOTCOUNT);
-        if (result < 0)
-            while (1) {
-            }
-
-        result = fs_file_write(&BOOTCOUNT, &boot_count, sizeof(boot_count));
-
-        if (result < 0)
-            while (1) {
-            }
-
-        fs_list_dir("", 1);
-
-        // remember the storage is not updated until the file is closed successfully
-        result = fs_file_close(&BOOTCOUNT);
-        char writeString[10];
-        for(int i = 0; i < 5; i++) {
-            fs_file_open(&files[i], names[i], LFS_O_RDWR | LFS_O_CREAT);
-            fs_file_read(&files[i], &readResult[0], 8);
-            fs_file_rewind(&files[i]);
-            sprintf(&writeString[0], "TEST %d", i);
-            fs_file_write(&files[i], &writeString, strlen(writeString));
-            fs_file_close(&files[i]);
-        }
-    }
+//    while (1) {
+//
+//        uint32_t boot_count = 0;
+//        result = fs_file_open(&BOOTCOUNT, "boot_count",
+//                LFS_O_RDWR | LFS_O_CREAT);
+//        if (result < 0)
+//            while (1) {
+//            }
+//
+//        result = fs_file_read(&BOOTCOUNT, &boot_count, sizeof(boot_count));
+//        if (result < 0)
+//            while (1) {
+//            }
+//        printf("CDH has started for the %dth time\n", boot_count);
+//        // update boot count
+//        boot_count += 1;
+//        result = fs_file_rewind(&BOOTCOUNT);
+//        if (result < 0)
+//            while (1) {
+//            }
+//
+//        result = fs_file_write(&BOOTCOUNT, &boot_count, sizeof(boot_count));
+//
+//        if (result < 0)
+//            while (1) {
+//            }
+//
+//        fs_list_dir("", 1);
+//
+//        // remember the storage is not updated until the file is closed successfully
+//        result = fs_file_close(&BOOTCOUNT);
+//        char writeString[10];
+//        for(int i = 0; i < 5; i++) {
+//            fs_file_open(&files[i], names[i], LFS_O_RDWR | LFS_O_CREAT);
+//            fs_file_read(&files[i], &readResult[0], 8);
+//            fs_file_rewind(&files[i]);
+//            sprintf(&writeString[0], "TEST %d", i);
+//            fs_file_write(&files[i], &writeString, strlen(writeString));
+//            fs_file_close(&files[i]);
+//        }
+//    }
 }

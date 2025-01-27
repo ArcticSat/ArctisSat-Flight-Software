@@ -199,7 +199,7 @@ int main( void )
     status = xTaskCreate(vTestCspClient,"Test CSP Client",500,NULL,1,NULL);
     status = xTaskCreate(commsHandlerTask,"Test CSP Client",1000,NULL,1,NULL);
 
-//    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
