@@ -9,6 +9,7 @@
 
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include <FreeRTOS-Kernel/include/task.h>
+#include <drivers/filesystem_driver.h>
 #include "tests.h"
 
 #include <string.h>
@@ -65,7 +66,7 @@ uint8_t cameraImageBuf[MAX_IMAGE_BUF];
 //	640 x 480	07h
 //	128 x 96	0Bh
 
-
+lfs_file_t imageFile = {0};
 
 void vTestUARTTx()
 {
@@ -87,6 +88,21 @@ void vTestUARTTx()
 
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));
+
+    FilesystemError_t stat = fs_init();
+
+        if (stat != FS_OK) {
+            while (1);
+        }
+        //Mount the file system.
+        int err = fs_mount();
+
+        // reformat if we can't mount the filesystem
+		// this should only happen on the first boot
+		if (err) {
+			fs_format();
+			fs_mount();
+		}
 
     for (;;)
     {
@@ -453,7 +469,9 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 
 	uint8_t cmdSuccess = 0;
 
-	uint32_t dataCnt = 0;
+	uint32_t dataCnt = 0, thisPackDataLength=0;
+
+	fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
 
 	// params meaning:
 
@@ -542,24 +560,27 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 						}
 					}while(!uartRXSuccess);
 					packageID = (buf_img_data_package[0]) | (buf_img_data_package[1] << 8);
+					thisPackDataLength = (buf_img_data_package[2]) | (buf_img_data_package[3] << 8);
 
 					buf_Tx0_ACK[4] = packageID & 0xFF;
 					buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;
 					custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
 					useless_delay(250000);
 
-					memcpy(&cameraImageBuf[dataCnt], &buf_img_data_package[4], packSizeJPEG-6);
+					memcpy(&cameraImageBuf[dataCnt], &buf_img_data_package[4], thisPackDataLength);
 //					packageID++;
-					dataCnt += packSizeJPEG-6;
+					dataCnt += thisPackDataLength;
 
 					if (dataCnt >= (MAX_IMAGE_BUF-packSizeJPEG))
 					{
-						dataCnt = 0;
 						/// almost overflowing the data array so copy everything now before it's overwritten
+						fs_file_write(&imageFile, cameraImageBuf, dataCnt);
+						dataCnt = 0;
 					}
 
 					if(packageID >= totalNumPacks){
-					cmdSuccess = 1;
+						fs_file_close(&imageFile);
+						cmdSuccess = 1;
 					break;
 					}
 				}

@@ -77,6 +77,7 @@
 
 
 
+
 //#define SERVER
 //#define CLIENT
 //#define CAN_SERVER
@@ -185,12 +186,14 @@ int main( void )
 FlashStatus_t data_flash_status;
 static void prvSetupHardware( void )
 {
+#define USING_DATA_FLASH
+#define USING_PROGRAM_FLASH
     /* Perform any configuration necessary to use the hardware peripherals on the board. */
 //    vInitializeLEDs();
 //
 //    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
 //     * UART 0 set to 115200 to connect to terminal */
-    vInitializeUARTs(MSS_UART_115200_BAUD);
+    vInitializeUARTs(MSS_UART_921600_BAUD);
 //
 //    init_WD();
     init_spi();
