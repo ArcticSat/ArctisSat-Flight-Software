@@ -97,46 +97,6 @@ void vTestUARTTx()
     {
     	Tx_Success = 0;
 
-//    	prvUARTSend(&g_mss_uart0, buf_Tx, sizeof(buf_Tx));
-//    	Tx_Success = MSS_UART_tx_complete(&g_mss_uart0);
-//        vTaskDelay(delay);
-
-//    	MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx);
-    	i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
-    	if(i > 0) {
-    	    if(buf_Rx0[0] == 0) {
-    	        char* msg = "Sending to power";
-    	        custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
-                csp_packet_t *newPacket = csp_buffer_get(i); // Get a buffer large enough to fit our data. Max size is 256.
-                csp_packet_t *packet;
-                satPacket myPacket;
-                if(newPacket) {
-                    memcpy(newPacket->data, buf_Rx0[1], i-1);
-                    newPacket->length = i;
-                    myPacket.packet = newPacket;
-                    myPacket.dest = 2;
-                    xQueueSendToBack(txQueue, &myPacket, 0);
-                }
-    	    } else if(buf_Rx0[0] == 1) {
-    	        char* msg = "Sending to ADCS";
-                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
-    	        adcsSyncSpiCommand(buf_Rx0[1]); // Command ID
-    	    }
-
-//    	    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
-//    	    csp_conn_t * conn;
-//            csp_packet_t * packet;
-//            conn = csp_connect(2,0,2,1000,0);   //Create a connection. This tells CSP where to send the data (address and destination port).
-//            packet = csp_buffer_get(sizeof(i)); // Get a buffer large enough to fit our data. Max size is 256.
-//            sprintf(packet->data, buf_Rx0);
-//            packet->length=i;
-//
-//            csp_send(conn,packet,0);
-//            csp_close(conn);
-//            csp_buffer_free(packet);
-//            vTaskDelay(100);
-    	}
-
     	Tx_Success = syncCamera();
     	if (Tx_Success > 0)
     	{
