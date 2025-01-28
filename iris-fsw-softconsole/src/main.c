@@ -155,7 +155,7 @@ int main( void )
 #endif
     status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
 #ifdef INCLUDE_TASK_CAN_SERVER
-    status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
+    status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,3,&vCanServer_h);
 #endif
 #ifdef INCLUDE_TASK_FW_MANAGER
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
@@ -191,15 +191,16 @@ int main( void )
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
 //    // increasing heap space or managing memory in a smarter manner. First step would be looking
 //    // at the FreeRTOS configurations and the linker file *.ld.
-    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestCspClient,"Test CSP Client",500,NULL,1,NULL);
-    status = xTaskCreate(commsHandlerTask,"Test CSP Client",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
+    status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
@@ -215,9 +216,8 @@ int main( void )
 //    // Task for testing time tagged task queue.
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
-    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",5000,NULL,1,NULL);
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
 
 

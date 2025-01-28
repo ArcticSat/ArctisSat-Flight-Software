@@ -34,12 +34,13 @@ void vTestAdcsDriver(void * pvParameters){
             lockout = 0;
         }
 
-        if(misses > 3 && lockout == 0) {
+        if(misses > 4 && lockout == 0) {
+            misses = 5;
             lockout = 1;
             char* msg = "ADCS COMM LOST\n";
             custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
         }
-        vTaskDelay(1000);
+        vTaskDelay(250);
     }
 
 
