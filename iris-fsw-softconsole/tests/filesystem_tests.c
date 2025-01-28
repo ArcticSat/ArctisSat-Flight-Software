@@ -44,23 +44,23 @@ void vTestFS(void *pvParams) {
     strcpy(names[4], "COMMS_telem");
     strcpy(names[5], "BOOTCOUNT");
 
-    if (stat != FS_OK) {
-        while (1) {
-        }
-    }
-    //Mount the file system.
-    int err = fs_mount();
-
-    // reformat if we can't mount the filesystem
-    // this should only happen on the first boot
-    if (err) {
-        fs_format();
-        fs_mount();
-    }
-
-    int result = 1;
-
-    char readResult[25];
+//    if (stat != FS_OK) {
+//        while (1) {
+//        }
+//    }
+//    //Mount the file system.
+//    int err = fs_mount();
+//
+//    // reformat if we can't mount the filesystem
+//    // this should only happen on the first boot
+//    if (err) {
+//        fs_format();
+//        fs_mount();
+//    }
+//
+//    int result = 1;
+//
+//    char readResult[25];
 
 //    while (1) {
 //

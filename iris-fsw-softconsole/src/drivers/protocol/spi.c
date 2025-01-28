@@ -76,7 +76,7 @@ int init_spi()
         core_lock[ix] = xSemaphoreCreateMutex();
         if (core_lock[ix] == NULL)
         {
-            //rc = 0;
+            rc = 0;
             //break; // Break out of this for loop.
         }
     }

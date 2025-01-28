@@ -19,6 +19,11 @@
 
 #define MAX_IMAGE_BUF 4800
 
+#include "drivers/filesystem_driver.h"
+#define USING_DATA_FLASH
+#define USING_PROGRAM_FLASH
+
+
 uint8_t cameraImageBuf[MAX_IMAGE_BUF];
 
 #define READ_JPEG 	1
@@ -48,7 +53,6 @@ uint8_t cameraImageBuf[MAX_IMAGE_BUF];
 #define STATE_MACHINE_RESET 1
 
 
-
 //init Params
 // 8-bit Gray Scale (RAW, 8-bit for Y only)	03h
 // 16-bit Colour (RAW, CrYCbY)	08h
@@ -67,6 +71,8 @@ uint8_t cameraImageBuf[MAX_IMAGE_BUF];
 //	640 x 480	07h
 //	128 x 96	0Bh
 
+
+lfs_file_t imageFile = {0};
 
 
 void vTestUARTTx()
@@ -89,6 +95,25 @@ void vTestUARTTx()
 
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));
+
+    FilesystemError_t stat = fs_init();
+
+	if (stat != FS_OK) {
+		while (1);
+	}
+	//Mount the file system.
+		fs_format();
+	int err = fs_mount();
+
+	// reformat if we can't mount the filesystem
+	// this should only happen on the first boot
+	if (err) {
+		fs_mount();
+		fs_format();
+
+	}
+	fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
+
 
     vTaskDelay(2000);
 
@@ -200,9 +225,9 @@ unsigned char resetCamera(unsigned char resetType)
 	buf_Tx0[2] = resetType; // param1 (reset state machine = 1, hard reset = 0)
 
 
-	custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 	useless_delay(250000);
-	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+	MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
 	if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
 	{
@@ -223,21 +248,21 @@ unsigned char syncCamera()
 
 	for (syncCount = 0; syncCount < 60; syncCount++)
 	{
-		custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+		custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 		useless_delay(250000);
-		MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0)); // this should return ack
+		MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0)); // this should return ack
 
 		if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
 		{
 			syncAck = syncCount+1;
-			MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0)); // this should return sync
+			MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0)); // this should return sync
 
 			if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0D))
 			{
 				buf_Tx0[1] = 0x0E; // send an ack
 				buf_Tx0[2] = 0x0D; // send an ack
 
-				custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0)); // this should send ack
+				custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0)); // this should send ack
 				break;
 			}
 		}
@@ -281,9 +306,9 @@ unsigned char initCamera(unsigned char imageFormat, unsigned char resRAW, unsign
 	buf_Tx0[5] = resJPEG; // param4 = (JPEG resolution)
 
 
-	custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 	useless_delay(250000);
-	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+	MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
 	if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
 	{
@@ -316,9 +341,9 @@ unsigned char setPackageSize(unsigned int packSize)
 	buf_Tx0[5] = 0x00; // param4 = 0 (always zero)
 
 
-	custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 	useless_delay(250000);
-	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+	MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
 	if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
 	{
@@ -354,9 +379,9 @@ unsigned char takeSnapShot(unsigned char snapType, unsigned int skipFrames)
 	buf_Tx0[5] = 0x00; // param4 = 0 (always zero)
 
 
-	custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 	useless_delay(250000);
-	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+	MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
 	if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
 	{
@@ -392,23 +417,23 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 	buf_Tx0[4] = 0x00; // param3 = 0 (always zero)
 	buf_Tx0[5] = 0x00; // param4 = 0 (always zero)
 
-	custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+	custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 	useless_delay(4000);
-	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+	MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
 	if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
 	{
 		if (getJPEG == 0) // read RAW data
-			custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
+			custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
 
 
-		MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0)); // read the first data cmd (6 bytes)
+		MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0)); // read the first data cmd (6 bytes)
 		if (getJPEG == 0) // read RAW data
 					{
 						dataCnt = 0;
 						// start reading image data
 						do{
-							uartRXSuccess = MSS_UART_get_rx(&g_mss_uart0, &buf_tmp, 1); // read the image data
+							uartRXSuccess = MSS_UART_get_rx(&g_mss_uart1, &buf_tmp, 1); // read the image data
 
 							if(uartRXSuccess){
 			//				memcpy(&cameraImageBuf[dataCnt],  buf_tmp, 48);
@@ -429,7 +454,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 //				dataCnt = 0;
 //				// start reading image data
 //				do{
-//					uartRXSuccess = MSS_UART_get_rx(&g_mss_uart0, &buf_tmp, 1); // read the image data
+//					uartRXSuccess = MSS_UART_get_rx(&g_mss_uart1, &buf_tmp, 1); // read the image data
 //
 //					if(uartRXSuccess){
 //	//				memcpy(&cameraImageBuf[dataCnt],  buf_tmp, 48);
@@ -449,14 +474,14 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 				// send first ack
 				buf_Tx0_ACK[4] = packageID & 0xFF;
 				buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;
-				custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
+				custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
 				useless_delay(250000);
 				for (;;) // **to be filled with proper for conditions**
 				{
 					// start reading image data
 					uartFails = 0;
 					do{
-						uartRXSuccess= MSS_UART_get_rx(&g_mss_uart0, buf_img_data_package, sizeof(buf_img_data_package)); // read the image data
+						uartRXSuccess= MSS_UART_get_rx(&g_mss_uart1, buf_img_data_package, sizeof(buf_img_data_package)); // read the image data
 						if (uartRXSuccess == 0)
 						{
 							uartFails++;
@@ -470,7 +495,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 
 					buf_Tx0_ACK[4] = packageID & 0xFF;
 					buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;
-					custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
+					custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
 					useless_delay(250000);
 
 					memcpy(&cameraImageBuf[dataCnt], &buf_img_data_package[4], packSizeJPEG-6);
@@ -479,12 +504,15 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 
 					if (dataCnt >= (MAX_IMAGE_BUF-packSizeJPEG))
 					{
-						dataCnt = 0;
 						/// almost overflowing the data array so copy everything now before it's overwritten
+						fs_file_write(&imageFile, cameraImageBuf, dataCnt);
+						dataCnt = 0;
 					}
 
 					if(packageID >= totalNumPacks){
 					cmdSuccess = 1;
+					fs_file_write(&imageFile, cameraImageBuf, dataCnt);
+					fs_file_close(&imageFile);
 					break;
 					}
 				}
@@ -522,7 +550,7 @@ unsigned char readImageData(unsigned int packSize, unsigned char * fullImageData
 	// package ID (HIGH BYTE)
 
 
-	MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0)); // read the first data cmd (6 bytes)
+	MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0)); // read the first data cmd (6 bytes)
 
 	if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0A))
 	{
@@ -532,7 +560,7 @@ unsigned char readImageData(unsigned int packSize, unsigned char * fullImageData
 		// send first ack
 		buf_Tx0[4] = packageID & 0xFF;
 		buf_Tx0[5] = (packageID >> 8) & 0xFF;
-		custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+		custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 //		useless_delay(250000);
 
 		// start reading image data
@@ -540,12 +568,12 @@ unsigned char readImageData(unsigned int packSize, unsigned char * fullImageData
 		//for (;;) // **to be filled with proper for conditions**
 		{
 			// start reading image data
-			MSS_UART_get_rx(&g_mss_uart0, fullImageData, 4800); // read the image data
+			MSS_UART_get_rx(&g_mss_uart1, fullImageData, 4800); // read the image data
 //			packageID = (buf_img_data_package[0]) | (buf_img_data_package[1] << 8);
 
 			buf_Tx0[4] = packageID & 0xFF;
 			buf_Tx0[5] = (packageID >> 8) & 0xFF;
-//			custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, sizeof(buf_Tx0));
+//			custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
 			useless_delay(250000);
 
 //			memcpy(&fullImageData[packageID*packSize], buf_img_data_package, packSize);
