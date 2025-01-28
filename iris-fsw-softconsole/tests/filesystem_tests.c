@@ -62,6 +62,11 @@ void vTestFS(void *pvParams) {
 //
 //    char readResult[25];
 
+
+    while(1) {
+        vTaskDelay(1000);
+    }
+
 //    while (1) {
 //
 //        uint32_t boot_count = 0;
