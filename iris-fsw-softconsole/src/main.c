@@ -199,7 +199,7 @@ int main( void )
     status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
     status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
+//    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
@@ -217,7 +217,7 @@ int main( void )
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
 
 
