@@ -17,7 +17,7 @@
 #include "csp/interfaces/csp_if_can.h"
 #include "drivers/protocol/uart.h"
 
-#define MAX_IMAGE_BUF 255
+#define MAX_IMAGE_BUF 3000
 
 #include "drivers/filesystem_driver.h"
 #define USING_DATA_FLASH
@@ -158,19 +158,20 @@ void vTestUARTTx()
                         {
                             useless_number = 8;
 //                          Tx_Success = readImageData(64, cameraImageBuf);
-                                taskENTER_CRITICAL();
+//                                vTaskSuspendAll();
                                 fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR);
                                 char buf[50];
                                 fs_file_rewind(&imageFile);
                                 int numBytes = 0;
-                                for(int i = 0; i < globalFileSize; i += 16) {
-                                    fs_file_read(&imageFile, buf, 16);
-                                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf, 16);
-                                    vTaskDelay(pdMS_TO_TICKS(10));
+                                for(int i = 0; i < globalFileSize; i += 8) {
+                                    fs_file_read(&imageFile, buf, 8);
+                                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf, 8);
+                                    vTaskDelay(pdMS_TO_TICKS(20));
+                                    int status = 0;
                                 }
                                 fs_file_close(&imageFile);
                                 fs_remove("imageFile.jpg");
-                                taskEXIT_CRITICAL();
+//                                xTaskResumeAll();
                             if (Tx_Success > 0)
                             {
                                 useless_number = 10;
@@ -542,7 +543,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
                         /// almost overflowing the data array so copy everything now before it's overwritten
                         fs_file_write(&imageFile, cameraImageBuf, dataCnt);
                         dataCnt = 0;
-                        fs_file_sync(&imageFile);
+//                        fs_file_sync(&imageFile);
                     }
 
                     if(packageID >= totalNumPacks){

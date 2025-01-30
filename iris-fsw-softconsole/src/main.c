@@ -153,9 +153,7 @@ int main( void )
 #ifdef INCLUDE_TASK_TTT
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
 #ifdef INCLUDE_TASK_CAN_SERVER
-    status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,3,&vCanServer_h);
 #endif
 #ifdef INCLUDE_TASK_FW_MANAGER
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
@@ -170,7 +168,6 @@ int main( void )
 #endif
 //    vTaskSuspend(xUART0RxTaskToNotify);
 #ifdef INCLUDE_TASK_CAN_SERVER
-    vTaskSuspend(vCanServer_h);
 #endif
 #ifdef INCLUDE_TASK_FW_MANAGER
     vTaskSuspend(vFw_Update_Mgr_Task_h);
@@ -196,14 +193,6 @@ int main( void )
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-
-
-
-    status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
-    status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-//    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
-
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
@@ -220,7 +209,20 @@ int main( void )
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+
+
+
+/**THESE ARE THE MAIN FUNCTIONS**/
+
+    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
+    status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,3,&vCanServer_h);
+    vTaskSuspend(vCanServer_h);
+    status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
+    status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+//    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
+
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
 
 
