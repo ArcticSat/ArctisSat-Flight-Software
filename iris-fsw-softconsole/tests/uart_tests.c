@@ -17,7 +17,7 @@
 #include "csp/interfaces/csp_if_can.h"
 #include "drivers/protocol/uart.h"
 
-#define MAX_IMAGE_BUF 4800
+#define MAX_IMAGE_BUF 255
 
 #include "drivers/filesystem_driver.h"
 #define USING_DATA_FLASH
@@ -74,6 +74,8 @@ uint8_t cameraImageBuf[MAX_IMAGE_BUF];
 
 lfs_file_t imageFile = {0};
 
+int globalFileSize = 0;
+
 
 void vTestUARTTx()
 {
@@ -102,7 +104,7 @@ void vTestUARTTx()
         while (1);
     }
     //Mount the file system.
-        fs_format();
+
     int err = fs_mount();
 
     // reformat if we can't mount the filesystem
@@ -124,8 +126,8 @@ void vTestUARTTx()
 //    }
 //    fs_file_close(&imageFile);
 
-    fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
-    fs_file_rewind(&imageFile);
+    fs_remove("imageFile.jpg");
+
     vTaskDelay(2000);
 
 
@@ -136,17 +138,16 @@ void vTestUARTTx()
         Tx_Success = syncCamera();
         if (Tx_Success > 0)
         {
-            useless_delay(1000000);
-            Tx_Success = initCamera(FORMAT_JPEG, RAW_SIZE_80_60, JPEG_SIZE_320_240);
+            vTaskDelay(2000);
+            Tx_Success = initCamera(FORMAT_JPEG, RAW_SIZE_80_60, JPEG_SIZE_640_480);
             if (Tx_Success > 0)
             {
                 useless_number = 4;
                 // there should be a delay between init and snapshot
-                useless_delay(10000000);
+                vTaskDelay(2000);
                 Tx_Success = takeSnapShot(SNAP_JPEG, SKIP_FRAMES);
                 if (Tx_Success > 0)
                 {
-
                     useless_number = 1;
                     Tx_Success = setPackageSize(PACKAGE_SIZE);
                     if (Tx_Success > 0)
@@ -157,7 +158,19 @@ void vTestUARTTx()
                         {
                             useless_number = 8;
 //                          Tx_Success = readImageData(64, cameraImageBuf);
-
+                                taskENTER_CRITICAL();
+                                fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR);
+                                char buf[50];
+                                fs_file_rewind(&imageFile);
+                                int numBytes = 0;
+                                for(int i = 0; i < globalFileSize; i += 16) {
+                                    fs_file_read(&imageFile, buf, 16);
+                                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf, 16);
+                                    vTaskDelay(pdMS_TO_TICKS(10));
+                                }
+                                fs_file_close(&imageFile);
+                                fs_remove("imageFile.jpg");
+                                taskEXIT_CRITICAL();
                             if (Tx_Success > 0)
                             {
                                 useless_number = 10;
@@ -188,7 +201,10 @@ void vTestUARTTx()
         }else
         {
             // if sync fails, RESET camera
-            resetCamera(HARD_RESET);
+            for(int i = 0; i < 10; i++) {
+                resetCamera(HARD_RESET);
+            }
+
             useless_number = 3;
         }
 
@@ -209,7 +225,7 @@ void vTestUARTTx()
 void useless_delay(unsigned long int uselessDel)
 {
     uint32_t i, useless_number;
-    vTaskDelay(1000);
+    vTaskDelay(500);
 
 //    for( i = 0; i < uselessDel; i++)
 //    {
@@ -238,7 +254,7 @@ unsigned char resetCamera(unsigned char resetType)
 
 
     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
-    useless_delay(250000);
+    vTaskDelay(100);
     MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
     if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
@@ -258,10 +274,13 @@ unsigned char syncCamera()
     uint8_t syncAck = 0;
     uint8_t syncCount = 0;
 
+
+    while(MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0)) > 0); // this should return ack
+
     for (syncCount = 0; syncCount < 60; syncCount++)
     {
         custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
-        useless_delay(250000);
+        vTaskDelay(50);
         MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0)); // this should return ack
 
         if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
@@ -278,7 +297,6 @@ unsigned char syncCamera()
                 break;
             }
         }
-        useless_delay(250000);
     }
 
     return syncAck;
@@ -319,7 +337,7 @@ unsigned char initCamera(unsigned char imageFormat, unsigned char resRAW, unsign
 
 
     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
-    useless_delay(250000);
+    vTaskDelay(100);
     MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
     if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
@@ -354,7 +372,7 @@ unsigned char setPackageSize(unsigned int packSize)
 
 
     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
-    useless_delay(250000);
+    vTaskDelay(1000);
     MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
     if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
@@ -392,7 +410,7 @@ unsigned char takeSnapShot(unsigned char snapType, unsigned int skipFrames)
 
 
     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
-    useless_delay(250000);
+    vTaskDelay(1000);
     MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
     if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
@@ -417,6 +435,9 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 
     uint32_t dataCnt = 0;
 
+    fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
+    fs_file_rewind(&imageFile);
+
     // params meaning:
 
     // param1
@@ -430,7 +451,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
     buf_Tx0[5] = 0x00; // param4 = 0 (always zero)
 
     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
-    useless_delay(4000);
+    vTaskDelay(1000);
     MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
 
     if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
@@ -482,16 +503,19 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
             {
                 imageLength = (buf_Rx0[3]) | (buf_Rx0[4] << 8) | (buf_Rx0[5] << 16);
                 totalNumPacks = imageLength/(packSizeJPEG-6);
+                globalFileSize = imageLength;
 
                 // send first ack
                 buf_Tx0_ACK[4] = packageID & 0xFF;
                 buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;
                 custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
-                useless_delay(250000);
+                vTaskDelay(3);
                 for (;;) // **to be filled with proper for conditions**
                 {
                     // start reading image data
                     uartFails = 0;
+                    vTaskDelay(5);
+
                     do{
                         uartRXSuccess= MSS_UART_get_rx(&g_mss_uart1, buf_img_data_package, sizeof(buf_img_data_package)); // read the image data
                         if (uartRXSuccess == 0)
@@ -499,7 +523,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
                             uartFails++;
                             if (uartFails > 250)
                             {
-                                return 0;
+                                break;
                             }
                         }
                     }while(!uartRXSuccess);
@@ -508,7 +532,6 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
                     buf_Tx0_ACK[4] = packageID & 0xFF;
                     buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;
                     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0_ACK, sizeof(buf_Tx0_ACK));
-                    useless_delay(250000);
 
                     memcpy(&cameraImageBuf[dataCnt], &buf_img_data_package[4], packSizeJPEG-6);
 //                  packageID++;
@@ -519,13 +542,14 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
                         /// almost overflowing the data array so copy everything now before it's overwritten
                         fs_file_write(&imageFile, cameraImageBuf, dataCnt);
                         dataCnt = 0;
+                        fs_file_sync(&imageFile);
                     }
 
                     if(packageID >= totalNumPacks){
-                    cmdSuccess = 1;
-                    fs_file_write(&imageFile, cameraImageBuf, dataCnt);
-                    fs_file_close(&imageFile);
-                    break;
+                        cmdSuccess = 1;
+                        fs_file_write(&imageFile, cameraImageBuf, dataCnt);
+                        fs_file_sync(&imageFile);
+                        break;
                     }
                 }
                 cmdSuccess = 1;
@@ -534,6 +558,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
     }
 
     }
+    fs_file_close(&imageFile);
     return cmdSuccess;
 }
 

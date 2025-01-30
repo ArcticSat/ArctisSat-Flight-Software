@@ -196,6 +196,9 @@ int main( void )
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
+
+
+
     status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
     status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);

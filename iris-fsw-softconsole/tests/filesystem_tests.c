@@ -44,8 +44,11 @@ void vTestFS(void *pvParams) {
     strcpy(names[4], "COMMS_telem");
     strcpy(names[5], "BOOTCOUNT");
 
+    vTaskDelay(2000);
+
     if (stat != FS_OK) {
         while (1) {
+            vTaskDelay(2000);
         }
     }
     //Mount the file system.
