@@ -79,6 +79,7 @@ void set_telemetry_verbose(bool verbose)
 void log_telemetry(telemetryPacket_t * pkt)
 {
 	// Debugging
+    return;
 	if (verbosity)
 		sendTelemetryAddr(pkt, GROUND_CSP_ADDRESS);
 

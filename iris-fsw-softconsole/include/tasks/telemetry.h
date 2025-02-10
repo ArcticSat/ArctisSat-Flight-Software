@@ -12,6 +12,7 @@
 #include "drivers/device/rtc/rtc_common.h"
 #include <csp/csp.h>
 #include "tasks/telemetry.h"
+#include "queue.h"
 
 //Define the csp address of all devices in the network.
 #define POWER_CSP_ADDRESS	2
@@ -29,6 +30,40 @@
 
 // Maximum CSP packet size
 #define DLC_MAX 256 // TBC
+
+typedef enum {
+    PING_LOST = 0x00,
+    PING_FOUND = 0x01
+} pingStatus_t;
+
+typedef struct {
+    uint8_t header;
+    uint8_t type;
+    uint8_t len;
+    uint16_t index;
+    uint8_t data[64];
+    uint32_t crc;
+    uint8_t footer;
+} radioPacket_t;
+
+QueueHandle_t commsQueue;
+
+typedef struct {
+  uint16_t VOLTAGE_IN;
+  uint16_t VOLTAGE_OUT;
+  uint16_t CURRENT_OUT;
+  uint16_t SW_OVERVOLTAGE_TRIGGER_VALUE;
+  uint16_t SW_UNDERVOLTAGE_TRIGGER_VALUE;
+  uint16_t SW_UNDERVOLTAGE_RELEASE_VALUE;
+  uint16_t SW_OVERCURRENT_TRIGGER_VALUE;
+  uint16_t HW_OVERCURRENT_TRIGGER_VALUE;
+  uint8_t SWITCH_STATE;
+  uint8_t SOFTWARE_PROTECTION_STATE;
+  uint8_t SOFTWARE_FAULT_STATE;
+  uint8_t HARDWARE_FAULT_STATE;
+  uint32_t CCLSM_RESPONSE_TIME; // this value holds the time it takes for the CCLSM to respond in milliseconds (from the latest communication). it is updated in the 1ms timer interrupt.
+  uint8_t CCLSM_WAITING_RESPONSE; // this value is set to 0 when a response is received. it is set to 1 when a command is sent to a CCLSM. it is set to 2 when a CCLSM response times out
+} CCLSM_DATA_ENTRY;
 
 /***********************************************************/
 //Telemetry IDs
@@ -212,6 +247,12 @@ typedef enum
 	ADCS_GET_SUN_POINTING_TM_CMD,
 	ADCS_GET_ECLIPSE_TIME_CMD,
 	ADCS_SET_ECLIPSE_TIME_CMD,
+	ADCS_DEPLOY_LEFT_CMD,
+	ADCS_STOW_LEFT_CMD,
+	ADCS_DEPLOY_RIGHT_CMD,
+	ADCS_STOW_RIGHT_CMD,
+	ADCS_DEPLOY_BOTH_CMD,
+	ADCS_STOW_BOTH_CMD,
 	ADCS_COMMANDS_END,
 	/*** CDH COMMANDS ***/
 	CDH_SCHEDULE_TTT_CMD,
@@ -329,7 +370,7 @@ typedef enum {
 typedef struct{
 
 	Calendar_t timestamp;
-	uint8_t telem_id;		//Make sure there is less than 255 commands/telemetry ids for any subsystem. Or change to uint16_t.
+	CommandId_t telem_id;		//Make sure there is less than 255 commands/telemetry ids for any subsystem. Or change to uint16_t.
 	uint8_t length;
 	uint8_t* data;
 
@@ -346,6 +387,13 @@ void printMsg(char * msg);
 int printf(const char *fmt, ...);
 void set_csp_init(int state);
 int is_csp_up();
+
+int powerPingStatus;
+int powerPingCount;
+
+int ADCSPingStatus;
+int ADCSPingCount;
+
 
 /**********************************************************/
 

@@ -177,6 +177,9 @@ int main( void )
 
     txQueue = xQueueCreate(25, sizeof(satPacket));
 
+    commsQueue = xQueueCreate(25, sizeof(radioPacket_t));
+
+
 
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);

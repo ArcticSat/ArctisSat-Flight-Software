@@ -91,6 +91,10 @@ void vCSP_Server(void *pvParameters) {
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
 
+    powerPingStatus = PING_LOST;
+    powerPingCount = 0;
+
+    CCLSM_DATA_ENTRY testCCLSM;
 	//Make sure FS is up before all tasks
 //	filesystem_initialization();
 
@@ -108,36 +112,44 @@ void vCSP_Server(void *pvParameters) {
 		conn = csp_accept(socket, 250);
 		if(conn){
 			packet = csp_read(conn,0);
-            #ifdef DEBUG
-                //prvUARTSend(&g_mss_uart0, packet->data, packet->length);
-			#endif
-            //Handle the message based on the port it was sent to.
+			int sourceID = csp_conn_src(conn);
             int dest_port = csp_conn_dport(conn);
-            switch(dest_port){
-				case CSP_CMD_PORT:{
-					telemetryPacket_t cmd_pkt;
-					unpackTelemetry(packet->data, &cmd_pkt);
 
-					if(handleCdhImmediateCommand(&cmd_pkt, conn) < 0)
-					    schedule_command(&cmd_pkt);
+			switch(sourceID){
+			case 0x06:
+			    break;
+			case 0x01:
+			    break;
+			case 0x00: //power ID
+			    {
+			    powerPingCount = 0;
+			    powerPingStatus = PING_FOUND;
+			    int boi = 50;
+			    break;
+			    }
+			}
 
-					csp_buffer_free(packet);
-					break;
-				} // case CSP_CMD_PORT
+			switch(dest_port){
 				case CSP_COMMS_PASSTHROUGH:{
-		            custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
+				    printToTerminal(packet->data);
+//		            custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
 //				    csp_buffer_free(packet);
 				    break;
 				}
 				case 0x04: {
-                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
-				    if(lockout) {
-			            custom_MSS_UART_polled_tx_string(&g_mss_uart0, "POWER COMM RESTORED\n", strlen("POWER COMM RESTORED\n"));
-				    }
-				    lockout = 0;
-				    misses = 0;
+				    printToTerminal(packet->data);
+//                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
 				    break;
 				}
+				case 0x05: //powinfo port
+				    sendDataPacket(packet->data, packet->length, 0x05);
+				    break;
+				case 10: //CCLSM DATA PACKET
+                    {
+                    memcpy(&testCCLSM, packet->data, sizeof(CCLSM_DATA_ENTRY));
+                    int boi = 50;
+                    break;
+                    }
 				default:{
 						csp_service_handler(conn,packet);
 						break;
@@ -147,13 +159,13 @@ void vCSP_Server(void *pvParameters) {
                 csp_buffer_free(packet);
 				csp_close(conn);
 		} else {
-		    misses++;
+		    powerPingCount++;
 		}
 
-		if(misses > 5 && !lockout) {
-		    lockout = 1;
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, "POWER COMM LOST\n", strlen("POWER COMM LOST\n"));
-		}
+		if(powerPingCount > 5) {
+		    powerPingStatus = PING_LOST;
+		    powerPingCount = 5;
+        }
 //		vTaskDelay(500);
 	} // while(1)
 } // End of vCSP_Server

@@ -112,7 +112,7 @@ void sendCommand(telemetryPacket_t * packet,uint8_t addr){
 
 void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr){
 
-
+    return;
     csp_conn_t * conn;
     csp_packet_t * outPacket;
     conn = csp_connect(2,addr,CSP_TELEM_PORT,100,0);   //Create a connection. This tells CSP where to send the data (address and destination port).

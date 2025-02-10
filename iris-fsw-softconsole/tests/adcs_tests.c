@@ -10,6 +10,7 @@
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include <FreeRTOS-Kernel/include/task.h>
 #include "tests.h"
+#include "tasks/telemetry.h"
 
 #include "drivers/device/adcs_driver.h"
 #include "drivers/protocol/uart.h"
@@ -20,25 +21,17 @@ void vTestAdcsDriver(void * pvParameters){
     int lockout = 1;
     uint8_t *buf[6];
     while(1){
-//        getGyroMeasurementsGenericRaw(buf);
         status = pingAdcs();
         if(status != ADCS_DRIVER_NO_ERROR) {
             misses++;
         } else {
-            if(lockout == 1) {
-                lockout = 0;
-                char* msg = "ADCS COMM RESTORED\n";
-                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
-            }
+            ADCSPingStatus = PING_FOUND;
             misses = 0;
-            lockout = 0;
         }
 
-        if(misses > 4 && lockout == 0) {
-            misses = 5;
-            lockout = 1;
-            char* msg = "ADCS COMM LOST\n";
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
+        if(misses > 4) {
+            misses = 4;
+            ADCSPingStatus = PING_LOST;
         }
         vTaskDelay(250);
     }

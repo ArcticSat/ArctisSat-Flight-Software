@@ -14,6 +14,30 @@
 #include <csp/csp.h>
 #include "csp/interfaces/csp_if_can.h"
 #include "drivers/protocol/uart.h"
+#include "tasks/telemetry.h"
+#include "application/adcs.h"
+
+void sendDataPacket(char* data, int len, uint8_t type) {
+    radioPacket_t packet;
+    packet.header = 0xAA;
+    packet.footer = 0xBB;
+    packet.index = 1234;
+    packet.len = len;
+    memcpy(packet.data, data, len);
+    packet.type = type;
+    xQueueSendToBack(commsQueue, &packet, 0);
+}
+
+void printToTerminal(char* msg) {
+    radioPacket_t packet;
+    int len = strlen(msg);
+    packet.len = len + 1;
+    packet.header = 0xAA;
+    packet.footer = 0xBB;
+    memcpy(packet.data, msg, len);
+    packet.type = 0x0A;
+    xQueueSendToBack(commsQueue, &packet, 0);
+}
 
 void commsHandlerTask()
 {
@@ -31,6 +55,12 @@ void commsHandlerTask()
 
     uint8_t buf_Rx0[32];
     uint8_t buf_Rx1[32];
+
+    uint8_t dataBuf[64];
+
+    radioPacket_t packet;
+    telemetryPacket_t telemPacket = {0};
+    telemPacket.data = dataBuf;
 
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));
@@ -50,39 +80,16 @@ void commsHandlerTask()
         i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
         if(i > 0) {
             if(buf_Rx0[0] == 0) {
-                char* msg = "Sending to power";
-                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
+                printToTerminal("Sending to power");
                 sendData(buf_Rx0, i, 2);
-//                csp_packet_t *newPacket = csp_buffer_get(i); // Get a buffer large enough to fit our data. Max size is 256.
-//                csp_packet_t *packet;
-//                satPacket myPacket;
-//                if(newPacket) {
-//                    memcpy(newPacket->data, buf_Rx0[1], i-1);
-//                    newPacket->length = i;
-//                    myPacket.packet = newPacket;
-//                    myPacket.dest = 2;
-//                    xQueueSendToBack(txQueue, &myPacket, 0);
-//                }
             } else if(buf_Rx0[0] == 1) {
-                char* msg = "Sending to ADCS";
-                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
-                while(adcsSyncSpiCommand(buf_Rx0[1])); // Command ID
-                vTaskDelay(100);
-                adcsTxRx(NULL,0,&buf_Rx1,buf_Rx0[2]);
-                msg = "ADCS Says: ";
-                                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
-                int endPointer = 0;
-                for(i = 0; i < buf_Rx0[2]; i++) {
-                    sprintf(buf_Tx0, "%X  ", buf_Rx1[i]);
-                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, strlen(buf_Tx0));
-                }
-                msg = "Done\n";
-                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
-
-//                custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx0, buf_Rx0[2]);
+                printToTerminal("Sending to ADCS");
+                telemPacket.telem_id = buf_Rx0[1];
+                HandleAdcsCommand(&telemPacket);
             } else if(buf_Rx0[0] == 0xAB) {
-                char* msg = "0xAB";
-                custom_MSS_UART_polled_tx_string(&g_mss_uart0, msg, strlen(msg));
+                dataBuf[0] = powerPingStatus;
+                dataBuf[1] = ADCSPingStatus;
+                sendDataPacket(dataBuf, 64, 0xAB);
             }
 
 //          custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
@@ -97,6 +104,10 @@ void commsHandlerTask()
 //            csp_close(conn);
 //            csp_buffer_free(packet);
 //            vTaskDelay(100);
+        }
+
+        if(xQueueReceive(commsQueue, &packet, 0) == pdTRUE) {
+            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
         }
 
 
