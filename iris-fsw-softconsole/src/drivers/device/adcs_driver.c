@@ -314,8 +314,11 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 	{
 		status = ADCS_ERROR_BAD_ACK;
 	}
+
 	return status;
 }
+
+
 
 AdcsDriverError_t adcsSyncSpi(void)
 {

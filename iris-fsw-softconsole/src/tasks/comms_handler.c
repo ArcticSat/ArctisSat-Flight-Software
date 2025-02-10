@@ -17,6 +17,24 @@
 #include "tasks/telemetry.h"
 #include "application/adcs.h"
 
+uint32_t crc32b(unsigned char *message) {
+   int i, j;
+   unsigned int byte, crc, mask;
+
+   i = 0;
+   crc = 0xFFFFFFFF;
+   for(int i = 0; i < 68; i++){
+      byte = message[i];            // Get next byte.
+      crc = crc ^ byte;
+      for (j = 7; j >= 0; j--) {    // Do eight times.
+         mask = -(crc & 1);
+         crc = (crc >> 1) ^ (0xEDB88320 & mask);
+      }
+      i = i + 1;
+   }
+   return ~crc;
+}
+
 void sendDataPacket(char* data, int len, uint8_t type) {
     radioPacket_t packet;
     packet.header = 0xAA;
@@ -25,6 +43,8 @@ void sendDataPacket(char* data, int len, uint8_t type) {
     packet.len = len;
     memcpy(packet.data, data, len);
     packet.type = type;
+    uint32_t tempCRC = crc32b((char*) &packet);
+    packet.crc = tempCRC;
     xQueueSendToBack(commsQueue, &packet, 0);
 }
 
@@ -79,17 +99,27 @@ void commsHandlerTask()
 //      MSS_UART_polled_tx_string(&g_mss_uart0, buf_Tx);
         i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
         if(i > 0) {
-            if(buf_Rx0[0] == 0) {
-                printToTerminal("Sending to power");
-                sendData(buf_Rx0, i, 2);
-            } else if(buf_Rx0[0] == 1) {
-                printToTerminal("Sending to ADCS");
-                telemPacket.telem_id = buf_Rx0[1];
-                HandleAdcsCommand(&telemPacket);
-            } else if(buf_Rx0[0] == 0xAB) {
-                dataBuf[0] = powerPingStatus;
-                dataBuf[1] = ADCSPingStatus;
-                sendDataPacket(dataBuf, 64, 0xAB);
+            int cmd_id = buf_Rx0[0];
+            switch(cmd_id){
+                case 0x00: //passthrough to power
+                    printToTerminal("Sending to power");
+                    sendData(buf_Rx0, i, 2);
+                    break;
+                case 0x01: //passthrough to ADCS
+                    printToTerminal("Sending to ADCS");
+                    telemPacket.telem_id = buf_Rx0[1];
+                    adcsArbCommand(buf_Rx0[1], &buf_Rx1, buf_Rx0[2]);
+                    sendDataPacket(&buf_Rx1, buf_Rx0[2], 0x10);
+                    break;
+                case 0xAB: //CDH status ping
+                    dataBuf[0] = powerPingStatus;
+                    dataBuf[1] = ADCSPingStatus;
+                    sendDataPacket(dataBuf, 32, 0xAB);
+                    break;
+                case 0x15: //image OK
+                    break;
+                case 0x51: //image NOT OK
+                    break;
             }
 
 //          custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));

@@ -11,6 +11,6 @@
 #include <application/memory_manager.h>
 #include "main.h"
 
-void HandleAdcsCommand(telemetryPacket_t * cmd_pkt);
+void HandleAdcsCommand(int);
 
 #endif /* INCLUDE_APPLICATION_ADCS_H_ */
