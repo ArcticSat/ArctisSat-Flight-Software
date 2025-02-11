@@ -47,7 +47,8 @@ typedef struct {
     uint8_t footer;
 } radioPacket_t;
 
-QueueHandle_t commsQueue;
+QueueHandle_t commsTxQueue;
+QueueHandle_t commsRxQueue;
 
 uint8_t imageFlag;
 

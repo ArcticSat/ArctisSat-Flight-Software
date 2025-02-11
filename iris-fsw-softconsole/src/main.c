@@ -177,7 +177,9 @@ int main( void )
 
     txQueue = xQueueCreate(25, sizeof(satPacket));
 
-    commsQueue = xQueueCreate(25, sizeof(radioPacket_t));
+    commsTxQueue = xQueueCreate(25, sizeof(radioPacket_t));
+    commsRxQueue = xQueueCreate(25, sizeof(radioPacket_t));
+
 
 
 
@@ -222,6 +224,8 @@ int main( void )
     vTaskSuspend(vCanServer_h);
     status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
     status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
+    status = xTaskCreate(commsTransmitterTask,"UART Comms Handler",1000,NULL,1,NULL);
+    status = xTaskCreate(commsReceiverTask,"UART Comms Handler",1000,NULL,1,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 

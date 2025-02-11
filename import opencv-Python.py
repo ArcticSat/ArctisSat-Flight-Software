@@ -311,8 +311,8 @@ while running:
                             expectedIndex = expectedIndex + 1
                             sendAck()
                         else:
-                            print("image data out of order")    
                             sendNack()
+                            print("image data out of order")    
                         pass
                     case _:
                         pass

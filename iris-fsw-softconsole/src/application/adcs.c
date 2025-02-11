@@ -20,10 +20,10 @@
 Calendar_t * lowerBound;
 Calendar_t * upperBound;
 
-AdcsDriverError_t adcsArbCommand(uint8_t cmd_id, uint8_t* rxBuf, uint16_t expectedLen)
+AdcsDriverError_t adcsArbCommand(uint8_t cmd_id, uint8_t* rxBuf, uint8_t expectedLen)
 {
     while(adcsSyncSpiCommand(cmd_id));
-    vTaskDelay(200);
+    vTaskDelay(100);
     return adcsTxRx(NULL,0,rxBuf,expectedLen);
 
 }

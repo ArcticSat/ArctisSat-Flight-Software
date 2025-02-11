@@ -9,5 +9,7 @@
 #define INCLUDE_TASKS_COMMS_HANDLER_H_
 
 void commsHandlerTask();
+void commsReceiverTask();
+void commsTransmitterTask();
 
 #endif /* INCLUDE_TASKS_COMMS_HANDLER_H_ */
