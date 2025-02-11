@@ -17,6 +17,8 @@
 #include "csp/interfaces/csp_if_can.h"
 #include "drivers/protocol/uart.h"
 
+#include "tasks/telemetry.h"
+
 #define MAX_IMAGE_BUF 3000
 
 #include "drivers/filesystem_driver.h"
@@ -163,11 +165,21 @@ void vTestUARTTx()
                                 char buf[50];
                                 fs_file_rewind(&imageFile);
                                 int numBytes = 0;
-                                for(int i = 0; i < globalFileSize; i += 8) {
-                                    fs_file_read(&imageFile, buf, 8);
-                                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf, 8);
-                                    vTaskDelay(pdMS_TO_TICKS(20));
-                                    int status = 0;
+                                int packetIndex = 0;
+                                uint8_t sendSuccess = 0;
+                                for(int i = 0; i < globalFileSize; i += 64) {
+                                    fs_file_read(&imageFile, buf, 64);
+                                    imageFlag = 0;
+                                    sendImagePacket(buf, 64, packetIndex);
+                                    while(!sendSuccess) {
+                                        while(imageFlag == 0);
+
+                                        if(imageFlag == 0x01) {
+                                            sendSuccess = 1;
+                                        } else {
+                                            sendImagePacket(buf, 64, packetIndex);
+                                        }
+                                    }
                                 }
                                 fs_file_close(&imageFile);
                                 fs_remove("imageFile.jpg");

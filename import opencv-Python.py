@@ -75,8 +75,10 @@ windowcol = WHITE
 dataLength = 64
 headerIndex = 0
 typeIndex = 1
-IDIndex = 2
-dataIndex = 4
+lengthIndex = 2
+continuedIndex = 3
+indexIndex = 4
+dataIndex = 6
 crcIndex = dataIndex + dataLength
 footerIndex = crcIndex + 4
 totalDataLength = footerIndex + 1
@@ -122,6 +124,12 @@ def armActuators():
     global armCount
     actuatorColor = GREEN
     armCount = 300
+
+def sendAck():
+    ser.write(bytearray(b'\xCC\xAA'))
+
+def sendNack():
+    ser.write(bytearray(b'\xCC\xBB'))
 
 class Button:
     def __init__(self, x, y, width, height, color, message, text, action = None, group = None):
@@ -211,6 +219,10 @@ def crc32b(message):
             crc = (crc >> 1) ^ (0xEDB88320 & mask)
     return ~crc & 0xFFFFFFFF
 
+buildUpData = []
+imageData = []
+expectedIndex = 0
+
 while running:    
     clock.tick(60)
 
@@ -285,6 +297,22 @@ while running:
                         ADCSStatusRx = new_data[7]
                         power_status = RED if powerStatusRx == 0 else GREEN
                         adcs_status = RED if ADCSStatusRx == 0 else GREEN
+                        pass
+                    case 0x75: #CCLSM info
+                        if(new_data[continuedIndex] == 1): #this packet is split into multiple packets
+                            buildUpData.append(new_data[dataIndex:crcIndex])
+                        else:
+                            buildUpData.append(new_data[dataIndex:crcIndex])
+                            print(buildUpData)
+                        pass
+                    case 0x99: #imageData
+                        if(index == expectedIndex):
+                            imageData = new_data[dataIndex:crcIndex]
+                            expectedIndex = expectedIndex + 1
+                            sendAck()
+                        else:
+                            print("image data out of order")    
+                            sendNack()
                         pass
                     case _:
                         pass

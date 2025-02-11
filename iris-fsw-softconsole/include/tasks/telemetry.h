@@ -40,6 +40,7 @@ typedef struct {
     uint8_t header;
     uint8_t type;
     uint8_t len;
+    uint8_t continued;
     uint16_t index;
     uint8_t data[64];
     uint32_t crc;
@@ -47,6 +48,8 @@ typedef struct {
 } radioPacket_t;
 
 QueueHandle_t commsQueue;
+
+uint8_t imageFlag;
 
 typedef struct {
   uint16_t VOLTAGE_IN;

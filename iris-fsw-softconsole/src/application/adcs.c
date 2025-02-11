@@ -24,7 +24,7 @@ AdcsDriverError_t adcsArbCommand(uint8_t cmd_id, uint8_t* rxBuf, uint16_t expect
 {
     while(adcsSyncSpiCommand(cmd_id));
     vTaskDelay(200);
-    status = adcsTxRx(NULL,0,rxBuf,expectedLen);
+    return adcsTxRx(NULL,0,rxBuf,expectedLen);
 
 }
 

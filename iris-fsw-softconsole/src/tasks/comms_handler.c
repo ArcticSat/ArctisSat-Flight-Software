@@ -35,17 +35,48 @@ uint32_t crc32b(unsigned char *message) {
    return ~crc;
 }
 
-void sendDataPacket(char* data, int len, uint8_t type) {
+void sendImagePacket(char* data, int len, int index) {
+    int currLen = len;
     radioPacket_t packet;
     packet.header = 0xAA;
     packet.footer = 0xBB;
-    packet.index = 1234;
+    packet.index = index;
     packet.len = len;
     memcpy(packet.data, data, len);
-    packet.type = type;
+    packet.type = 0x99;
     uint32_t tempCRC = crc32b((char*) &packet);
     packet.crc = tempCRC;
     xQueueSendToBack(commsQueue, &packet, 0);
+}
+
+void sendDataPacket(char* data, int len, uint8_t type) {
+    int remLen = len;
+    int copyLen = 64;
+    int index = 0;
+    do {
+        radioPacket_t packet;
+        packet.header = 0xAA;
+        packet.footer = 0xBB;
+
+        packet.len = len;
+        packet.index = index;
+
+        index++;
+        memcpy(packet.data, data, copyLen);
+        remLen -= copyLen;
+        packet.type = type;
+        uint32_t tempCRC = crc32b((char*) &packet);
+        packet.crc = tempCRC;
+        if(remLen > 64) {
+            packet.continued = 1;
+            copyLen = 64;
+        } else {
+            packet.continued = 0;
+            copyLen = remLen;
+        }
+        xQueueSendToBack(commsQueue, &packet, 0);
+    } while(remLen > 0);
+
 }
 
 void printToTerminal(char* msg) {
@@ -82,6 +113,8 @@ void commsHandlerTask()
     telemetryPacket_t telemPacket = {0};
     telemPacket.data = dataBuf;
 
+    imageFlag = 0;
+
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));
 
@@ -116,9 +149,14 @@ void commsHandlerTask()
                     dataBuf[1] = ADCSPingStatus;
                     sendDataPacket(dataBuf, 32, 0xAB);
                     break;
-                case 0x15: //image OK
-                    break;
-                case 0x51: //image NOT OK
+                case 0xCC: //image status
+                    if(buf_Rx0[1] == 0xAA) {
+                        imageFlag = 0x01;
+                        //image ok, send next
+                    } else {
+                        imageFlag = 0xFF;
+                        //image bad, resend
+                    }
                     break;
             }
 
