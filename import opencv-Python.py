@@ -210,14 +210,19 @@ buttons = [
     Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "POWER"),
 ]
 
-def crc32b(message):
+def crc32b(tmpString):
     crc = 0xFFFFFFFF
-    for byte in message:
-        crc = crc ^ byte
-        for _ in range(8):
-            mask = -(crc & 1)
-            crc = (crc >> 1) ^ (0xEDB88320 & mask)
-    return ~crc & 0xFFFFFFFF
+    string = list(tmpString)
+    for char in string:
+        ch = char % 256
+        for i in range(8):
+            b = (ch ^ crc) & 1
+            crc = crc>>1
+            if(b):
+                crc = crc ^ 0x04C11DB7
+            ch = ch>>1
+
+    return (~crc) % (1 << 32)
 
 buildUpData = []
 imageData = []

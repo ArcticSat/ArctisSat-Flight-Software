@@ -17,22 +17,19 @@
 #include "tasks/telemetry.h"
 #include "application/adcs.h"
 
-uint32_t crc32b(unsigned char *message) {
-   int i, j;
-   unsigned int byte, crc, mask;
-
-   i = 0;
-   crc = 0xFFFFFFFF;
-   for(int i = 0; i < 68; i++){
-      byte = message[i];            // Get next byte.
-      crc = crc ^ byte;
-      for (j = 7; j >= 0; j--) {    // Do eight times.
-         mask = -(crc & 1);
-         crc = (crc >> 1) ^ (0xEDB88320 & mask);
-      }
-      i = i + 1;
-   }
-   return ~crc;
+uint32_t crc32b(unsigned char *data, int size) {
+    int byteIdx, bitIdx;
+    uint32_t crc = 0xFFFFFFFF;
+    for(byteIdx = 0; byteIdx < size; byteIdx++) {
+        char ch=data[byteIdx];
+        for(bitIdx = 0; bitIdx < 8; bitIdx++) {
+            uint32_t b = (ch^crc) & 1;
+            crc >>= 1;
+            if(b) crc = crc^0x04C11DB7;
+            ch>>=1;
+        }
+    }
+    return ~crc;
 }
 
 void sendImagePacket(char* data, int len, int index) {
@@ -44,7 +41,7 @@ void sendImagePacket(char* data, int len, int index) {
     packet.len = len;
     memcpy(packet.data, data, len);
     packet.type = 0x99;
-    uint32_t tempCRC = crc32b((char*) &packet);
+    uint32_t tempCRC = crc32b((char*) &packet, 64+6);
     packet.crc = tempCRC;
     xQueueSendToBack(commsTxQueue, &packet, 0);
 }
@@ -69,16 +66,17 @@ void commsReceiverTask() {
             memcpy(packet.data, buf_Rx0, i);
             packet.type = buf_Rx0[0];
             xQueueSendToBack(commsRxQueue, &packet, 0);
+        } else {
+            vTaskDelay(10);
         }
-        vTaskDelay(10);
     }
-
 }
 
 void sendDataPacket(char* data, int len, uint8_t type) {
     int remLen = len;
     int copyLen = 64;
     int index = 0;
+
     do {
         radioPacket_t packet;
         packet.header = 0xAA;
@@ -91,8 +89,9 @@ void sendDataPacket(char* data, int len, uint8_t type) {
         memcpy(packet.data, data, copyLen);
         remLen -= copyLen;
         packet.type = type;
-        uint32_t tempCRC = crc32b((char*) &packet);
+        uint32_t tempCRC = crc32b((char*) &packet, 6+64);
         packet.crc = tempCRC;
+
         if(remLen > 64) {
             packet.continued = 1;
             copyLen = 64;
@@ -100,6 +99,7 @@ void sendDataPacket(char* data, int len, uint8_t type) {
             packet.continued = 0;
             copyLen = remLen;
         }
+
         xQueueSendToBack(commsTxQueue, &packet, 0);
     } while(remLen > 0);
 
@@ -130,12 +130,6 @@ void commsHandlerTask()
     telemPacket.data = dataBuf;
 
     imageFlag = 0;
-
-//    const char message[] = "Test";
-//    memcpy(buf_Tx, message, sizeof(message));
-
-    vTaskDelay(2000);
-
 
     for (;;)
     {
