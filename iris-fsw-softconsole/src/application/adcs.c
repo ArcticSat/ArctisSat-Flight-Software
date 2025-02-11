@@ -22,13 +22,7 @@ Calendar_t * upperBound;
 
 AdcsDriverError_t adcsArbCommand(uint8_t cmd_id, uint8_t* rxBuf, uint16_t expectedLen)
 {
-    AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
-    // Command ack
-    uint8_t cmd_ack = 0;
-//  uint8_t cmd[2] = {cmd_id,cmd_id};
-//  status = adcsTxRx(cmd,2,NULL,0);
     while(adcsSyncSpiCommand(cmd_id));
-    // Verify result
     vTaskDelay(200);
     status = adcsTxRx(NULL,0,rxBuf,expectedLen);
 
