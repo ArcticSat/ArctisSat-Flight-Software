@@ -32,6 +32,10 @@ uint32_t crc32b(unsigned char *data, int size) {
     return ~crc;
 }
 
+volatile int CTS = 1;
+static TaskHandle_t xTaskToNotify = NULL;
+
+
 void sendImagePacket(char* data, int len, int index) {
     int currLen = len;
     radioPacket_t packet;
@@ -48,10 +52,13 @@ void sendImagePacket(char* data, int len, int index) {
 
 void commsTransmitterTask() {
     radioPacket_t packet;
+    xTaskToNotify = xTaskGetCurrentTaskHandle();
+    uint32_t* notVal;
     for(;;) {
-        if(xQueueReceive(commsTxQueue, &packet, 1000) == pdTRUE) {
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
-        }
+            xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
+            if(xQueueReceive(commsTxQueue, &packet, 1000) == pdTRUE) {
+                custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
+            }
     }
 }
 
@@ -61,14 +68,17 @@ void commsReceiverTask() {
         uint8_t buf_Rx0[32];
         i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
         if(i){
-            radioPacket_t packet;
-            packet.len = i;
-            memcpy(packet.data, buf_Rx0, i);
-            packet.type = buf_Rx0[0];
-            xQueueSendToBack(commsRxQueue, &packet, 0);
-        } else {
-            vTaskDelay(10);
+            if(buf_Rx0[0] == 0xAA && buf_Rx0[1] == 0xBB && buf_Rx0[2] == 0xCC) {
+                xTaskNotify(xTaskToNotify, 0, eNoAction );
+            } else {
+                radioPacket_t packet;
+                packet.len = i;
+                memcpy(packet.data, buf_Rx0, i);
+                packet.type = buf_Rx0[0];
+                xQueueSendToBack(commsRxQueue, &packet, 0);
+            }
         }
+        vTaskDelay(5);
     }
 }
 
@@ -143,7 +153,7 @@ void commsHandlerTask()
                     break;
                 case 0x01: //passthrough to ADCS
                     printToTerminal("Sending to ADCS");
-                    telemPacket.telem_id = buf_Rx0[1];
+                    if(buf_Rx0[2] > 32) buf_Rx0[2] = 31;
                     adcsArbCommand(buf_Rx0[1], buf_Rx1, buf_Rx0[2]);
                     sendDataPacket(buf_Rx1, buf_Rx0[2], 0x10);
                     break;
@@ -163,6 +173,5 @@ void commsHandlerTask()
                     break;
             }
         }
-        vTaskDelay(100);
     }
 }

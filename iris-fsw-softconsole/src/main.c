@@ -223,13 +223,13 @@ int main( void )
     status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,3,&vCanServer_h);
     vTaskSuspend(vCanServer_h);
     status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
-    status = xTaskCreate(commsHandlerTask,"UART Comms Handler",1000,NULL,1,NULL);
-    status = xTaskCreate(commsTransmitterTask,"UART Comms Handler",1000,NULL,1,NULL);
-    status = xTaskCreate(commsReceiverTask,"UART Comms Handler",1000,NULL,1,NULL);
+    status = xTaskCreate(commsHandlerTask,"UART Comms Handler",500,NULL,1,NULL);
+    status = xTaskCreate(commsTransmitterTask,"UART Comms Handler 2",100,NULL,1,NULL);
+    status = xTaskCreate(commsReceiverTask,"UART Comms Handler 3",100,NULL,1,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
 
 
 

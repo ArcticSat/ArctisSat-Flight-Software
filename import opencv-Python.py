@@ -3,6 +3,9 @@ import serial
 import gif_pygame
 import time
 import string
+import threading
+
+import os
 
 # Initialize Pygame
 pygame.init()
@@ -17,6 +20,10 @@ current_anchor_y = 550
 
 # Set up the display
 width, height = 1000, 600
+
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 
 pygame.mixer.init()
 pygame.display.set_caption("HAXSat")
@@ -47,7 +54,7 @@ PURPLE = (100, 0, 125)
 
 # Set up the serial connection
 ser = serial.Serial('COM7', 115200)  # Change 'COM3' to your COM port
-ser.timeout = 0.05
+ser.timeout = 0.5
 
 #actuator arming logic variables
 actuatorColor = RED
@@ -185,7 +192,7 @@ buttons = [
     Button(200, 50, 100, 50, RED, bytearray(b'\x01\x09\x00'), "Right Out", None, "ACTUATORS"),
     Button(200, 110, 100, 50, GREEN, bytearray(b'\x01\x0B\x00'), "Right In", None, "ACTUATORS"),
     Button(350, 110, 100, 50, GREEN, bytearray(b'\x01\x0D\x00'), "Both In", None, "ACTUATORS"),
-    Button(50, 170, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "POWER"),
+    Button(50, 170, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "BRUH"),
     Button(200, 170, 100, 50, PURPLE, bytearray(b'\x00\x01\x01'), "Get V and C", None, "POWER"),
     Button(350, 170, 100, 50, GREY, bytearray(b'\x01\x01\x02'), "Sync", None, "ADCS"),
     Button(500, 50, 100, 50, GREY, bytearray(b'\x01\x02\x0D'), "Gyro", None, "ADCS"),
@@ -224,13 +231,29 @@ def crc32b(tmpString):
 
     return (~crc) % (1 << 32)
 
+new_data = []
+def SerialRx():
+    global ser
+    global new_data
+    global running
+    while(running):
+        if ser.in_waiting >= 79:
+            while(ser.in_waiting > 0):
+                # new_data.append(int(ser.read(1)))
+                # new_data.append(ser.read(1))
+                new_data = ser.read_all()
+            ser.write(b'\xAA\xBB\xCC')
+
 buildUpData = []
 imageData = []
 expectedIndex = 0
+# t1 = threading.Thread(target=GUI)
+t1 = threading.Thread(target=SerialRx)
+
+t1.start()
 
 while running:    
     clock.tick(60)
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -254,48 +277,59 @@ while running:
 
     #ping CDH periodically
     toc = time.time()
-    if(toc - tic > 0.25):
+    if(toc - tic > 0.5):
         ser.write(bytearray(b'\xAB'))
         tic = time.time()
     
     #if CDH hasn't responded in a while, change status to red
-    if misses > 60:
+    if misses > 100:
         comms_status = RED
         windowcol = RED
+        ser.write(b'\xAA\xBB\xCC')
+        time.sleep(0.3)
+
     else:
         comms_status = GREEN
         windowcol = WHITE
-    
     # Read serial data
-    if ser.in_waiting >= 74:
+    if(len(new_data) >= 79):
         try:
-            new_data = ser.read_all()
+            # print(new_data)
             misses = 0
+            # new_data = ser.read_all() #(b'\xBB\x13')
+            # print(len(new_data))
+            for char in new_data:
+                pass
+                # print(hex(char))
+            # print(new_data[0])
             if(new_data[0] == 0xAA):
                 type = new_data[1]
-                len = new_data[2]
-                rxCRC = new_data[76-5:76-1]
-                crc = crc32b(new_data[0:67])
+                myLen = new_data[2] 
+                # rxCRC = new_data[76-5:76-1]
+                # crc = crc32b(new_data[0:67])
                 index = (new_data[3] << 8) | new_data[4] 
+
                 match type:
                     case 0x05: #powinfo
-                        stringData = new_data[6:6+len-1]
+                        stringData = new_data[6:6+myLen-1]
                         stringData = stringData.decode('utf-8')
                         stringData = stringData.split(' ')
                         voltage = stringData[0]
                         current = stringData[1]
                         pass
                     case 0x0A: #printable
-                        stringData = new_data[6:6+len-1]
+                        stringData = new_data[6:6+myLen-1]
                         received_data.append(stringData.decode('utf-8'))
+                        print(stringData.decode('utf-8'))
                         pass
                     case 0x10: #raw hex data to print
                         hexString = ""
-                        temp = new_data[6:6+len-1]
+                        temp = new_data[6:6+myLen-1]
                         for char in temp:
                             hexString = hexString + hex(char) + " "
                         hexString = hexString + "\n"
                         received_data.append(hexString)
+                        print(hexString)
                         pass
                     case 0xAB: #ping with status
                         powerStatusRx = new_data[6]
@@ -321,8 +355,13 @@ while running:
                         pass
                     case _:
                         pass
+            
+            # ser.read_all()
         except Exception as e:
             print(e)
+        
+        new_data = []
+
 
     # Draw everything
     window.fill(windowcol)
@@ -343,6 +382,8 @@ while running:
     drawVoltageAndCurrent(voltage, current)
     updateStatus()
     pygame.display.flip()
+
+t1.join()
 
 # Clean up
 ser.close()

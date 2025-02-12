@@ -132,13 +132,10 @@ void vCSP_Server(void *pvParameters) {
 			switch(dest_port){
 				case CSP_COMMS_PASSTHROUGH:{
 				    printToTerminal(packet->data);
-//		            custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
-//				    csp_buffer_free(packet);
 				    break;
 				}
 				case 0x04: {
 				    printToTerminal(packet->data);
-//                    custom_MSS_UART_polled_tx_string(&g_mss_uart0, packet->data, packet->length);
 				    break;
 				}
 				case 0x05: //powinfo port
