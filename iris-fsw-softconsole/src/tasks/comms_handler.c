@@ -47,7 +47,7 @@ void sendImagePacket(char* data, int len, int index) {
     packet.type = 0x99;
     uint32_t tempCRC = crc32b((char*) &packet, 64+6);
     packet.crc = tempCRC;
-    xQueueSendToBack(commsTxQueue, &packet, 0);
+    xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
 }
 
 void commsTransmitterTask() {
@@ -154,8 +154,8 @@ void commsHandlerTask()
                 case 0x01: //passthrough to ADCS
                     printToTerminal("Sending to ADCS");
                     if(buf_Rx0[2] > 32) buf_Rx0[2] = 31;
-                    adcsArbCommand(buf_Rx0[1], buf_Rx1, buf_Rx0[2]);
-                    sendDataPacket(buf_Rx1, buf_Rx0[2], 0x10);
+                    adcsArbCommand(rxPacket.data[1], buf_Rx1, rxPacket.data[2]);
+                    sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
                     break;
                 case 0xAB: //CDH status ping
                     dataBuf[0] = powerPingStatus;
@@ -163,7 +163,7 @@ void commsHandlerTask()
                     sendDataPacket(dataBuf, 32, 0xAB);
                     break;
                 case 0xCC: //image status
-                    if(buf_Rx0[1] == 0xAA) {
+                    if(rxPacket.data[1] == 0xAA) {
                         imageFlag = 0x01;
                         //image ok, send next
                     } else {

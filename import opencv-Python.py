@@ -19,7 +19,7 @@ voltage_anchor_y = 500
 current_anchor_y = 550
 
 # Set up the display
-width, height = 1000, 600
+width, height = 1500, 900
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -118,6 +118,8 @@ def drawTextToScreen(received_data):
     # Draw the text window
     pygame.draw.rect(window, BLACK, text_window, 2)
     y_offset = text_window.y + 5
+    if(len(received_data) > max_lines):
+        received_data.pop(0)
     for line in received_data:
         try:
             text_surface = font.render(line, True, BLACK)
@@ -201,8 +203,8 @@ buttons = [
     Button(650, 50, 100, 50, GREY, bytearray(b'\x01\x04\x15'), "Lat/Long", None, "ADCS"),
     Button(650, 110, 100, 50, GREY, bytearray(b'\x01\x05\x11'), "Time", None, "ADCS"),
     Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
-    Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x0E\x00'), "Reset GNSS", None, "ADCS"),
-    Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x11\x06'), "Get data rate", None, "ADCS"),
+    Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
+    Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x06'), "Get data rate", None, "ADCS"),
     Button(800, 230, 50, 50, GREEN, bytearray(b'\x00\x04\x31\x01'), "ON", None, "POWER"),
     Button(850, 230, 50, 50, OFF_RED, bytearray(b'\x00\x04\x31\x00'), "OFF", None, "POWER"),
     Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x03'), "DATA", None, "POWER"),
@@ -242,7 +244,10 @@ def SerialRx():
                 # new_data.append(int(ser.read(1)))
                 # new_data.append(ser.read(1))
                 new_data = ser.read_all()
-            ser.write(b'\xAA\xBB\xCC')
+            try:
+                ser.write(b'\xAA\xBB\xCC')
+            except:
+                pass
 
 buildUpData = []
 imageData = []
@@ -278,7 +283,10 @@ while running:
     #ping CDH periodically
     toc = time.time()
     if(toc - tic > 0.5):
-        ser.write(bytearray(b'\xAB'))
+        try:
+            ser.write(bytearray(b'\xAB'))
+        except:
+            pass
         tic = time.time()
     
     #if CDH hasn't responded in a while, change status to red
@@ -308,6 +316,7 @@ while running:
                 # rxCRC = new_data[76-5:76-1]
                 # crc = crc32b(new_data[0:67])
                 index = (new_data[3] << 8) | new_data[4] 
+                # print(index)
 
                 match type:
                     case 0x05: #powinfo
@@ -345,13 +354,29 @@ while running:
                             print(buildUpData)
                         pass
                     case 0x99: #imageData
-                        if(index == expectedIndex):
-                            imageData = new_data[dataIndex:crcIndex]
-                            expectedIndex = expectedIndex + 1
-                            sendAck()
-                        else:
-                            sendNack()
-                            print("image data out of order")    
+                        print("IMAGE DATA RX!!!")
+                        imageData.append(new_data[dataIndex:crcIndex])
+                        print(expectedIndex, end=" ")
+                        print(len(imageData) * 64)
+                        expectedIndex += 1
+                        
+                        if((len(imageData) * 64) > 1000 or True):
+                            combined_image_data = b''.join(imageData)
+                            # Save the image data to a file
+                            with open("received_image.jpg", "wb") as img_file:
+                                img_file.write(combined_image_data)
+                            # Load the image using Pygame
+                            received_image = pygame.image.load("received_image.jpg")
+                            # Display the image in the window
+                            window.blit(received_image, (600, 50))
+                            # print(imageData)
+
+                        # if(index == expectedIndex):
+                        #     expectedIndex = expectedIndex + 1
+                        #     sendAck()
+                        # else:
+                        #     sendNack()
+                        #     print("image data out of order")    
                         pass
                     case _:
                         pass
@@ -359,7 +384,7 @@ while running:
             # ser.read_all()
         except Exception as e:
             print(e)
-        
+            # print(imageData)
         new_data = []
 
 
@@ -381,6 +406,13 @@ while running:
     drawTextToScreen(received_data)
     drawVoltageAndCurrent(voltage, current)
     updateStatus()
+    try:
+        if (expectedIndex % 20 == 0) :
+            received_image = pygame.image.load("received_image.jpg")
+                # Display the image in the window
+            window.blit(received_image, (900, 500))
+    except:
+        pass
     pygame.display.flip()
 
 t1.join()

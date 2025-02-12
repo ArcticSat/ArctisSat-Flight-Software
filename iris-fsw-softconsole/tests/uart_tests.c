@@ -140,16 +140,19 @@ void vTestUARTTx()
         Tx_Success = syncCamera();
         if (Tx_Success > 0)
         {
+            printToTerminal("Camera synced!\n");
             vTaskDelay(2000);
             Tx_Success = initCamera(FORMAT_JPEG, RAW_SIZE_80_60, JPEG_SIZE_640_480);
             if (Tx_Success > 0)
             {
+                printToTerminal("Camera initalized!\n");
                 useless_number = 4;
                 // there should be a delay between init and snapshot
                 vTaskDelay(2000);
                 Tx_Success = takeSnapShot(SNAP_JPEG, SKIP_FRAMES);
                 if (Tx_Success > 0)
                 {
+                    printToTerminal("Snapshot taken!\n");
                     useless_number = 1;
                     Tx_Success = setPackageSize(PACKAGE_SIZE);
                     if (Tx_Success > 0)
@@ -158,6 +161,8 @@ void vTestUARTTx()
                         Tx_Success = getPicture(GET_SNAP_FRAME, READ_JPEG, PACKAGE_SIZE);
                         if (Tx_Success > 0)
                         {
+                            printToTerminal("Photo received!\n");
+                            printToTerminal("Beginning downlink!\n");
                             useless_number = 8;
 //                          Tx_Success = readImageData(64, cameraImageBuf);
 //                                vTaskSuspendAll();
@@ -170,16 +175,20 @@ void vTestUARTTx()
                                 for(int i = 0; i < globalFileSize; i += 64) {
                                     fs_file_read(&imageFile, buf, 64);
                                     imageFlag = 0;
+                                    sendSuccess = 0;
                                     sendImagePacket(buf, 64, packetIndex);
-                                    while(!sendSuccess) {
-                                        while(imageFlag == 0);
-
-                                        if(imageFlag == 0x01) {
-                                            sendSuccess = 1;
-                                        } else {
-                                            sendImagePacket(buf, 64, packetIndex);
-                                        }
-                                    }
+                                    vTaskDelay(pdMS_TO_TICKS(100));
+//                                    while(!sendSuccess) {
+//                                        while(imageFlag == 0);
+//
+//                                        if(imageFlag == 0x01) {
+//                                            sendSuccess = 1;
+//                                            packetIndex += 1;
+//                                        } else {
+//                                            imageFlag = 0;
+//                                            sendImagePacket(buf, 64, packetIndex);
+//                                        }
+//                                    }
                                 }
                                 fs_file_close(&imageFile);
                                 fs_remove("imageFile.jpg");

@@ -134,7 +134,7 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 	// Initialization
-    prvSetupHardware();
+   prvSetupHardware();
 
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
@@ -219,7 +219,7 @@ int main( void )
 
 /**THESE ARE THE MAIN FUNCTIONS**/
 
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 300, NULL, 3, &vCSP_Server_h);
     status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,3,&vCanServer_h);
     vTaskSuspend(vCanServer_h);
     status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
@@ -229,7 +229,7 @@ int main( void )
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
 
 
 
