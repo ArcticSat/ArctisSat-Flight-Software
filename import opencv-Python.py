@@ -453,7 +453,7 @@ while running:
                         pass
                     case 0x0A: #printable
                         stringData = new_data[6:6+myLen-1]
-                        received_data.append(stringData.decode('utf-8'))
+                        textbox.append_text(stringData.decode('utf-8'))
                         print(stringData.decode('utf-8'))
                         pass
                     case 0x10: #raw hex data to print
@@ -462,7 +462,7 @@ while running:
                         for char in temp:
                             hexString = hexString + hex(char) + " "
                         hexString = hexString + "\n"
-                        received_data.append(hexString)
+                        textbox.append_text(hexString)
                         print(hexString)
                         pass
                     case 0xAB: #ping with status
