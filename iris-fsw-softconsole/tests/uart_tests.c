@@ -177,7 +177,7 @@ void vTestUARTTx()
                                     imageFlag = 0;
                                     sendSuccess = 0;
                                     sendImagePacket(buf, 64, packetIndex);
-                                    vTaskDelay(pdMS_TO_TICKS(100));
+                                    vTaskDelay(pdMS_TO_TICKS(50));
 //                                    while(!sendSuccess) {
 //                                        while(imageFlag == 0);
 //

@@ -407,10 +407,10 @@ while running:
     drawVoltageAndCurrent(voltage, current)
     updateStatus()
     try:
-        if (expectedIndex % 20 == 0) :
-            received_image = pygame.image.load("received_image.jpg")
+        # if (expectedIndex % 20 == 0) :
+        received_image = pygame.image.load("received_image.jpg")
                 # Display the image in the window
-            window.blit(received_image, (900, 500))
+        window.blit(received_image, (900, 500))
     except:
         pass
     pygame.display.flip()
