@@ -29,6 +29,8 @@ pygame.mixer.init()
 pygame.display.set_caption("HAXSat")
 window = pygame.display.set_mode((width, height))
 font = pygame.font.Font(None, 20)
+small_font = pygame.font.Font(None, 12)
+
 text_window = pygame.Rect(50, 250, 380, 200)
 tic = time.time()
 clock = pygame.Clock()
@@ -48,12 +50,13 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 GREY = (160, 160, 160)
 DISABLED_GREY = (100, 100, 100)
+BACKGROUND_GREY = (200, 200, 200)
 OFF_RED = (250, 0, 0)
 ORANGE = (252, 186, 3)
 PURPLE = (100, 0, 125)
 
 # Set up the serial connection
-ser = serial.Serial('COM7', 115200)  # Change 'COM3' to your COM port
+ser = serial.Serial('COM5', 115200)  # Change 'COM3' to your COM port
 ser.timeout = 0.5
 
 #actuator arming logic variables
@@ -183,6 +186,88 @@ class Button:
 
     def off_click(self):
         self.color = self.defaultColor
+class label:
+    def __init__(self, x, y, text, font_size=20):
+        self.font = pygame.font.Font(None, font_size)
+        self.x = x
+        self.y = y
+        self.text = text
+    
+    def draw(self, surface):
+        text_surface = self.font.render(self.text, True, BLACK)
+        text_rect = text_surface.get_rect(center=(self.x, self.y))
+        surface.blit(text_surface, text_rect)
+
+class scrollable_textbox:
+    def __init__(self, x, y, width, height, color):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color = color
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect)
+
+class ScrollableTextbox:
+    def __init__(self, x, y, width, height, color, font):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color = color
+        self.font = font
+        self.text_lines = []
+        self.scroll_offset = 0
+        self.max_lines = height // font.get_height()
+        self.snap_to_bottom = True
+        self.checkbox = Checkbox(x + width - 20, y, 20, "Snap", font)
+
+    def append_text(self, text):
+        self.text_lines.append(text)
+        self.snap_to_bottom = self.checkbox.checked
+        if self.snap_to_bottom:
+            if len(self.text_lines) > self.max_lines:
+                self.scroll_offset = len(self.text_lines) - self.max_lines
+            else:
+                self.scroll_offset = 0
+
+    def scroll(self, direction):
+        if direction == 1 and self.scroll_offset > 0:
+            self.scroll_offset -= 1
+        elif direction == -1 and self.scroll_offset < len(self.text_lines) - self.max_lines:
+            self.scroll_offset += 1
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect)
+        self.checkbox.draw(surface)
+        y_offset = self.rect.y
+        for i in range(self.scroll_offset, min(len(self.text_lines), self.scroll_offset + self.max_lines)):
+            text_surface = self.font.render(self.text_lines[i], True, BLACK)
+            surface.blit(text_surface, (self.rect.x + 5, y_offset))
+            y_offset += self.font.get_height()
+
+        # Draw the scrollbar
+        if len(self.text_lines) > self.max_lines:
+            scrollbar_height = self.rect.height * (self.max_lines / len(self.text_lines))
+            scrollbar_y = self.rect.y + (self.scroll_offset / len(self.text_lines)) * self.rect.height
+            scrollbar_rect = pygame.Rect(self.rect.right - 10, scrollbar_y, 10, scrollbar_height)
+            pygame.draw.rect(surface, GREY, scrollbar_rect)
+
+class Checkbox:
+    def __init__(self, x, y, size, text, font, checked=False):
+        self.rect = pygame.Rect(x, y, size, size)
+        self.text = text
+        self.font = font
+        self.checked = checked
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, BLACK, self.rect, 2)
+        if self.checked:
+            pygame.draw.line(surface, BLACK, (self.rect.left, self.rect.top), (self.rect.right, self.rect.bottom), 2)
+            pygame.draw.line(surface, BLACK, (self.rect.right, self.rect.top), (self.rect.left, self.rect.bottom), 2)
+        text_surface = self.font.render(self.text, True, BLACK)
+        surface.blit(text_surface, (self.rect.right + 10, self.rect.centery - text_surface.get_height() // 2))
+
+    def is_clicked(self, pos):
+        return self.rect.collidepoint(pos)
+
+    def toggle(self):
+        self.checked = not self.checked
 
 # Define buttons with unique serial messages and text
 
@@ -194,7 +279,7 @@ buttons = [
     Button(200, 50, 100, 50, RED, bytearray(b'\x01\x09\x00'), "Right Out", None, "ACTUATORS"),
     Button(200, 110, 100, 50, GREEN, bytearray(b'\x01\x0B\x00'), "Right In", None, "ACTUATORS"),
     Button(350, 110, 100, 50, GREEN, bytearray(b'\x01\x0D\x00'), "Both In", None, "ACTUATORS"),
-    Button(50, 170, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "BRUH"),
+    Button(50, 170, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "POWER"),
     Button(200, 170, 100, 50, PURPLE, bytearray(b'\x00\x01\x01'), "Get V and C", None, "POWER"),
     Button(350, 170, 100, 50, GREY, bytearray(b'\x01\x01\x02'), "Sync", None, "ADCS"),
     Button(500, 50, 100, 50, GREY, bytearray(b'\x01\x02\x0D'), "Gyro", None, "ADCS"),
@@ -205,19 +290,37 @@ buttons = [
     Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
     Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
     Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x06'), "Get data rate", None, "ADCS"),
-    Button(800, 230, 50, 50, GREEN, bytearray(b'\x00\x04\x31\x01'), "ON", None, "POWER"),
-    Button(850, 230, 50, 50, OFF_RED, bytearray(b'\x00\x04\x31\x00'), "OFF", None, "POWER"),
-    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x03'), "DATA", None, "POWER"),
-    Button(800, 290, 50, 50, GREEN, bytearray(b'\x00\x04\x30\x01'), "ON", None, "POWER"),
-    Button(850, 290, 50, 50, OFF_RED, bytearray(b'\x00\x04\x30\x00'), "OFF", None, "POWER"),
-    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x02'), "DATA", None, "POWER"),
-    Button(800, 350, 50, 50, GREEN, bytearray(b'\x00\x04\x03\x01'), "ON", None, "POWER"),
-    Button(850, 350, 50, 50, OFF_RED, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "POWER"),
-    Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "POWER"),
-    Button(800, 410, 50, 50, GREEN, bytearray(b'\x00\x04\x03\x01'), "ON", None, "POWER"),
-    Button(850, 410, 50, 50, OFF_RED, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "POWER"),
-    Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "POWER"),
+    Button(800, 230, 50, 50, GREEN, bytearray(b'\x00\x04\x31\x01'), "ON", None, "CCLSM"),
+    Button(850, 230, 50, 50, OFF_RED, bytearray(b'\x00\x04\x31\x00'), "OFF", None, "CCLSM"),
+    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x03'), "DATA", None, "CCLSM"),
+    Button(800, 290, 50, 50, GREEN, bytearray(b'\x00\x04\x30\x01'), "ON", None, "CCLSM"),
+    Button(850, 290, 50, 50, OFF_RED, bytearray(b'\x00\x04\x30\x00'), "OFF", None, "CCLSM"),
+    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x02'), "DATA", None, "CCLSM"),
+    Button(800, 350, 50, 50, GREEN, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
+    Button(850, 350, 50, 50, OFF_RED, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
+    Button(800, 410, 50, 50, GREEN, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
+    Button(850, 410, 50, 50, OFF_RED, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
+    Button(1050, 410, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
+    Button(1200, 410, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
+    Button(1050, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
+    Button(1200, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
+    Button(1050, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
+    Button(1200, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
+    Button(1050, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
+    Button(1200, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
 ]
+
+labels = [
+    label(760, 260, "ADCS\nPOWER", 15),
+    label(760, 320, "CDH\nPOWER", 15),
+    label(760, 380, "OTHER\nPOWER", 15),
+    label(760, 440, "CAMERA\nPOWER", 15),
+    #label(50, 20, "Actuator Controls", 12),
+]
+
+textbox = ScrollableTextbox(50, 250, 380, 200, WHITE, font)
 
 def crc32b(tmpString):
     crc = 0xFFFFFFFF
@@ -230,7 +333,6 @@ def crc32b(tmpString):
             if(b):
                 crc = crc ^ 0x04C11DB7
             ch = ch>>1
-
     return (~crc) % (1 << 32)
 
 new_data = []
@@ -240,10 +342,7 @@ def SerialRx():
     global running
     while(running):
         if ser.in_waiting >= 79:
-            while(ser.in_waiting > 0):
-                # new_data.append(int(ser.read(1)))
-                # new_data.append(ser.read(1))
-                new_data = ser.read_all()
+            new_data = ser.read_all()
             try:
                 ser.write(b'\xAA\xBB\xCC')
             except:
@@ -252,9 +351,7 @@ def SerialRx():
 buildUpData = []
 imageData = []
 expectedIndex = 0
-# t1 = threading.Thread(target=GUI)
 t1 = threading.Thread(target=SerialRx)
-
 t1.start()
 
 while running:    
@@ -266,10 +363,15 @@ while running:
             for button in buttons:
                 if button.is_clicked(event.pos):
                     button.on_click()
+            if textbox.checkbox.is_clicked(event.pos):
+                textbox.checkbox.toggle()
         elif event.type == pygame.MOUSEBUTTONUP:
             for button in buttons:
                 if button.is_clicked(event.pos):
                     button.off_click()
+        elif event.type == pygame.MOUSEWHEEL:
+            if text_window.collidepoint(pygame.mouse.get_pos()):
+                textbox.scroll(event.y)
 
     #check timeout on arm count
     misses = misses + 1
@@ -283,6 +385,9 @@ while running:
     #ping CDH periodically
     toc = time.time()
     if(toc - tic > 0.5):
+        textbox.append_text("Pinging CDH")
+        textbox.append_text("BLBLBLB")
+        ser.write(b'\xAA\xBB\xCC')
         try:
             ser.write(bytearray(b'\xAB'))
         except:
@@ -293,30 +398,20 @@ while running:
     if misses > 100:
         comms_status = RED
         windowcol = RED
-        ser.write(b'\xAA\xBB\xCC')
-        time.sleep(0.3)
-
     else:
         comms_status = GREEN
         windowcol = WHITE
+    
     # Read serial data
     if(len(new_data) >= 79):
         try:
-            # print(new_data)
-            misses = 0
-            # new_data = ser.read_all() #(b'\xBB\x13')
-            # print(len(new_data))
-            for char in new_data:
-                pass
-                # print(hex(char))
-            # print(new_data[0])
             if(new_data[0] == 0xAA):
+                misses = 0
                 type = new_data[1]
                 myLen = new_data[2] 
                 # rxCRC = new_data[76-5:76-1]
                 # crc = crc32b(new_data[0:67])
                 index = (new_data[3] << 8) | new_data[4] 
-                # print(index)
 
                 match type:
                     case 0x05: #powinfo
@@ -356,41 +451,22 @@ while running:
                     case 0x99: #imageData
                         print("IMAGE DATA RX!!!")
                         imageData.append(new_data[dataIndex:crcIndex])
-                        print(expectedIndex, end=" ")
-                        print(len(imageData) * 64)
-                        expectedIndex += 1
                         
                         if((len(imageData) * 64) > 1000 or True):
                             combined_image_data = b''.join(imageData)
-                            # Save the image data to a file
                             with open("received_image.jpg", "wb") as img_file:
                                 img_file.write(combined_image_data)
-                            # Load the image using Pygame
-                            received_image = pygame.image.load("received_image.jpg")
-                            # Display the image in the window
-                            window.blit(received_image, (600, 50))
-                            # print(imageData)
-
-                        # if(index == expectedIndex):
-                        #     expectedIndex = expectedIndex + 1
-                        #     sendAck()
-                        # else:
-                        #     sendNack()
-                        #     print("image data out of order")    
                         pass
                     case _:
                         pass
-            
-            # ser.read_all()
         except Exception as e:
             print(e)
-            # print(imageData)
         new_data = []
 
 
     # Draw everything
     window.fill(windowcol)
-    example_gif.render(window, (500, 230))
+    example_gif.render(window, (480, 230))
     newColor = GREEN
 
     for button in buttons:
@@ -403,14 +479,18 @@ while running:
         elif button.group == "ADCS":
             button.update(adcs_status)
 
-    drawTextToScreen(received_data)
+    for label in labels:
+        label.draw(window)
+    textbox.draw(window)
+
+    # drawTextToScreen(received_data)
     drawVoltageAndCurrent(voltage, current)
     updateStatus()
     try:
-        # if (expectedIndex % 20 == 0) :
         received_image = pygame.image.load("received_image.jpg")
-                # Display the image in the window
-        window.blit(received_image, (900, 500))
+        received_image = pygame.transform.scale(received_image, (640/2, 480/2))
+        image = pygame.transform.rotate(received_image, -90)
+        window.blit(image, (1050, 50))
     except:
         pass
     pygame.display.flip()
