@@ -151,12 +151,15 @@ int printf(const char *fmt, ...){
     //Based on stuff in this thread:https://electronics.stackexchange.com/questions/206113/how-do-i-use-the-printf-function-on-stm32
     char str[256];
 
-    if(!is_csp_up()){
-        return 0;
-    }
 
     va_list argp;
     va_start(argp, fmt);
+
+    vsnprintf(str,255,fmt,argp);
+    printToTerminal(str);
+
+    return 0;
+
 
     if(0 < vsnprintf(str,255,fmt,argp)) // build string
     {

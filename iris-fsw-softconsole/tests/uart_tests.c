@@ -128,17 +128,19 @@ void vTestUARTTx()
 //    }
 //    fs_file_close(&imageFile);
 
-    fs_remove("imageFile.jpg");
-
-    vTaskDelay(2000);
-
+//    fs_list_dir("/", 1);
+//    fs_mkdir("images");
+//    fs_list_dir("/", 1);
+    takeImage = 0;
+    downlinkImage = 0;
 
     for (;;)
     {
+
         Tx_Success = 0;
 
         Tx_Success = syncCamera();
-        if (Tx_Success > 0)
+        if (Tx_Success > 0 && takeImage)
         {
             printToTerminal("Camera synced!\n");
             vTaskDelay(2000);
@@ -157,56 +159,12 @@ void vTestUARTTx()
                     Tx_Success = setPackageSize(PACKAGE_SIZE);
                     if (Tx_Success > 0)
                     {
+                        printToTerminal("Copying image...\n");
                         useless_number = 6;
                         Tx_Success = getPicture(GET_SNAP_FRAME, READ_JPEG, PACKAGE_SIZE);
-                        if (Tx_Success > 0)
-                        {
-                            printToTerminal("Photo received!\n");
-                            printToTerminal("Beginning downlink!\n");
-                            useless_number = 8;
-//                          Tx_Success = readImageData(64, cameraImageBuf);
-//                                vTaskSuspendAll();
-                                fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR);
-                                char buf[50];
-                                fs_file_rewind(&imageFile);
-                                int numBytes = 0;
-                                int packetIndex = 0;
-                                uint8_t sendSuccess = 0;
-                                for(int i = 0; i < globalFileSize; i += 64) {
-                                    fs_file_read(&imageFile, buf, 64);
-                                    imageFlag = 0;
-                                    sendSuccess = 0;
-                                    sendImagePacket(buf, 64, packetIndex);
-                                    vTaskDelay(pdMS_TO_TICKS(50));
-//                                    while(!sendSuccess) {
-//                                        while(imageFlag == 0);
-//
-//                                        if(imageFlag == 0x01) {
-//                                            sendSuccess = 1;
-//                                            packetIndex += 1;
-//                                        } else {
-//                                            imageFlag = 0;
-//                                            sendImagePacket(buf, 64, packetIndex);
-//                                        }
-//                                    }
-                                }
-                                fs_file_close(&imageFile);
-                                fs_remove("imageFile.jpg");
-//                                xTaskResumeAll();
-                            if (Tx_Success > 0)
-                            {
-                                useless_number = 10;
+                        printToTerminal("Photo received!\n");
 
-                            }else
-                            {
-                                useless_number = 11;
-
-                            }
-
-                        }else
-                        {
-                            useless_number = 9;
-                        }
+                        takeImage = 0;
                     }else
                     {
                         useless_number = 7;
@@ -238,8 +196,55 @@ void vTestUARTTx()
         // 5- get picture
         // 6- ack the incoming data until the last package is received
 
+        if (downlinkImage)
+        {
+            int result = 0;
+            printToTerminal("Beginning downlink!\n");
 
+            buf_Rx0[0] = 0x88;
+            buf_Rx0[1] = (globalFileSize & 0xFF);
+            buf_Rx0[2] = (globalFileSize & 0xFF00) >> 8;
+            buf_Rx0[3] = (globalFileSize & 0xFF0000) >> 16;
+            buf_Rx0[4] = (globalFileSize & 0xFF000000) >> 24;
 
+            sendDataPacket(buf_Rx0, 5, 0x88);
+
+            useless_number = 8;
+//                          Tx_Success = readImageData(64, cameraImageBuf);
+//                                vTaskSuspendAll();
+                fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR);
+
+                if(1) {
+                    char buf[50];
+                    fs_file_rewind(&imageFile);
+                    int numBytes = 0;
+                    int packetIndex = 0;
+                    uint8_t sendSuccess = 0;
+                    for(int i = 0; i < globalFileSize; i += 64) {
+                        fs_file_read(&imageFile, buf, 64);
+                        imageFlag = 0;
+                        sendSuccess = 0;
+                        sendImagePacket(buf, 64, packetIndex);
+                        vTaskDelay(pdMS_TO_TICKS(50));
+    //                                    while(!sendSuccess) {
+    //                                        while(imageFlag == 0);
+    //
+    //                                        if(imageFlag == 0x01) {
+    //                                            sendSuccess = 1;
+    //                                            packetIndex += 1;
+    //                                        } else {
+    //                                            imageFlag = 0;
+    //                                            sendImagePacket(buf, 64, packetIndex);
+    //                                        }
+    //                                    }
+                    }
+                    sendDataPacket(buf_Rx0, 5, 0x89);
+                } else {
+                    printToTerminal("Failed to open image file!");
+                }
+                downlinkImage = 0;
+                fs_file_close(&imageFile);
+        }
     }
 }
 
@@ -452,10 +457,12 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
     unsigned long int imageLength=0;
     unsigned int packageID = 0, totalNumPacks = 0;
     uint8_t buf_img_data_package[packSizeJPEG];
+    char msg[64];
 
     uint8_t cmdSuccess = 0;
 
     uint32_t dataCnt = 0;
+    fs_remove("imageFile.jpg");
 
     fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
     fs_file_rewind(&imageFile);
@@ -523,10 +530,12 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
             }
             else // read the JPEG DATA
             {
+
                 imageLength = (buf_Rx0[3]) | (buf_Rx0[4] << 8) | (buf_Rx0[5] << 16);
                 totalNumPacks = imageLength/(packSizeJPEG-6);
                 globalFileSize = imageLength;
 
+                sprintf(msg, "Requesting %d bytes\n", globalFileSize);
                 // send first ack
                 buf_Tx0_ACK[4] = packageID & 0xFF;
                 buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;
@@ -563,6 +572,8 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
                     {
                         /// almost overflowing the data array so copy everything now before it's overwritten
                         fs_file_write(&imageFile, cameraImageBuf, dataCnt);
+                        sprintf(msg, "Wrote up to packet %d of %d\n", packageID, totalNumPacks);
+                        printToTerminal(msg);
                         dataCnt = 0;
 //                        fs_file_sync(&imageFile);
                     }
@@ -580,6 +591,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
     }
 
     }
+//    printf("Copied %d bytes.\n", globalFileSize);
     fs_file_close(&imageFile);
     return cmdSuccess;
 }

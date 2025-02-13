@@ -110,7 +110,7 @@ void sendDataPacket(char* data, int len, uint8_t type) {
             copyLen = remLen;
         }
 
-        xQueueSendToBack(commsTxQueue, &packet, 0);
+        xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
     } while(remLen > 0);
 
 }
@@ -123,7 +123,7 @@ void printToTerminal(char* msg) {
     packet.footer = 0xBB;
     memcpy(packet.data, msg, len);
     packet.type = 0x0A;
-    xQueueSendToBack(commsTxQueue, &packet, 0);
+    xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
 }
 
 void commsHandlerTask()
@@ -138,7 +138,7 @@ void commsHandlerTask()
 
     telemetryPacket_t telemPacket = {0};
     telemPacket.data = dataBuf;
-
+    cameraPowerStatus = 0;
     imageFlag = 0;
 
     for (;;)
@@ -153,13 +153,34 @@ void commsHandlerTask()
                     break;
                 case 0x01: //passthrough to ADCS
                     printToTerminal("Sending to ADCS");
+                    if(rxPacket.data[1] == 0x11) {
+                        cameraPowerStatus = 0;
+                    }
+                    if(rxPacket.data[1] == 0x12) {
+                        cameraPowerStatus = 1;
+                    }
                     if(buf_Rx0[2] > 32) buf_Rx0[2] = 31;
                     adcsArbCommand(rxPacket.data[1], buf_Rx1, rxPacket.data[2]);
                     sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
                     break;
+                case 0x02:{ //CDH command
+                    int cdhCommand = rxPacket.data[1];
+                    switch (cdhCommand) {
+                        case 0x01:
+                            printToTerminal("Take image request received!");
+                            takeImage = 1;
+                            break;
+                        case 0x02:
+                            printToTerminal("Take image request received!");
+                            downlinkImage = 1;
+                            break;
+                    }
+                    break;
+                }
                 case 0xAB: //CDH status ping
                     dataBuf[0] = powerPingStatus;
                     dataBuf[1] = ADCSPingStatus;
+                    dataBuf[2] = cameraPowerStatus;
                     sendDataPacket(dataBuf, 32, 0xAB);
                     break;
                 case 0xCC: //image status

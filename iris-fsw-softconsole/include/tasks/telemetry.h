@@ -51,6 +51,12 @@ QueueHandle_t commsTxQueue;
 QueueHandle_t commsRxQueue;
 
 uint8_t imageFlag;
+uint8_t takeImage;
+uint8_t downlinkImage;
+
+uint8_t cameraPowerStatus;
+uint8_t ADCSPowerStatus;
+uint8_t OtherPowerStatus;
 
 typedef struct {
   uint16_t VOLTAGE_IN;

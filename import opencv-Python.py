@@ -57,7 +57,7 @@ ORANGE = (252, 186, 3)
 PURPLE = (100, 0, 125)
 
 # Set up the serial connection
-ser = serial.Serial('COM5', 115200)  # Change 'COM3' to your COM port
+ser = serial.Serial('COM7', 115200)  # Change 'COM3' to your COM port
 ser.timeout = 0.5
 
 #actuator arming logic variables
@@ -228,6 +228,7 @@ class ScrollableTextbox:
         self.max_lines = height // font.get_height()
         self.snap_to_bottom = True
         self.checkbox = Checkbox(x + width - 20, y, 20, "Snap", font)
+        self.clearbox = Checkbox(x + width - 20, y+20, 20, "Clear", font)
 
     def append_text(self, text):
         t = datetime.datetime.now()
@@ -253,9 +254,13 @@ class ScrollableTextbox:
             self.scroll_offset += 1
 
     def draw(self, surface):
+        if(self.clearbox.checked):
+            self.text_lines = []
+            self.clearbox.checked = False
         pygame.draw.rect(surface, self.color, self.rect)
         pygame.draw.rect(surface, BLACK, self.rect, 2)  # Add a border
         self.checkbox.draw(surface)
+        self.clearbox.draw(surface)
         y_offset = self.rect.y
         for i in range(self.scroll_offset, min(len(self.text_lines), self.scroll_offset + self.max_lines)):
             text_surface = self.font.render(self.text_lines[i], True, BLACK)
@@ -310,21 +315,21 @@ buttons = [
     Button(650, 110, 100, 50, GREY, bytearray(b'\x01\x05\x11'), "Time", None, "ADCS"),
     Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
     Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
-    Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x06'), "Get data rate", None, "ADCS"),
-    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x01'), "ON", None, "CCLSM"),
-    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x00'), "OFF", None, "CCLSM"),
-    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x03'), "DATA", None, "CCLSM"),
-    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x01'), "ON", None, "CCLSM"),
-    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x00'), "OFF", None, "CCLSM"),
-    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x02'), "DATA", None, "CCLSM"),
+    Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x00'), "Get data rate", None, "ADCS"),
+    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"),
+    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
+    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x03'), "DATA", None, "CCLSM"),
+    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x01'), "ON", None, "CCLSM"),
+    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x00'), "OFF", None, "CCLSM"),
+    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x02'), "DATA", None, "CCLSM"),
     Button(800, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
     Button(850, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
-    Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
-    Button(800, 410, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
-    Button(850, 410, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x02'), "DATA", None, "CCLSM"),
+    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"),
+    Button(850, 410, 50, 50, GREY, bytearray(b'\x01\x11\x00'), "OFF", None, "CCLSM"),
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
     Button(1050, 410, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
-    Button(1200, 410, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
+    Button(1200, 410, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
     Button(1050, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
     Button(1200, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
     Button(1050, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
@@ -334,17 +339,17 @@ buttons = [
 ]
 
 indicators = {
-    "ADCS_CCLSM":indicator(800, 230, RED),
-    "CDH_CCLSM":indicator(800, 290, RED),
+    "CDH_CCLSM":indicator(800, 230, RED),
+    "ADCS_CCLSM":indicator(800, 290, RED),
     "OTHER_CCLSM":indicator(800, 350, RED),
     "CAMERA_CCLSM":indicator(800, 410, RED),
-    "POWER_STATUS":indicator(800, 410, RED),
-    "ADCS_STATUS":indicator(800, 410, RED),
+    # "POWER_STATUS":indicator(800, 410, RED),
+    # "ADCS_STATUS":indicator(800, 410, RED),
 }
 
 labels = [
-    label(760, 260, "ADCS\nPOWER", 15),
-    label(760, 320, "CDH\nPOWER", 15),
+    label(760, 260, "CDH\nPOWER", 15),
+    label(760, 320, "ADCS\nPOWER", 15),
     label(760, 380, "OTHER\nPOWER", 15),
     label(760, 440, "CAMERA\nPOWER", 15),
     label(70, 240, "Messages from CDH", 15),
@@ -397,6 +402,8 @@ while running:
                     button.on_click()
             if textbox.checkbox.is_clicked(event.pos):
                 textbox.checkbox.toggle()
+            if textbox.clearbox.is_clicked(event.pos):
+                textbox.clearbox.toggle()
         elif event.type == pygame.MOUSEBUTTONUP:
             for button in buttons:
                 if button.is_clicked(event.pos):
@@ -416,8 +423,7 @@ while running:
 
     #ping CDH periodically
     toc = time.time()
-    if(toc - tic > 0.5):
-        ser.write(b'\xAA\xBB\xCC')
+    if(toc - tic > 0.25):
         try:
             ser.write(bytearray(b'\xAB'))
         except:
@@ -428,6 +434,8 @@ while running:
     if misses > 100:
         comms_status = RED
         windowcol = RED
+        ser.write(b'\xAA\xBB\xCC')
+        time.sleep(0.1)
     else:
         comms_status = GREEN
         windowcol = WHITE
@@ -450,6 +458,12 @@ while running:
                         stringData = stringData.split(' ')
                         voltage = stringData[0]
                         current = stringData[1]
+                        bits =stringData[2]
+                        CDHCCLSMRx = 1
+                        # CAMERACCLSMRx = (int(bits) & 0x02) >> 1
+                        ADCSCCLSMRx = (int(bits) & 0x01)
+                        indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
+                        indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
                         pass
                     case 0x0A: #printable
                         stringData = new_data[6:6+myLen-1]
@@ -468,13 +482,11 @@ while running:
                     case 0xAB: #ping with status
                         powerStatusRx = new_data[6]
                         ADCSStatusRx = new_data[7]
-                        ADCSCCLSMRx = new_data[8]
+                        CAMERACCLSMRx = new_data[8]
                         CDHCCLSMRx = new_data[9]
-                        CAMERACCLSMRx = new_data[10]
+                        ADCSCCLSMRx = new_data[10]
                         power_status = RED if powerStatusRx == 0 else GREEN
                         adcs_status = RED if ADCSStatusRx == 0 else GREEN
-                        indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
-                        indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
                         indicators["CAMERA_CCLSM"].update(RED if CAMERACCLSMRx == 0 else GREEN)
                         pass
                     case 0x75: #CCLSM info
@@ -485,7 +497,6 @@ while running:
                             print(buildUpData)
                         pass
                     case 0x99: #imageData
-                        print("IMAGE DATA RX!!!")
                         imageData.append(new_data[dataIndex:crcIndex])
                         combined_image_data = b''.join(imageData)
                         with open(filename, "wb") as img_file:
@@ -493,11 +504,15 @@ while running:
                         pass
                     case 0x88: #image start info
                         print("Image status RX!!")
+                        imageData = []
                         filename = "received_image_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
                         imageSizeBytes = new_data[6:10]
                         pass
                     case 0x89: #image end info
                         print("Image RX done!!")
+                        pass
+                    case 0x45: #power telemetry values
+
                         pass
                     case _:
                         pass
@@ -532,7 +547,7 @@ while running:
     drawVoltageAndCurrent(voltage, current)
     updateStatus()
     try:
-        received_image = pygame.image.load("received_image.jpg")
+        received_image = pygame.image.load(filename)
         received_image = pygame.transform.scale(received_image, (640/2, 480/2))
         image = pygame.transform.rotate(received_image, -90)
         window.blit(image, (1050, 50))
