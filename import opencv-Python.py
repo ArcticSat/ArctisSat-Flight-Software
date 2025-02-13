@@ -417,9 +417,6 @@ while running:
     #ping CDH periodically
     toc = time.time()
     if(toc - tic > 0.5):
-        textbox.append_text("Pinging CDH")
-        textbox.append_text("BLBLBLB")
-        textbox.append_text("THIS IS A SUPER LONG MESSAGE LOL ABABABABABABA")
         ser.write(b'\xAA\xBB\xCC')
         try:
             ser.write(bytearray(b'\xAB'))
