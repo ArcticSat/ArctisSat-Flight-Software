@@ -1,3 +1,4 @@
+import datetime
 import pygame
 import serial
 import gif_pygame
@@ -72,8 +73,8 @@ running = True
 max_lines = 10
 
 # Indicators for power and ADCS status
-power_status = GREEN
-adcs_status = GREEN
+power_status = RED
+adcs_status = RED
 actuatorStatus = RED
 oldPowerStatus = GREEN
 oldADCSStatus = GREEN
@@ -186,6 +187,17 @@ class Button:
 
     def off_click(self):
         self.color = self.defaultColor
+
+class indicator:
+    def __init__(self, x, y, color):
+        self.rect = pygame.Rect(x, y, 20, 20)
+        self.color = color
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect)
+
+    def update(self, newColor):
+        self.color = newColor
 class label:
     def __init__(self, x, y, text, font_size=20):
         self.font = pygame.font.Font(None, font_size)
@@ -218,7 +230,15 @@ class ScrollableTextbox:
         self.checkbox = Checkbox(x + width - 20, y, 20, "Snap", font)
 
     def append_text(self, text):
-        self.text_lines.append(text)
+        t = datetime.datetime.now()
+        s = t.strftime('%H:%M:%S.%f')
+        text = s[:-3] + " - " + text
+        maxLength = 48
+        if len(text) > maxLength:  # Assuming 50 characters as the max length for a single line
+            self.text_lines.append(text[:maxLength])
+            self.text_lines.append(text[maxLength:])
+        else:
+            self.text_lines.append(text)
         self.snap_to_bottom = self.checkbox.checked
         if self.snap_to_bottom:
             if len(self.text_lines) > self.max_lines:
@@ -234,6 +254,7 @@ class ScrollableTextbox:
 
     def draw(self, surface):
         pygame.draw.rect(surface, self.color, self.rect)
+        pygame.draw.rect(surface, BLACK, self.rect, 2)  # Add a border
         self.checkbox.draw(surface)
         y_offset = self.rect.y
         for i in range(self.scroll_offset, min(len(self.text_lines), self.scroll_offset + self.max_lines)):
@@ -249,7 +270,7 @@ class ScrollableTextbox:
             pygame.draw.rect(surface, GREY, scrollbar_rect)
 
 class Checkbox:
-    def __init__(self, x, y, size, text, font, checked=False):
+    def __init__(self, x, y, size, text, font, checked=True):
         self.rect = pygame.Rect(x, y, size, size)
         self.text = text
         self.font = font
@@ -290,17 +311,17 @@ buttons = [
     Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
     Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
     Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x06'), "Get data rate", None, "ADCS"),
-    Button(800, 230, 50, 50, GREEN, bytearray(b'\x00\x04\x31\x01'), "ON", None, "CCLSM"),
-    Button(850, 230, 50, 50, OFF_RED, bytearray(b'\x00\x04\x31\x00'), "OFF", None, "CCLSM"),
+    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x01'), "ON", None, "CCLSM"),
+    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x00'), "OFF", None, "CCLSM"),
     Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x31\x03'), "DATA", None, "CCLSM"),
-    Button(800, 290, 50, 50, GREEN, bytearray(b'\x00\x04\x30\x01'), "ON", None, "CCLSM"),
-    Button(850, 290, 50, 50, OFF_RED, bytearray(b'\x00\x04\x30\x00'), "OFF", None, "CCLSM"),
+    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x01'), "ON", None, "CCLSM"),
+    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x00'), "OFF", None, "CCLSM"),
     Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x30\x02'), "DATA", None, "CCLSM"),
-    Button(800, 350, 50, 50, GREEN, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
-    Button(850, 350, 50, 50, OFF_RED, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    Button(800, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
+    Button(850, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
     Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
-    Button(800, 410, 50, 50, GREEN, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
-    Button(850, 410, 50, 50, OFF_RED, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    Button(800, 410, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
+    Button(850, 410, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
     Button(1050, 410, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
     Button(1200, 410, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
@@ -312,12 +333,21 @@ buttons = [
     Button(1200, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
 ]
 
+indicators = {
+    "ADCS_CCLSM":indicator(800, 230, RED),
+    "CDH_CCLSM":indicator(800, 290, RED),
+    "OTHER_CCLSM":indicator(800, 350, RED),
+    "CAMERA_CCLSM":indicator(800, 410, RED),
+    "POWER_STATUS":indicator(800, 410, RED),
+    "ADCS_STATUS":indicator(800, 410, RED),
+}
+
 labels = [
     label(760, 260, "ADCS\nPOWER", 15),
     label(760, 320, "CDH\nPOWER", 15),
     label(760, 380, "OTHER\nPOWER", 15),
     label(760, 440, "CAMERA\nPOWER", 15),
-    #label(50, 20, "Actuator Controls", 12),
+    label(70, 240, "Messages from CDH", 15),
 ]
 
 textbox = ScrollableTextbox(50, 250, 380, 200, WHITE, font)
@@ -354,6 +384,8 @@ expectedIndex = 0
 t1 = threading.Thread(target=SerialRx)
 t1.start()
 
+filename = "received_image_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
+
 while running:    
     clock.tick(60)
     for event in pygame.event.get():
@@ -387,6 +419,7 @@ while running:
     if(toc - tic > 0.5):
         textbox.append_text("Pinging CDH")
         textbox.append_text("BLBLBLB")
+        textbox.append_text("THIS IS A SUPER LONG MESSAGE LOL ABABABABABABA")
         ser.write(b'\xAA\xBB\xCC')
         try:
             ser.write(bytearray(b'\xAB'))
@@ -438,8 +471,14 @@ while running:
                     case 0xAB: #ping with status
                         powerStatusRx = new_data[6]
                         ADCSStatusRx = new_data[7]
+                        ADCSCCLSMRx = new_data[8]
+                        CDHCCLSMRx = new_data[9]
+                        CAMERACCLSMRx = new_data[10]
                         power_status = RED if powerStatusRx == 0 else GREEN
                         adcs_status = RED if ADCSStatusRx == 0 else GREEN
+                        indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
+                        indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
+                        indicators["CAMERA_CCLSM"].update(RED if CAMERACCLSMRx == 0 else GREEN)
                         pass
                     case 0x75: #CCLSM info
                         if(new_data[continuedIndex] == 1): #this packet is split into multiple packets
@@ -451,11 +490,17 @@ while running:
                     case 0x99: #imageData
                         print("IMAGE DATA RX!!!")
                         imageData.append(new_data[dataIndex:crcIndex])
-                        
-                        if((len(imageData) * 64) > 1000 or True):
-                            combined_image_data = b''.join(imageData)
-                            with open("received_image.jpg", "wb") as img_file:
-                                img_file.write(combined_image_data)
+                        combined_image_data = b''.join(imageData)
+                        with open(filename, "wb") as img_file:
+                            img_file.write(combined_image_data)
+                        pass
+                    case 0x88: #image start info
+                        print("Image status RX!!")
+                        filename = "received_image_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
+                        imageSizeBytes = new_data[6:10]
+                        pass
+                    case 0x89: #image end info
+                        print("Image RX done!!")
                         pass
                     case _:
                         pass
@@ -478,6 +523,9 @@ while running:
             button.update(power_status)
         elif button.group == "ADCS":
             button.update(adcs_status)
+
+    for indicator in indicators.values():
+        indicator.draw(window)
 
     for label in labels:
         label.draw(window)
