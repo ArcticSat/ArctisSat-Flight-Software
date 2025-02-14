@@ -351,26 +351,26 @@ buttons = [
     Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
     Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
     Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x00'), "Get data rate", None, "ADCS"),
-    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"),
-    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
-    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x03'), "DATA", None, "CCLSM"),
-    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x01'), "ON", None, "CCLSM"),
-    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x00'), "OFF", None, "CCLSM"),
-    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x02'), "DATA", None, "CCLSM"),
+    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x01'), "ON", None, "CCLSM"),#CDH
+    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x00'), "OFF", None, "CCLSM"),
+    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x03'), "DATA", None, "CCLSM"),
+    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"), #ADCS
+    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
+    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x02'), "DATA", None, "CCLSM"),
     Button(800, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
     Button(850, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
     Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x02'), "DATA", None, "CCLSM"),
-    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"),
+    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"), #CAMERA
     Button(850, 410, 50, 50, GREY, bytearray(b'\x01\x11\x00'), "OFF", None, "CCLSM"),
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
-    Button(1050, 410, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
-    Button(1200, 410, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
-    Button(1050, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
-    Button(1200, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
-    Button(1050, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
-    Button(1200, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
-    Button(1050, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
-    Button(1200, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
+    Button(1050, 110, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
+    Button(1200, 110, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
+    Button(1050, 170, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
+    Button(1200, 170, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
+    Button(1050, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
+    Button(1200, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
+    Button(1050, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
+    Button(1200, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
 ]
 
 indicators = {
@@ -387,7 +387,7 @@ labels = [
     label(760, 320, "ADCS\nPOWER", 15),
     label(760, 380, "OTHER\nPOWER", 15),
     label(760, 440, "CAMERA\nPOWER", 15),
-    label(70, 240, "Messages from CDH", 15),
+    label(100, 240, "Messages from CDH", 15),
 ]
 
 textbox = ScrollableTextbox(50, 250, 380, 200, WHITE, font)
@@ -564,7 +564,6 @@ def check_serial_connections():
     if ps:
         try:
             ps.get_voltage()
-            ser.in_waiting
         except (OSError, serial.SerialException):
             ps.close()
             ps = None
@@ -818,7 +817,7 @@ expectedIndex = 0
 
 filename = "received_image_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
 
-set_GUI_fps = 60
+set_GUI_fps = 150
 thread_started = 1
 while running:
     if ser and thread_started: # start SerialRx thread only once we've connected to the radio serial port
@@ -840,7 +839,10 @@ while running:
                 connect_ps_button.on_click()
             for button in buttons:
                 if button.is_clicked(event.pos):
-                    button.on_click()
+                    try:
+                        button.on_click()
+                    except:
+                        pass
             if textbox.checkbox.is_clicked(event.pos):
                 textbox.checkbox.toggle()
             if textbox.clearbox.is_clicked(event.pos):
@@ -905,7 +907,9 @@ while running:
                         bits = stringData[2]
                         CDHCCLSMRx = 1
                         # CAMERACCLSMRx = (int(bits) & 0x02) >> 1
-                        ADCSCCLSMRx = (int(bits) & 0x01)
+                        ADCSCCLSMRx = (int(bits) & 0x02)
+                        CDHCCLSMRx = (int(bits) & 0x01)
+
                         indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
                         indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
                         pass
@@ -1015,7 +1019,7 @@ while running:
         received_image = pygame.image.load(filename)
         received_image = pygame.transform.scale(received_image, (640/2, 480/2))
         image = pygame.transform.rotate(received_image, -90)
-        window.blit(image, (1050, 50))
+        window.blit(image, (1050, 450))
     except:
         pass
 
