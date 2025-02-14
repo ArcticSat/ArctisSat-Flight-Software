@@ -316,16 +316,16 @@ buttons = [
     Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
     Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
     Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x00'), "Get data rate", None, "ADCS"),
-    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"),
-    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
-    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x01\x03'), "DATA", None, "CCLSM"),
-    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x01'), "ON", None, "CCLSM"),
-    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x00'), "OFF", None, "CCLSM"),
-    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x00\x02'), "DATA", None, "CCLSM"),
+    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x01'), "ON", None, "CCLSM"),#CDH
+    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x00'), "OFF", None, "CCLSM"),
+    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x03'), "DATA", None, "CCLSM"),
+    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"), #ADCS
+    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
+    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x02'), "DATA", None, "CCLSM"),
     Button(800, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
     Button(850, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
     Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x02'), "DATA", None, "CCLSM"),
-    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"),
+    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"), #CAMERA
     Button(850, 410, 50, 50, GREY, bytearray(b'\x01\x11\x00'), "OFF", None, "CCLSM"),
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
     Button(1050, 410, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
@@ -399,7 +399,10 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             for button in buttons:
                 if button.is_clicked(event.pos):
-                    button.on_click()
+                    try:
+                        button.on_click()
+                    except:
+                        pass
             if textbox.checkbox.is_clicked(event.pos):
                 textbox.checkbox.toggle()
             if textbox.clearbox.is_clicked(event.pos):
@@ -431,6 +434,7 @@ while running:
         tic = time.time()
     
     #if CDH hasn't responded in a while, change status to red
+
     if misses > 100:
         comms_status = RED
         windowcol = RED
@@ -461,7 +465,9 @@ while running:
                         bits =stringData[2]
                         CDHCCLSMRx = 1
                         # CAMERACCLSMRx = (int(bits) & 0x02) >> 1
-                        ADCSCCLSMRx = (int(bits) & 0x01)
+                        ADCSCCLSMRx = (int(bits) & 0x02)
+                        CDHCCLSMRx = (int(bits) & 0x01)
+
                         indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
                         indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
                         pass
@@ -535,6 +541,10 @@ while running:
             button.update(power_status)
         elif button.group == "ADCS":
             button.update(adcs_status)
+        elif button.group == "BALLIN":
+            button.update(comms_status)
+        elif button.group == "CCLSM":
+            button.update(power_status)
 
     for indicator in indicators.values():
         indicator.draw(window)

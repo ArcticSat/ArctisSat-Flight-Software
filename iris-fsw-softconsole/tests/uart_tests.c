@@ -103,7 +103,9 @@ void vTestUARTTx()
     FilesystemError_t stat = fs_init();
 
     if (stat != FS_OK) {
-        while (1);
+        while (1) {
+            vTaskDelay(1000);
+        }
     }
     //Mount the file system.
 
@@ -138,8 +140,11 @@ void vTestUARTTx()
     {
 
         Tx_Success = 0;
-
-        Tx_Success = syncCamera();
+        if(takeImage) {
+            Tx_Success = syncCamera();
+        } else {
+            vTaskDelay(250);
+        }
         if (Tx_Success > 0 && takeImage)
         {
             printToTerminal("Camera synced!\n");
@@ -199,7 +204,6 @@ void vTestUARTTx()
         if (downlinkImage)
         {
             int result = 0;
-            printToTerminal("Beginning downlink!\n");
 
             buf_Rx0[0] = 0x88;
             buf_Rx0[1] = (globalFileSize & 0xFF);
@@ -212,7 +216,10 @@ void vTestUARTTx()
             useless_number = 8;
 //                          Tx_Success = readImageData(64, cameraImageBuf);
 //                                vTaskSuspendAll();
+
+                printToTerminal("Opening file!\n");
                 fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR);
+                printToTerminal("Beginning downlink!\n");
 
                 if(1) {
                     char buf[50];
@@ -225,7 +232,7 @@ void vTestUARTTx()
                         imageFlag = 0;
                         sendSuccess = 0;
                         sendImagePacket(buf, 64, packetIndex);
-                        vTaskDelay(pdMS_TO_TICKS(50));
+                        vTaskDelay(pdMS_TO_TICKS(10));
     //                                    while(!sendSuccess) {
     //                                        while(imageFlag == 0);
     //
@@ -463,9 +470,11 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
 
     uint32_t dataCnt = 0;
     fs_remove("imageFile.jpg");
-
+    printToTerminal("Opening file!\n");
     fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
     fs_file_rewind(&imageFile);
+    printToTerminal("File open!\n");
+
 
     // params meaning:
 
@@ -535,7 +544,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
                 totalNumPacks = imageLength/(packSizeJPEG-6);
                 globalFileSize = imageLength;
 
-                sprintf(msg, "Requesting %d bytes\n", globalFileSize);
+                printToTerminal("Beginning transfer!\n");
                 // send first ack
                 buf_Tx0_ACK[4] = packageID & 0xFF;
                 buf_Tx0_ACK[5] = (packageID >> 8) & 0xFF;

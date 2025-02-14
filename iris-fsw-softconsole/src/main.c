@@ -219,8 +219,8 @@ int main( void )
 
 /**THESE ARE THE MAIN FUNCTIONS**/
 
-    status = xTaskCreate(vCSP_Server, "cspServer", 300, NULL, 3, &vCSP_Server_h);
-    status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,3,&vCanServer_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 300, NULL, 1, &vCSP_Server_h);
+    status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,1,&vCanServer_h);
     vTaskSuspend(vCanServer_h);
     status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
     status = xTaskCreate(commsHandlerTask,"UART Comms Handler",500,NULL,1,NULL);
@@ -376,7 +376,7 @@ static void vTestCspClient(void * pvParameters){
     csp_packet_t *cspPacket;
     uint8_t dest;
 	while(1){
-        if(xQueueReceive(txQueue, &packet, 1000) == pdTRUE) {
+        if(xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
             dest = packet.dest;
             cspPacket = packet.packet;
             txconn = csp_connect(2, 0, dest, 1000, 0);
@@ -384,28 +384,6 @@ static void vTestCspClient(void * pvParameters){
             csp_close(txconn);
             csp_buffer_free(cspPacket);
         }
-//		csp_conn_t * conn;
-//		csp_packet_t * packet;
-//		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
-//		if(allowChange) {
-//		    packet = csp_buffer_get(sizeof(uint8_t));
-//            packet->data[0] = 0;
-//		} else {
-//            packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
-//            sprintf(packet->data,"Hello World");
-//            packet->length=strlen("Hello World");
-//		}
-//		csp_send(conn,packet,0);
-//		csp_close(conn);
-//        csp_buffer_free(packet);
-//		vTaskDelay(1000);
-
-//		CANMessage_t msg = {0};
-//		msg.id = 0x144;
-//		msg.dlc = 8;
-//		sprintf(msg.data,"SHEEEESH");
-//		CAN_transmit_message(&msg);
-//		vTaskDelay(5000);
 	}
 }
 
