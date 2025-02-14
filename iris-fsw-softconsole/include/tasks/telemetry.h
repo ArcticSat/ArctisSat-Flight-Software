@@ -13,6 +13,8 @@
 #include <csp/csp.h>
 #include "tasks/telemetry.h"
 #include "queue.h"
+#include "drivers/filesystem_driver.h"
+
 
 //Define the csp address of all devices in the network.
 #define POWER_CSP_ADDRESS	2
@@ -53,10 +55,15 @@ QueueHandle_t commsRxQueue;
 uint8_t imageFlag;
 uint8_t takeImage;
 uint8_t downlinkImage;
+uint8_t broadcastTelemFlag;
 
 uint8_t cameraPowerStatus;
 uint8_t ADCSPowerStatus;
 uint8_t OtherPowerStatus;
+
+lfs_file_t powerTelemFile;
+lfs_file_t adcsTelemFile;
+lfs_file_t logTelemFile;
 
 typedef struct {
   uint16_t VOLTAGE_IN;
@@ -397,6 +404,8 @@ void printMsg(char * msg);
 int printf(const char *fmt, ...);
 void set_csp_init(int state);
 int is_csp_up();
+void telemetryManager();
+void logPowerTelem(char*, int);
 
 int powerPingStatus;
 int powerPingCount;

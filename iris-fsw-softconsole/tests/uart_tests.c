@@ -100,24 +100,6 @@ void vTestUARTTx()
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));
 
-    FilesystemError_t stat = fs_init();
-
-    if (stat != FS_OK) {
-        while (1) {
-            vTaskDelay(1000);
-        }
-    }
-    //Mount the file system.
-
-    int err = fs_mount();
-
-    // reformat if we can't mount the filesystem
-    // this should only happen on the first boot
-    if (err) {
-        fs_mount();
-        fs_format();
-    }
-
 //    fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
 //    char buf[50];
 //    fs_file_rewind(&imageFile);
@@ -469,7 +451,9 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
     uint8_t cmdSuccess = 0;
 
     uint32_t dataCnt = 0;
-    fs_remove("imageFile.jpg");
+    if(fs_file_exist("imageFile.jpg")) {
+        fs_remove("imageFile.jpg");
+    }
     printToTerminal("Opening file!\n");
     fs_file_open(&imageFile, "imageFile.jpg", LFS_O_RDWR | LFS_O_CREAT);
     fs_file_rewind(&imageFile);
@@ -602,6 +586,7 @@ unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned 
     }
 //    printf("Copied %d bytes.\n", globalFileSize);
     fs_file_close(&imageFile);
+
     return cmdSuccess;
 }
 

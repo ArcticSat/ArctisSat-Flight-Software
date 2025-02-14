@@ -15,6 +15,7 @@
 
 uint8_t tempBuff[256]={0};
 int csp_init_done =0;
+int flashSystemReady = 0;
 
 void unpackTelemetry(uint8_t * data, telemetryPacket_t* output){
 
@@ -25,6 +26,63 @@ void unpackTelemetry(uint8_t * data, telemetryPacket_t* output){
     memcpy(tempBuff,&data[sizeof(Calendar_t)+2],output->length);
     output->data = tempBuff;
 
+}
+
+lfs_soff_t powerWritePos = 0;
+lfs_soff_t powerReadPos = 0;
+
+
+void telemetryManager() {
+    char telemBuf[64];
+    FilesystemError_t stat = fs_init();
+
+    if (stat != FS_OK) {
+        while (1) {
+            vTaskDelay(1000);
+        }
+    }
+    //Mount the file system.
+
+    int err = fs_mount();
+
+    // reformat if we can't mount the filesystem
+    // this should only happen on the first boot
+    if (err) {
+        fs_mount();
+        fs_format();
+    }
+
+    fs_file_open(&powerTelemFile, "powerTelem.log", LFS_O_RDWR | LFS_O_CREAT);
+    fs_file_open(&adcsTelemFile, "adcsTelem.log", LFS_O_RDWR | LFS_O_CREAT);
+    fs_file_open(&logTelemFile, "logTelem.log", LFS_O_RDWR | LFS_O_CREAT);
+
+    printToTerminal("File system online!");
+    flashSystemReady = 1;
+    for(;;) {
+            if(broadcastTelemFlag) {
+                powerWritePos = fs_file_tell(&powerTelemFile);
+                fs_file_seek(&powerTelemFile, powerReadPos, 0);
+                int result = fs_file_read(&powerTelemFile, telemBuf, 64);
+                powerReadPos = 0;
+                while(broadcastTelemFlag && result > 0 && powerReadPos < powerWritePos) {
+                    sendDataPacket(telemBuf, 64, 0x19);
+//                    vTaskDelay(100);
+                    result = fs_file_read(&powerTelemFile, telemBuf, 64);
+                    powerReadPos = fs_file_tell(&powerTelemFile);
+                }
+                if(powerReadPos > powerWritePos) powerReadPos = powerWritePos;
+                broadcastTelemFlag = 0;
+                fs_file_seek(&powerTelemFile, powerWritePos, 0);
+            }
+        vTaskDelay(500);
+    }
+}
+
+void logPowerTelem(char* data, int len) {
+    if(flashSystemReady) {
+        fs_file_write(&powerTelemFile, data, len);
+    }
+    return;
 }
 
 void sendTelemetry(telemetryPacket_t * packet){

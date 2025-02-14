@@ -330,8 +330,8 @@ buttons = [
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
     Button(1050, 410, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
     Button(1200, 410, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
-    Button(1050, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
-    Button(1200, 470, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
+    Button(1050, 470, 75, 50, GREEN, bytearray(b'\x08\x08'), "Get\nTelem", None, "BALLIN"),
+    Button(1200, 470, 75, 50, GREEN, bytearray(b'\x09\x09'), "Stop\nTelem", None, "BALLIN"),
     Button(1050, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
     Button(1200, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
     Button(1050, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
@@ -463,10 +463,9 @@ while running:
                         voltage = stringData[0]
                         current = stringData[1]
                         bits =stringData[2]
-                        CDHCCLSMRx = 1
                         # CAMERACCLSMRx = (int(bits) & 0x02) >> 1
-                        ADCSCCLSMRx = (int(bits) & 0x02)
-                        CDHCCLSMRx = (int(bits) & 0x01)
+                        CDHCCLSMRx = (int(bits) & 0x02)
+                        ADCSCCLSMRx = (int(bits) & 0x01)
 
                         indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
                         indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
@@ -484,6 +483,16 @@ while running:
                         hexString = hexString + "\n"
                         textbox.append_text(hexString)
                         print(hexString)
+                        pass
+                    case 0x19: #telemetry data
+                        hexString = ""
+                        temp = new_data[6:6+myLen-1]
+                        for char in temp:
+                            hexString = hexString + hex(char) + " "
+                        hexString = hexString + "\n"
+                        # textbox.append_text(hexString)
+                        # print(hexString)
+                        print(temp)
                         pass
                     case 0xAB: #ping with status
                         powerStatusRx = new_data[6]

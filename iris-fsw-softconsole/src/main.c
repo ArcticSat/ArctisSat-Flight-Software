@@ -219,17 +219,19 @@ int main( void )
 
 /**THESE ARE THE MAIN FUNCTIONS**/
 
-    status = xTaskCreate(vCSP_Server, "cspServer", 300, NULL, 1, &vCSP_Server_h);
-    status = xTaskCreate(vCanServer,"CAN Rx",800,NULL,1,&vCanServer_h);
+    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
+    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
     vTaskSuspend(vCanServer_h);
-    status = xTaskCreate(vTestCspClient,"CSP transmitter",500,NULL,1,NULL);
-    status = xTaskCreate(commsHandlerTask,"UART Comms Handler",500,NULL,1,NULL);
-    status = xTaskCreate(commsTransmitterTask,"UART Comms Handler 2",100,NULL,1,NULL);
-    status = xTaskCreate(commsReceiverTask,"UART Comms Handler 3",100,NULL,1,NULL);
+    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
+    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
+    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,1,NULL);
+    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,1,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    status = xTaskCreate(telemetryManager,"Telem",500,NULL,1,NULL);
+
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",700,NULL,1,NULL);
 
 
 

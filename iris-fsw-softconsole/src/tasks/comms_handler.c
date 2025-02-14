@@ -178,6 +178,16 @@ void commsHandlerTask() {
                 }
                 break;
             }
+            case 0x08: { //Ground station ping - start transmitting data!
+                printToTerminal("Ground station ping received!");
+                broadcastTelemFlag = 1;
+                break;
+            }
+            case 0x09: { //Ground station ping - start transmitting data!
+                printToTerminal("Stopping telem downlink!");
+                broadcastTelemFlag = 0;
+                break;
+            }
             case 0xAB: //CDH status ping
                 dataBuf[0] = powerPingStatus;
                 dataBuf[1] = ADCSPingStatus;

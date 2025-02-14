@@ -132,6 +132,7 @@ void vCSP_Server(void *pvParameters) {
 			switch(dest_port){
 				case CSP_COMMS_PASSTHROUGH:{
 				    printToTerminal(packet->data);
+				    logPowerTelem(packet->data, packet->length);
 				    break;
 				}
 				case 0x04: {
@@ -140,6 +141,7 @@ void vCSP_Server(void *pvParameters) {
 				}
 				case 0x05: //powinfo port
 				    sendDataPacket(packet->data, packet->length, 0x05);
+                    logPowerTelem(packet->data, packet->length);
 				    break;
 				case 10: //CCLSM DATA PACKET
                     {
