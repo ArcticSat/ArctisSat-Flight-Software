@@ -672,7 +672,7 @@ void vCanServer(void * pvParameters)
 	while(1)
 	{
 		bool is_backpanel_sa_current;
-		if( xQueueReceive(can_rx_queue,&rxmsg,pdMS_TO_TICKS(10000)) )
+		if( xQueueReceive(can_rx_queue,&rxmsg,portMAX_DELAY))
 		{
 		 /* rxmsg now contains a copy of xMessage. */
 			unpackRawCanTelemetry(&rxmsg, &tmpkt);

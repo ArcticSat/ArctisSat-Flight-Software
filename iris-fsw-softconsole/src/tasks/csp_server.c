@@ -109,7 +109,7 @@ void vCSP_Server(void *pvParameters) {
     int lockout = 0;
     //TODO: Check return of csp_bind and listen, then handle errors.
     while(1) {
-		conn = csp_accept(socket, 250);
+		conn = csp_accept(socket, CSP_MAX_DELAY);
 		if(conn){
 			packet = csp_read(conn,0);
 			int sourceID = csp_conn_src(conn);
