@@ -365,8 +365,8 @@ buttons = [
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
     Button(1050, 110, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
     Button(1200, 110, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
-    Button(1050, 170, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
-    Button(1200, 170, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
+    Button(1050, 170, 75, 50, GREEN, bytearray(b'\x08\x08'), "Get\nTelem", None, "BALLIN"),
+    Button(1200, 170, 75, 50, GREEN, bytearray(b'\x09\x09'), "Stop\nTelem", None, "BALLIN"),
     Button(1050, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
     Button(1200, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
     Button(1050, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
@@ -817,7 +817,7 @@ expectedIndex = 0
 
 filename = "received_image_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
 
-set_GUI_fps = 150
+set_GUI_fps = 60
 thread_started = 1
 while running:
     if ser and thread_started: # start SerialRx thread only once we've connected to the radio serial port
@@ -899,16 +899,15 @@ while running:
 
                 match type:
                     case 0x05:  #powinfo
-                        stringData = new_data[6:6+myLen-1]
+                        stringData = new_data[6:6 + myLen - 1]
                         stringData = stringData.decode('utf-8')
                         stringData = stringData.split(' ')
                         voltage = stringData[0]
                         current = stringData[1]
                         bits = stringData[2]
-                        CDHCCLSMRx = 1
                         # CAMERACCLSMRx = (int(bits) & 0x02) >> 1
-                        ADCSCCLSMRx = (int(bits) & 0x02)
-                        CDHCCLSMRx = (int(bits) & 0x01)
+                        CDHCCLSMRx = (int(bits) & 0x02)
+                        ADCSCCLSMRx = (int(bits) & 0x01)
 
                         indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
                         indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
@@ -927,6 +926,17 @@ while running:
                         textbox.append_text(hexString)
                         print(hexString)
                         pass
+                    case 0x19:  # telemetry data
+                        hexString = ""
+                        temp = new_data[6:6 + myLen - 1]
+                        for char in temp:
+                            hexString = hexString + hex(char) + " "
+                        hexString = hexString + "\n"
+                        # textbox.append_text(hexString)
+                        # print(hexString)
+                        print(temp)
+                        pass
+
                     case 0xAB:  #ping with status
                         powerStatusRx = new_data[6]
                         ADCSStatusRx = new_data[7]
