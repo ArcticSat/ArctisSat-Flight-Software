@@ -29,7 +29,7 @@ void vTestAdcsDriver(void * pvParameters){
             misses = 0;
         }
 
-        if(misses > 4) {
+        if(misses > 4 && ADCSPingStatus == PING_FOUND) {
             misses = 4;
             ADCSPingStatus = PING_LOST;
         }

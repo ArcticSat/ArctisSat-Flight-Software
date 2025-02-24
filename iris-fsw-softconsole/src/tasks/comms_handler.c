@@ -69,8 +69,7 @@ void commsReceiverTask() {
         uint8_t buf_Rx0[32];
         i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
         if (i) {
-            if (buf_Rx0[0] == 0xAA && buf_Rx0[1] == 0xBB && buf_Rx0[2] == 0xCC
-                    && xTaskToNotify) {
+            if (buf_Rx0[0] == 0xAA && buf_Rx0[1] == 0xBB && buf_Rx0[2] == 0xCC && xTaskToNotify) {
                 xTaskNotify(xTaskToNotify, 0, eNoAction);
             } else {
                 radioPacket_t packet;
@@ -126,7 +125,15 @@ void printToTerminal(char *msg) {
     memcpy(packet.data, msg, len);
     packet.type = 0x0A;
     xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
+    logMessage(msg);
 }
+
+uint8_t year, month, day, hour, minute, second;
+Calendar_t time;
+Calendar_t currTime;
+char timeBuf[32];
+
+
 
 void commsHandlerTask() {
     uint8_t buf_Rx0[32];
@@ -141,6 +148,7 @@ void commsHandlerTask() {
     telemPacket.data = dataBuf;
     cameraPowerStatus = 0;
     imageFlag = 0;
+    printToTerminal("COMMS TASK STARTED!?!?!?!?!");
 
     for (;;) {
         if (xQueueReceive(commsRxQueue, &rxPacket, portMAX_DELAY) == pdTRUE) {
@@ -175,6 +183,17 @@ void commsHandlerTask() {
                     printToTerminal("Take image request received!");
                     downlinkImage = 1;
                     break;
+                case 0x03:
+                    ds1393_read_time(&currTime);
+                    year = currTime.year;
+                    month = currTime.month;
+                    day = currTime.day;
+                    hour = currTime.hour;
+                    minute = currTime.minute;
+                    second = currTime.second;
+                    sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
+                    printToTerminal(timeBuf);
+                    break;
                 }
                 break;
             }
@@ -202,6 +221,23 @@ void commsHandlerTask() {
                     imageFlag = 0xFF;
                     //image bad, resend
                 }
+                break;
+            case 0xDD: //calendar with time
+                year = rxPacket.data[1];
+                month = rxPacket.data[2];
+                day = rxPacket.data[3];
+                hour = rxPacket.data[4];
+                minute = rxPacket.data[5];
+                second = rxPacket.data[6];
+                time.year = year;
+                time.month = month;
+                time.day = day;
+                time.hour = hour;
+                time.minute = minute;
+                time.second = second;
+                time.weekday = 2;
+                time.week = 2;
+                set_rtc(&time);
                 break;
             }
         }

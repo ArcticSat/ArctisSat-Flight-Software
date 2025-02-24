@@ -123,10 +123,12 @@ void vTestUARTTx()
 
         Tx_Success = 0;
         if(takeImage) {
+            printToTerminal("Syncing camera\n");
             Tx_Success = syncCamera();
         } else {
             vTaskDelay(250);
         }
+
         if (Tx_Success > 0 && takeImage)
         {
             printToTerminal("Camera synced!\n");

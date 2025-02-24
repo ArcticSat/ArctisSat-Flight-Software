@@ -86,7 +86,7 @@ void vCSP_Server(void *pvParameters) {
 
     csp_bind(socket, CSP_ANY); //bind to all ports, listen to anything set to this destination address
     csp_listen(socket, 4); //have up to 4 backlog connections for testing
-    vTaskResume(vCanServer_h); //resume CAN rx handler
+//    vTaskResume(vCanServer_h); //resume CAN rx handler
 
     //Have up to 4 backlog connections.
     csp_listen(socket,4);
@@ -141,7 +141,7 @@ void vCSP_Server(void *pvParameters) {
 				}
 				case 0x05: //powinfo port
 				    sendDataPacket(packet->data, packet->length, 0x05);
-                    logPowerTelem(packet->data, packet->length);
+//                    logPowerTelem(packet->data, packet->length);
 				    break;
 				case 10: //CCLSM DATA PACKET
                     {

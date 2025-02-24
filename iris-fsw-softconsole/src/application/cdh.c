@@ -655,6 +655,7 @@ uint8_t telem_id = 0;
 void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
 
 {
+    return;
 	memcpy(can_data_buf,0,256);
 	memcpy(&output->telem_id,&can_msg->data[0],1);
 	memcpy(&output->length,&can_msg->dlc,1);

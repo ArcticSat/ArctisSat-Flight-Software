@@ -145,7 +145,7 @@ int main( void )
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
+    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
@@ -175,12 +175,12 @@ int main( void )
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
 //    vTaskSuspend(vSunPointing_h);
 
-    txQueue = xQueueCreate(25, sizeof(satPacket));
+    txQueue = xQueueCreate(10, sizeof(satPacket));
 
-    commsTxQueue = xQueueCreate(25, sizeof(radioPacket_t));
-    commsRxQueue = xQueueCreate(25, sizeof(radioPacket_t));
+    commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
+    commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
 
-
+    logMessage("Power on!");
 
 
     // Start FreeRTOS Tasks
@@ -198,7 +198,7 @@ int main( void )
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-//    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
 //    //      finishes transmission (for the first time). In core_spi.c, the software gets stuck in the
@@ -219,13 +219,23 @@ int main( void )
 
 /**THESE ARE THE MAIN FUNCTIONS**/
 
+    radioPacket_t packet;
+    int len = strlen("INIT FINISHED!!!");
+    packet.len = len + 1;
+    packet.header = 0xAA;
+    packet.footer = 0xBB;
+    memcpy(packet.data, "INIT FINISHED!!!", len);
+    packet.type = 0x0A;
+
+
+
     status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
-    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
-    vTaskSuspend(vCanServer_h);
+//    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
+//    vTaskSuspend(vCanServer_h);
     status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
     status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
-    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,1,NULL);
-    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,1,NULL);
+    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
+    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
     status = xTaskCreate(telemetryManager,"Telem",500,NULL,1,NULL);
 
@@ -233,7 +243,16 @@ int main( void )
 
     status = xTaskCreate(vTestUARTTx,"Test UART Tx",700,NULL,1,NULL);
 
+    logMessage("Tasks created!");
 
+
+
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
+    printToTerminal("STARTING SCHEDDY!!!");
+    logMessage("Beginning scheduller");
 
     vTaskStartScheduler();
 
@@ -252,12 +271,14 @@ static void prvSetupHardware( void )
 //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
 
+
 //    init_WD();
-//    init_rtc();
+    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    init_mram();
 //    adcs_init_driver();
+
 #if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
 //    init_mram();
 #ifdef USING_DATA_FLASH
@@ -269,6 +290,24 @@ static void prvSetupHardware( void )
 #endif
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
+
+    FilesystemError_t stat = fs_init();
+
+        if (stat != FS_OK) {
+            while (1) {
+                int j = 20;
+            }
+        }
+        //Mount the file system.
+
+        int err = fs_mount();
+
+        // reformat if we can't mount the filesystem
+        // this should only happen on the first boot
+        if (err) {
+            fs_mount();
+            fs_format();
+        }
 
 //    initADC();
 //    asMram_init();

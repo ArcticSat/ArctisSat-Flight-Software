@@ -406,6 +406,9 @@ void set_csp_init(int state);
 int is_csp_up();
 void telemetryManager();
 void logPowerTelem(char*, int);
+void logADCSTelem(char*, int);
+void logTelem(char*, int);
+void logMessage(char*);
 
 int powerPingStatus;
 int powerPingCount;

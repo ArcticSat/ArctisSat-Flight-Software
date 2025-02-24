@@ -138,6 +138,21 @@ def armActuators():
     actuatorColor = GREEN
     armCount = 300
 
+def sendTime():
+    t = datetime.datetime.now()
+    header = 0xDD
+    year = t.year % 100
+    month = t.month
+    day = t.day
+    hour = t.hour
+    minute = t.minute
+    second = t.second
+    s = bytearray([header, year, month, day, hour, minute, second])
+    ser.write(s)
+    print(s)
+    # s = t.strftime('%H:%M:%S.%f')
+    # ser.write(bytearray(s, 'utf-8'))
+
 def sendAck():
     ser.write(bytearray(b'\xCC\xAA'))
 
@@ -334,8 +349,8 @@ buttons = [
     Button(1200, 470, 75, 50, GREEN, bytearray(b'\x09\x09'), "Stop\nTelem", None, "BALLIN"),
     Button(1050, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
     Button(1200, 530, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
-    Button(1050, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
-    Button(1200, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
+    Button(1050, 590, 75, 50, GREEN, bytearray(b'\x02\x03'), "Get\ntime", None, "BALLIN"),
+    Button(1200, 590, 75, 50, GREEN, bytearray(b'\x02\x05'), "Set\ntime", sendTime, "BALLIN"),
 ]
 
 indicators = {
@@ -492,7 +507,16 @@ while running:
                         hexString = hexString + "\n"
                         # textbox.append_text(hexString)
                         # print(hexString)
-                        print(temp)
+                        tempArr = temp.split(b'\x00')
+                        # print(len(tempArr))
+                        for line in tempArr:
+                            line = line.split(b'\n')
+                            for subline in line:
+                                print(subline, end = "")
+                            print()
+
+                            # print(line)
+                        # print(temp)
                         pass
                     case 0xAB: #ping with status
                         powerStatusRx = new_data[6]
