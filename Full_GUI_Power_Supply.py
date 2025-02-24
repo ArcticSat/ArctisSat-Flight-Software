@@ -21,22 +21,25 @@ from pyHM310T import PowerSupply
 # Initialize Pygame
 pygame.init()
 
-indicator_corner_anchor_x = 50
-indicator_corner_anchor_y = 500
+indicator_corner_anchor_x = 750
+indicator_corner_anchor_y = 290
 
-voltage_anchor_x = 200
-current_anchor_x = 200
-voltage_anchor_y = 500
-current_anchor_y = 550
-GUI_loop_rate_anchor_x = 950
-GUI_loop_rate_anchor_y = 60
+voltage_anchor_x = 750
+current_anchor_x = 750
+voltage_anchor_y = 420
+current_anchor_y = 445
+GUI_loop_rate_anchor_x = 450
+GUI_loop_rate_anchor_y = 15
 
 # Set up the display
-width, height = 1500, 900
+width, height = 1250, 825
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
+# # Create a directory to store images
+# if not os.path.exists('Downlinked Images'):
+#     os.makedirs('Downlinked Images')
 
 pygame.mixer.init()
 pygame.display.set_caption("HAXSat")
@@ -48,9 +51,6 @@ text_window = pygame.Rect(50, 250, 380, 200)
 tic = time.time()
 tic1 = time.time()
 clock = pygame.Clock()
-example_gif = gif_pygame.load("cat.gif") # Loads a .gif file
-
-sound1 = pygame.mixer.Sound('catsong.mp3')  # Load a sound.
 
 power_indicator = pygame.Rect(indicator_corner_anchor_x, indicator_corner_anchor_y, 20, 20)
 adcs_indicator = pygame.Rect(indicator_corner_anchor_x, indicator_corner_anchor_y + 25, 20, 20)
@@ -112,17 +112,17 @@ def updateStatus():
     power_label = font.render("Power Status", True, BLACK)
     adcs_label = font.render("ADCS Status", True, BLACK)
     comms_label = font.render("CDH Status", True, BLACK)
-    window.blit(power_label, (indicator_corner_anchor_x + 25, indicator_corner_anchor_y))
-    window.blit(adcs_label, (indicator_corner_anchor_x + 25, indicator_corner_anchor_y + 25))
-    window.blit(comms_label, (indicator_corner_anchor_x + 25, indicator_corner_anchor_y + 50))
+    window.blit(power_label, (indicator_corner_anchor_x + 25, indicator_corner_anchor_y + 2.5))
+    window.blit(adcs_label, (indicator_corner_anchor_x + 25, indicator_corner_anchor_y + 27.5))
+    window.blit(comms_label, (indicator_corner_anchor_x + 25, indicator_corner_anchor_y + 52.5))
     pygame.draw.rect(window, power_status, power_indicator)
     pygame.draw.rect(window, adcs_status, adcs_indicator)
     pygame.draw.rect(window, comms_status, comms_indicator)
 
 
 def drawVoltageAndCurrent(voltage, current):
-    voltage_label = font.render("Voltage", True, BLACK)
-    current_label = font.render("Current", True, BLACK)
+    voltage_label = font.render("Voltage [V]:", True, BLACK)
+    current_label = font.render("Current [mA]:", True, BLACK)
     window.blit(voltage_label, (voltage_anchor_x, voltage_anchor_y))
     window.blit(current_label, (current_anchor_x, current_anchor_y))
 
@@ -130,15 +130,15 @@ def drawVoltageAndCurrent(voltage, current):
     currentstr = "" + str(current)
     voltage_num = font.render(voltagestr, True, BLACK)
     current_num = font.render(currentstr, True, BLACK)
-    window.blit(voltage_num, (voltage_anchor_x + 55, voltage_anchor_y))
-    window.blit(current_num, (current_anchor_x + 55, current_anchor_y))
+    window.blit(voltage_num, (voltage_anchor_x + 90, voltage_anchor_y))
+    window.blit(current_num, (current_anchor_x + 90, current_anchor_y))
 
 def drawLoopRate(set_GUI_fps, current_fps):
     # Display the GUI main loop rate - helps to identify if GUI is slowing down
     GUI_loop_rate_color = BLACK
     if ((current_fps-set_GUI_fps)/set_GUI_fps) < -0.1:
         GUI_loop_rate_color = RED
-    GUI_loop_rate_label = font.render("GUI Update Rate (Hz):", True, GUI_loop_rate_color)
+    GUI_loop_rate_label = font.render("GUI Update Rate [Hz]:", True, GUI_loop_rate_color)
     GUI_loop_rate_num = font.render(str(round(clock.get_fps(), 2)), True, GUI_loop_rate_color)
     window.blit(GUI_loop_rate_label, (GUI_loop_rate_anchor_x, GUI_loop_rate_anchor_y))
     window.blit(GUI_loop_rate_num, (GUI_loop_rate_anchor_x + 140, GUI_loop_rate_anchor_y))
@@ -333,64 +333,75 @@ class Checkbox:
 
 # Define buttons with unique serial messages and text
 buttons = [
-    Button(50, 20, 100, 20, RED, "bruh", "ARM", armActuators, "ARMING"),
-    Button(50, 50, 100, 50, RED, bytearray(b'\x01\x08\x00'), "Left Out", None, "ACTUATORS"),
-    Button(50, 110, 100, 50, GREEN, bytearray(b'\x01\x0A\x00'), "Left In", None, "ACTUATORS"),
-    Button(350, 50, 100, 50, RED, bytearray(b'\x01\x0C\x00'), "Both Out", None, "ACTUATORS"),
-    Button(200, 50, 100, 50, RED, bytearray(b'\x01\x09\x00'), "Right Out", None, "ACTUATORS"),
-    Button(200, 110, 100, 50, GREEN, bytearray(b'\x01\x0B\x00'), "Right In", None, "ACTUATORS"),
-    Button(350, 110, 100, 50, GREEN, bytearray(b'\x01\x0D\x00'), "Both In", None, "ACTUATORS"),
-    Button(50, 170, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "POWER"),
-    Button(200, 170, 100, 50, PURPLE, bytearray(b'\x00\x01\x01'), "Get V and C", None, "POWER"),
-    Button(350, 170, 100, 50, GREY, bytearray(b'\x01\x01\x02'), "Sync", None, "ADCS"),
-    Button(500, 50, 100, 50, GREY, bytearray(b'\x01\x02\x0D'), "Gyro", None, "ADCS"),
-    Button(500, 110, 100, 50, GREY, bytearray(b'\x01\x03\x0B'), "Mag", None, "ADCS"),
-    Button(500, 170, 100, 50, GREY, bytearray(b'\x01\x07\x03'), "Temp", None, "ADCS"),
-    Button(650, 50, 100, 50, GREY, bytearray(b'\x01\x04\x15'), "Lat/Long", None, "ADCS"),
-    Button(650, 110, 100, 50, GREY, bytearray(b'\x01\x05\x11'), "Time", None, "ADCS"),
-    Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
-    Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
-    Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x00'), "Get data rate", None, "ADCS"),
-    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x01'), "ON", None, "CCLSM"),#CDH
-    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x00'), "OFF", None, "CCLSM"),
-    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x03'), "DATA", None, "CCLSM"),
-    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"), #ADCS
-    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
-    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x02'), "DATA", None, "CCLSM"),
-    Button(800, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
-    Button(850, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
-    Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x02'), "DATA", None, "CCLSM"),
-    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"), #CAMERA
-    Button(850, 410, 50, 50, GREY, bytearray(b'\x01\x11\x00'), "OFF", None, "CCLSM"),
+    Button(50, 80, 400, 50, RED, "bruh", "ARM", armActuators, "ARMING"),
+    Button(50, 140, 100, 50, RED, bytearray(b'\x01\x08\x00'), "Left Out", None, "ACTUATORS"),
+    Button(50, 200, 100, 50, GREEN, bytearray(b'\x01\x0A\x00'), "Left In", None, "ACTUATORS"),
+    Button(350, 140, 100, 50, RED, bytearray(b'\x01\x0C\x00'), "Both Out", None, "ACTUATORS"),
+    Button(200, 140, 100, 50, RED, bytearray(b'\x01\x09\x00'), "Right Out", None, "ACTUATORS"),
+    Button(200, 200, 100, 50, GREEN, bytearray(b'\x01\x0B\x00'), "Right In", None, "ACTUATORS"),
+    Button(350, 200, 100, 50, GREEN, bytearray(b'\x01\x0D\x00'), "Both In", None, "ACTUATORS"),
+    Button(950, 80, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "POWER"),
+    Button(1100, 80, 100, 50, PURPLE, bytearray(b'\x00\x01\x01'), "Get V and C", None, "POWER"),
+    Button(800, 80, 100, 50, GREY, bytearray(b'\x01\x01\x02'), "Sync", None, "ADCS"),
+    Button(500, 80, 100, 50, GREY, bytearray(b'\x01\x02\x0D'), "Gyro", None, "ADCS"),
+    Button(500, 140, 100, 50, GREY, bytearray(b'\x01\x03\x0B'), "Mag", None, "ADCS"),
+    Button(500, 200, 100, 50, GREY, bytearray(b'\x01\x07\x03'), "Temp", None, "ADCS"),
+    Button(650, 80, 100, 50, GREY, bytearray(b'\x01\x04\x15'), "Lat/Long/Alt", None, "ADCS"),
+    Button(650, 140, 100, 50, GREY, bytearray(b'\x01\x05\x11'), "Time", None, "ADCS"),
+    Button(650, 200, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
+    Button(800, 140, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
+    Button(800, 200, 100, 50, GREY, bytearray(b'\x01\x12\x00'), "Get data rate", None, "ADCS"),
+    Button(1000, 140, 50, 50, GREY, bytearray(b'\x00\x04\x02\x01'), "ON", None, "CCLSM"),#CDH
+    Button(1050, 140, 50, 50, GREY, bytearray(b'\x00\x04\x02\x00'), "OFF", None, "CCLSM"),
+    Button(1100, 140, 50, 50, GREY, bytearray(b'\x00\x04\x02\x03'), "DATA", None, "CCLSM"),
+    Button(1000, 200, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"), #ADCS
+    Button(1050, 200, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
+    Button(1100, 200, 50, 50, GREY, bytearray(b'\x00\x04\x01\x02'), "DATA", None, "CCLSM"),
+    Button(1000, 260, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
+    Button(1050, 260, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    Button(1100, 260, 50, 50, GREY, bytearray(b'\x00\x04\x03\x02'), "DATA", None, "CCLSM"),
+    Button(1000, 320, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"), #CAMERA
+    Button(1050, 320, 50, 50, GREY, bytearray(b'\x01\x11\x00'), "OFF", None, "CCLSM"),
     # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
-    Button(1050, 110, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
-    Button(1200, 110, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
-    Button(1050, 170, 75, 50, GREEN, bytearray(b'\x02\x05'), "Downlink\nImage", None, "BALLIN"),
-    Button(1200, 170, 75, 50, GREEN, bytearray(b'\x02\x05'), "Request\ntelemetry", None, "BALLIN"),
-    Button(1050, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
-    Button(1200, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
-    Button(1050, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
-    Button(1200, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
+    Button(850, 480, 75, 150, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
+    Button(850, 650, 75, 150, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
+    # Button(1050, 170, 75, 50, GREEN, bytearray(b'\x08\x08'), "Get\nTelem", None, "BALLIN"),
+    # Button(1200, 170, 75, 50, GREEN, bytearray(b'\x09\x09'), "Stop\nTelem", None, "BALLIN"),
+    # Button(1050, 630, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
+    # Button(1200, 630, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
+    # Button(1050, 690, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
+    # Button(1200, 690, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
 ]
 
+get_telem_button = Button(570, 570, 75, 105, GREEN, bytearray(b'\x08\x08'), "Get\nTelem", None, "BALLIN")
+stop_telem_button = Button(570, 700, 75, 105, GREEN, bytearray(b'\x09\x09'), "Stop\nTelem", None, "BALLIN")
+buttons.append(get_telem_button)
+buttons.append(stop_telem_button)
+
 indicators = {
-    "CDH_CCLSM":indicator(800, 230, RED),
-    "ADCS_CCLSM":indicator(800, 290, RED),
-    "OTHER_CCLSM":indicator(800, 350, RED),
-    "CAMERA_CCLSM":indicator(800, 410, RED),
+    "CDH_CCLSM":indicator(1000, 140, RED),
+    "ADCS_CCLSM":indicator(1000, 200, RED),
+    "OTHER_CCLSM":indicator(1000, 260, RED),
+    "CAMERA_CCLSM":indicator(1000, 320, RED),
     # "POWER_STATUS":indicator(800, 410, RED),
     # "ADCS_STATUS":indicator(800, 410, RED),
 }
 
 labels = [
-    label(760, 260, "CDH\nPOWER", 15),
-    label(760, 320, "ADCS\nPOWER", 15),
-    label(760, 380, "OTHER\nPOWER", 15),
-    label(760, 440, "CAMERA\nPOWER", 15),
-    label(100, 240, "Messages from CDH", 15),
+    label(970, 165, "CDH\nPOWER", 15),
+    label(970, 225, "ADCS\nPOWER", 15),
+    label(970, 285, "OTHER\nPOWER", 15),
+    label(970, 345, "CAMERA\nPOWER", 15),
+    label(90, 270, "Messages from CDH", 15),
+    label(980, 455, "Downlinked Image", 15),
+    label(80, 65, "For Deployables", 15),
+    label(515, 65, "For ADCS", 15),
+    label(965, 65, "For Power", 15),
+    label(indicator_corner_anchor_x+45, 270, "Communication Status", 15),
+    label(voltage_anchor_x+40, 400, "Power Consumption", 15),
 ]
 
-textbox = ScrollableTextbox(50, 250, 380, 200, WHITE, font)
+textbox = ScrollableTextbox(40, 280, 600, 200, WHITE, font)
 
 
 def crc32b(tmpString):
@@ -422,26 +433,57 @@ def SerialRx():
             except:
                 pass
 
+def draw_image_black_box_outline():
+    outline_rect = pygame.Rect(935, 465, 270, 350)
+    pygame.draw.rect(window, BLACK, outline_rect, 2)
+
+def draw_Deployables_buttons_black_box_outline():
+    outline_rect = pygame.Rect(40, 75, 420, 180)
+    pygame.draw.rect(window, BLACK, outline_rect, 2)
+
+def draw_ADCS_buttons_black_box_outline():
+    outline_rect = pygame.Rect(490, 75, 420, 180)
+    pygame.draw.rect(window, BLACK, outline_rect, 2)
+
+def draw_Power_buttons_black_box_outline():
+    outline_rect = pygame.Rect(940, 75, 270, 300)
+    pygame.draw.rect(window, BLACK, outline_rect, 2)
+
+def draw_Communication_Status_black_box_outline():
+    outline_rect = pygame.Rect(indicator_corner_anchor_x-10, indicator_corner_anchor_y - 10, 170, 90)
+    pygame.draw.rect(window, BLACK, outline_rect, 2)
+
+def draw_Power_Consumption_status_black_box_outline():
+    outline_rect = pygame.Rect(voltage_anchor_x-10, voltage_anchor_y-10, 170, 60)
+    pygame.draw.rect(window, BLACK, outline_rect, 2)
+
 ##################################################################################################
 # Button to allow orbit simulation to control power supply
-orbit_sim_control_button = Button(600, 700, 200, 75, GREY, None, "Allow Orbit Sim. to Control:\nPower Supply &\nAuto Telemetry Downlink", lambda: toggle_orbit_sim_control())
+orbit_sim_control_button = Button(40, 495, 522.5, 30, GREY, None, "Allow Orbit Sim. to Control Power Supply & Auto Telemetry Downlink", lambda: toggle_orbit_sim_control())
 
 # Connect buttons for the serial COM ports
 connect_serial_button = Button(width-575, 5, 125, 25, GREY, None, "Connect Radio", lambda: toggle_serial_connection())
 connect_ps_button = Button(width-250, 5, 100, 25, GREY, None, "Connect PS", lambda: toggle_ps_connection())
 
 def toggle_serial_connection():
-    global ser
+    global ser, running, serialRX_thread, thread_started
     if ser:
+        running = False
+        serialRX_thread.join()
         ser.close()
         ser = None
         connect_serial_button.text = "Connect Radio"
         connect_serial_button.color = GREY
+        running = True  # Reset running for the next connection
+        thread_started = 1
     else:
         initialize_serial_connection()
         if ser:
+            serialRX_thread = threading.Thread(target=SerialRx)  # Reinitialize the thread
+            serialRX_thread.start()
             connect_serial_button.text = "Disconnect Radio"
             connect_serial_button.color = GREEN
+            thread_started = 0
 
 def toggle_ps_connection():
     global ps
@@ -595,7 +637,8 @@ MINUTES_IN_DAY = 1440
 EARTH_ROTATION_RATE = 360 / (24 * 60)  # degrees per minute
 allow_orbit_sim_control = 0 # start with not allowing orbit simulation to control power supply
 ps_previous_state = 1 # start with assuming PS is off
-allow_auto_telemetry_downlink = 1 # start with enabling auto telemetry downlink when over ground station
+allow_auto_telemetry_downlink_previous_state = 1 # start with enabling auto telemetry downlink when over ground station
+get_downlink_telem_status = 0
 
 def calculate_position(semi_major_axis, eccentricity, inclination, raan, arg_periapsis, mean_anomaly):
     inclination = np.radians(inclination)
@@ -666,7 +709,7 @@ def simulate_and_animate_day(semi_major_axis, eccentricity, inclination, raan, a
         telemetry_statuses.append(is_over_ground_station(latitude_spacecraft, longitude_spacecraft, ground_station_latitude, ground_station_longitude))
         sunlight_statuses.append(is_in_sunlight(position_spacecraft))
 
-    fig, ax = plt.subplots(figsize=(5*1.2, 3*1.1), subplot_kw={'projection': ccrs.PlateCarree()})
+    fig, ax = plt.subplots(figsize=(5*1.1, 3*1), subplot_kw={'projection': ccrs.PlateCarree()})
     fig.patch.set_alpha(0)  # Make the figure's background transparent
     ax.set_facecolor((0, 0, 0, 0))  # Make the axes' background transparent
     ax.stock_img()
@@ -674,11 +717,11 @@ def simulate_and_animate_day(semi_major_axis, eccentricity, inclination, raan, a
     ground_station_marker, = ax.plot(ground_station_longitude, ground_station_latitude, 'ro', ms=10, transform=ccrs.Geodetic(), label='Ground Station')
     power_supply_marker, = ax.plot([], [], 'yD', ms=8, transform=ccrs.Geodetic(), label='Power Supply')
     # plt.legend(loc='lower left')
-    plt.title('Spacecraft Trajectory and Ground Station')
+    plt.title('Spacecraft Trajectory and Ground Station', fontsize=9)
     plt.tight_layout()
 
     def update(frame):
-        global ps_previous_state, allow_orbit_sim_control, current_orbit_start_index, allow_auto_telemetry_downlink
+        global ps_previous_state, allow_orbit_sim_control, current_orbit_start_index, allow_auto_telemetry_downlink_previous_state
         # Clear trajectory if starting a new orbit
         if frame % num_frames_per_orbit == 0:
             current_orbit_start_index = frame
@@ -686,10 +729,13 @@ def simulate_and_animate_day(semi_major_axis, eccentricity, inclination, raan, a
         line.set_data(longitudes[current_orbit_start_index:frame], latitudes[current_orbit_start_index:frame])
         if telemetry_statuses[frame]:
             ground_station_marker.set_color('#228B22') # not over ground station
-            allow_auto_telemetry_downlink = 1
+            if allow_auto_telemetry_downlink_previous_state == 1:
+                allow_auto_telemetry_downlink_previous_state = 0
         else:
             ground_station_marker.set_color('#DC143C') # over ground station
-            allow_auto_telemetry_downlink = 0
+            if allow_auto_telemetry_downlink_previous_state == 0:
+                allow_auto_telemetry_downlink_previous_state = 1
+
         if sunlight_statuses[frame]:
             power_supply_marker.set_data([longitudes[frame]], [latitudes[frame]])
             power_supply_marker.set_color('yellow')
@@ -709,11 +755,11 @@ def toggle_orbit_sim_control():
     global allow_orbit_sim_control
     if allow_orbit_sim_control == 0:
         allow_orbit_sim_control = 1
-        orbit_sim_control_button.text = "Disable Orbit Sim. to Control:\nPower Supply &\nAuto Telemetry Downlink"
+        orbit_sim_control_button.text = "Disable Orbit Sim. to Control Power Supply & Auto Telemetry Downlink"
         orbit_sim_control_button.color = GREEN
     else:
         allow_orbit_sim_control = 0
-        orbit_sim_control_button.text = "Allow Orbit Sim. to Control:\nPower Supply &\nAuto Telemetry Downlink"
+        orbit_sim_control_button.text = "Allow Orbit Sim. to Control Power Supply & Auto Telemetry Downlink"
         orbit_sim_control_button.color = GREY
 
 def update_oribt_animation():
@@ -728,9 +774,15 @@ def update_oribt_animation():
     surf = pygame.image.frombuffer(raw_data.tobytes(), size, "RGBA")
 
 def auto_telemetry_downlink():
-    global ser, allow_auto_telemetry_downlink, allow_orbit_sim_control
-    if ser and allow_orbit_sim_control and allow_auto_telemetry_downlink:
-        print("Downlinking Data")
+    global ser, allow_auto_telemetry_downlink_previous_state, allow_orbit_sim_control, get_downlink_telem_status
+    if ser and allow_orbit_sim_control and (allow_auto_telemetry_downlink_previous_state==0) and (get_downlink_telem_status == 0):
+        get_telem_button.on_click()
+        get_downlink_telem_status = 1
+        print("Over Ground Station. Downlinking Data")
+    elif ser and allow_orbit_sim_control and (allow_auto_telemetry_downlink_previous_state==1) and (get_downlink_telem_status == 1):
+        stop_telem_button.on_click()
+        get_downlink_telem_status = 0
+        print("NOT Over Ground Station. Downlinking Data STOPPED")
 
 ##################################################################################################
 #########################################################################################################
@@ -815,9 +867,14 @@ buildUpData = []
 imageData = []
 expectedIndex = 0
 
+telemetry_save_directory = 'Downlinked Telemetry'
+image_save_directory = 'Downlinked Images'
+os.makedirs(image_save_directory, exist_ok=True)
+os.makedirs(telemetry_save_directory, exist_ok=True)
 filename = "received_image_" + time.strftime("%Y%m%d_%H%M%S") + ".jpg"
+telemetry_filename = "telemetry_" + time.strftime("%Y%m%d_%H%M%S") + ".txt"
 
-set_GUI_fps = 150
+set_GUI_fps = 60
 thread_started = 1
 while running:
     if ser and thread_started: # start SerialRx thread only once we've connected to the radio serial port
@@ -899,16 +956,15 @@ while running:
 
                 match type:
                     case 0x05:  #powinfo
-                        stringData = new_data[6:6+myLen-1]
+                        stringData = new_data[6:6 + myLen - 1]
                         stringData = stringData.decode('utf-8')
                         stringData = stringData.split(' ')
                         voltage = stringData[0]
                         current = stringData[1]
                         bits = stringData[2]
-                        CDHCCLSMRx = 1
                         # CAMERACCLSMRx = (int(bits) & 0x02) >> 1
-                        ADCSCCLSMRx = (int(bits) & 0x02)
-                        CDHCCLSMRx = (int(bits) & 0x01)
+                        CDHCCLSMRx = (int(bits) & 0x02)
+                        ADCSCCLSMRx = (int(bits) & 0x01)
 
                         indicators["ADCS_CCLSM"].update(RED if ADCSCCLSMRx == 0 else GREEN)
                         indicators["CDH_CCLSM"].update(RED if CDHCCLSMRx == 0 else GREEN)
@@ -927,6 +983,20 @@ while running:
                         textbox.append_text(hexString)
                         print(hexString)
                         pass
+                    case 0x19:  # telemetry data
+                        hexString = ""
+                        temp = new_data[6:6 + myLen - 1]
+                        for char in temp:
+                            hexString = hexString + hex(char) + " "
+                        hexString = hexString + "\n"
+                        # textbox.append_text(hexString)
+                        # print(hexString)
+                        # print(temp)
+                        telemetry_file_path = os.path.join(telemetry_save_directory, telemetry_filename)
+                        with open(telemetry_file_path, "ab") as telem_file:
+                            telem_file.write(temp)
+                        pass
+
                     case 0xAB:  #ping with status
                         powerStatusRx = new_data[6]
                         ADCSStatusRx = new_data[7]
@@ -947,7 +1017,8 @@ while running:
                     case 0x99:  #imageData
                         imageData.append(new_data[dataIndex:crcIndex])
                         combined_image_data = b''.join(imageData)
-                        with open(filename, "wb") as img_file:
+                        file_path = os.path.join(image_save_directory, filename)
+                        with open(file_path, "wb") as img_file:
                             img_file.write(combined_image_data)
                         pass
                     case 0x88:  #image start info
@@ -970,7 +1041,6 @@ while running:
 
     # Draw everything
     window.fill(windowcol)
-    example_gif.render(window, (480, 230))
     newColor = GREEN
 
     for button in buttons:
@@ -995,10 +1065,10 @@ while running:
     textbox.draw(window)
 
     toc1 = time.time()
-    if (toc1 - tic1 > 2):
+    if (toc1 - tic1 > 0.25):
         update_oribt_animation()
         tic1 = time.time()
-    window.blit(surf, (10, height - size[1] + 6))
+    window.blit(surf, (25, height - size[1] + 6))
 
     # Ground pass auto telemetry downlink
     auto_telemetry_downlink()
@@ -1015,11 +1085,17 @@ while running:
     # drawTextToScreen(received_data)
     drawVoltageAndCurrent(voltage, current)
     updateStatus()
+    draw_image_black_box_outline()
+    draw_ADCS_buttons_black_box_outline()
+    draw_Deployables_buttons_black_box_outline()
+    draw_Power_buttons_black_box_outline()
+    draw_Communication_Status_black_box_outline()
+    draw_Power_Consumption_status_black_box_outline()
     try:
-        received_image = pygame.image.load(filename)
+        received_image = pygame.image.load(file_path)
         received_image = pygame.transform.scale(received_image, (640/2, 480/2))
         image = pygame.transform.rotate(received_image, -90)
-        window.blit(image, (1050, 450))
+        window.blit(image, (950, 480))
     except:
         pass
 
