@@ -334,6 +334,7 @@ class Checkbox:
 
 # Define buttons with unique serial messages and text
 buttons = [
+<<<<<<< HEAD
     Button(50, 80, 400, 50, RED, "bruh", "ARM", armActuators, "ARMING"),
     Button(50, 140, 100, 50, RED, bytearray(b'\x01\x08\x00'), "Left Out", None, "ACTUATORS"),
     Button(50, 200, 100, 50, GREEN, bytearray(b'\x01\x0A\x00'), "Left In", None, "ACTUATORS"),
@@ -372,6 +373,46 @@ buttons = [
     # Button(1200, 630, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
     # Button(1050, 690, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
     # Button(1200, 690, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
+=======
+    Button(50, 20, 100, 20, RED, "bruh", "ARM", armActuators, "ARMING"),
+    Button(50, 50, 100, 50, RED, bytearray(b'\x01\x08\x00'), "Left Out", None, "ACTUATORS"),
+    Button(50, 110, 100, 50, GREEN, bytearray(b'\x01\x0A\x00'), "Left In", None, "ACTUATORS"),
+    Button(350, 50, 100, 50, RED, bytearray(b'\x01\x0C\x00'), "Both Out", None, "ACTUATORS"),
+    Button(200, 50, 100, 50, RED, bytearray(b'\x01\x09\x00'), "Right Out", None, "ACTUATORS"),
+    Button(200, 110, 100, 50, GREEN, bytearray(b'\x01\x0B\x00'), "Right In", None, "ACTUATORS"),
+    Button(350, 110, 100, 50, GREEN, bytearray(b'\x01\x0D\x00'), "Both In", None, "ACTUATORS"),
+    Button(50, 170, 100, 50, PURPLE, bytearray(b'\x00\x00'), "Ping Power", None, "POWER"),
+    Button(200, 170, 100, 50, PURPLE, bytearray(b'\x00\x01\x01'), "Get V and C", None, "POWER"),
+    Button(350, 170, 100, 50, GREY, bytearray(b'\x01\x01\x02'), "Sync", None, "ADCS"),
+    Button(500, 50, 100, 50, GREY, bytearray(b'\x01\x02\x0D'), "Gyro", None, "ADCS"),
+    Button(500, 110, 100, 50, GREY, bytearray(b'\x01\x03\x0B'), "Mag", None, "ADCS"),
+    Button(500, 170, 100, 50, GREY, bytearray(b'\x01\x07\x03'), "Temp", None, "ADCS"),
+    Button(650, 50, 100, 50, GREY, bytearray(b'\x01\x04\x15'), "Lat/Long", None, "ADCS"),
+    Button(650, 110, 100, 50, GREY, bytearray(b'\x01\x05\x11'), "Time", None, "ADCS"),
+    Button(650, 170, 100, 50, GREY, bytearray(b'\x01\x06\x05'), "Num Sats", None, "ADCS"),
+    Button(800, 110, 100, 50, GREY, bytearray(b'\x01\x11\x00'), "Reset GNSS", None, "ADCS"),
+    Button(800, 170, 100, 50, GREY, bytearray(b'\x01\x12\x00'), "Get data rate", None, "ADCS"),
+    Button(800, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x01'), "ON", None, "CCLSM"),#CDH
+    Button(850, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x00'), "OFF", None, "CCLSM"),
+    Button(900, 230, 50, 50, GREY, bytearray(b'\x00\x04\x02\x03'), "DATA", None, "CCLSM"),
+    Button(800, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x01'), "ON", None, "CCLSM"), #ADCS
+    Button(850, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x00'), "OFF", None, "CCLSM"),
+    Button(900, 290, 50, 50, GREY, bytearray(b'\x00\x04\x01\x02'), "DATA", None, "CCLSM"),
+    Button(800, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x01'), "ON", None, "CCLSM"),
+    Button(850, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x00'), "OFF", None, "CCLSM"),
+    Button(900, 350, 50, 50, GREY, bytearray(b'\x00\x04\x03\x02'), "DATA", None, "CCLSM"),
+    Button(800, 410, 50, 50, GREY, bytearray(b'\x01\x12\x00'), "ON", None, "CCLSM"), #CAMERA
+    Button(850, 410, 50, 50, GREY, bytearray(b'\x01\x11\x00'), "OFF", None, "CCLSM"),
+    # Button(900, 410, 50, 50, GREY, bytearray(b'\x00\x04\x31\x02'), "DATA", None, "CCLSM"),
+    Button(1050, 110, 75, 50, GREEN, bytearray(b'\x02\x01'), "Take\nImage", None, "BALLIN"),
+    Button(1200, 110, 75, 50, GREEN, bytearray(b'\x02\x02'), "Downlink\nImage", None, "BALLIN"),
+    Button(1050, 170, 75, 50, GREEN, bytearray(b'\x08\x08'), "Get\nTelem", None, "BALLIN"),
+    Button(1200, 170, 75, 50, GREEN, bytearray(b'\x09\x09'), "Stop\nTelem", None, "BALLIN"),
+    Button(1050, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "File system\nstatus", None, "BALLIN"),
+    Button(1200, 230, 75, 50, GREEN, bytearray(b'\x02\x05'), "More\nbuttons!", None, "BALLIN"),
+    Button(1050, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Even\nmore!", None, "BALLIN"),
+    Button(1200, 290, 75, 50, GREEN, bytearray(b'\x02\x05'), "Big\nswag!!", None, "BALLIN"),
+>>>>>>> c5c230551bb99889ec7bd5089fce042cb09f0666
 ]
 
 get_telem_button = Button(570, 570, 75, 105, GREEN, bytearray(b'\x08\x08'), "Get\nTelem", None, "BALLIN")
@@ -389,6 +430,7 @@ indicators = {
 }
 
 labels = [
+<<<<<<< HEAD
     label(970, 165, "CDH\nPOWER", 15),
     label(970, 225, "ADCS\nPOWER", 15),
     label(970, 285, "OTHER\nPOWER", 15),
@@ -400,6 +442,13 @@ labels = [
     label(965, 65, "For Power", 15),
     label(indicator_corner_anchor_x+45, 270, "Communication Status", 15),
     label(voltage_anchor_x+40, 400, "Power Consumption", 15),
+=======
+    label(760, 260, "CDH\nPOWER", 15),
+    label(760, 320, "ADCS\nPOWER", 15),
+    label(760, 380, "OTHER\nPOWER", 15),
+    label(760, 440, "CAMERA\nPOWER", 15),
+    label(100, 240, "Messages from CDH", 15),
+>>>>>>> c5c230551bb99889ec7bd5089fce042cb09f0666
 ]
 
 textbox = ScrollableTextbox(40, 280, 600, 200, WHITE, font)
@@ -992,10 +1041,14 @@ while running:
                         hexString = hexString + "\n"
                         # textbox.append_text(hexString)
                         # print(hexString)
+<<<<<<< HEAD
                         # print(temp)
                         telemetry_file_path = os.path.join(telemetry_save_directory, telemetry_filename)
                         with open(telemetry_file_path, "ab") as telem_file:
                             telem_file.write(temp)
+=======
+                        print(temp)
+>>>>>>> c5c230551bb99889ec7bd5089fce042cb09f0666
                         pass
 
                     case 0xAB:  #ping with status
@@ -1096,7 +1149,11 @@ while running:
         received_image = pygame.image.load(file_path)
         received_image = pygame.transform.scale(received_image, (640/2, 480/2))
         image = pygame.transform.rotate(received_image, -90)
+<<<<<<< HEAD
         window.blit(image, (950, 480))
+=======
+        window.blit(image, (1050, 450))
+>>>>>>> c5c230551bb99889ec7bd5089fce042cb09f0666
     except:
         pass
 
