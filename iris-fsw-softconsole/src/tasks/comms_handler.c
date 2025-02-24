@@ -117,6 +117,7 @@ void sendDataPacket(char *data, int len, uint8_t type) {
 }
 
 void printToTerminal(char *msg) {
+    logMessage(msg);
     radioPacket_t packet;
     int len = strlen(msg);
     packet.len = len + 1;
@@ -125,7 +126,6 @@ void printToTerminal(char *msg) {
     memcpy(packet.data, msg, len);
     packet.type = 0x0A;
     xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
-    logMessage(msg);
 }
 
 uint8_t year, month, day, hour, minute, second;
@@ -146,7 +146,7 @@ void commsHandlerTask() {
 
     telemetryPacket_t telemPacket = { 0 };
     telemPacket.data = dataBuf;
-    cameraPowerStatus = 0;
+    cameraPowerStatus = 1;
     imageFlag = 0;
     printToTerminal("COMMS TASK STARTED!?!?!?!?!");
 
@@ -156,11 +156,11 @@ void commsHandlerTask() {
             int size = rxPacket.len;
             switch (cmd_id) {
             case 0x00: //passthrough to power
-                printToTerminal("Sending to power");
+                printToTerminal("Sending to power\n");
                 sendData(rxPacket.data, size, 2);
                 break;
             case 0x01: //passthrough to ADCS
-                printToTerminal("Sending to ADCS");
+                printToTerminal("Sending to ADCS\n");
                 if (rxPacket.data[1] == 0x11) {
                     cameraPowerStatus = 0;
                 }
@@ -176,11 +176,11 @@ void commsHandlerTask() {
                 int cdhCommand = rxPacket.data[1];
                 switch (cdhCommand) {
                 case 0x01:
-                    printToTerminal("Take image request received!");
+                    printToTerminal("Take image request received!\n");
                     takeImage = 1;
                     break;
                 case 0x02:
-                    printToTerminal("Take image request received!");
+                    printToTerminal("Downlink image request received!\n");
                     downlinkImage = 1;
                     break;
                 case 0x03:
@@ -198,12 +198,12 @@ void commsHandlerTask() {
                 break;
             }
             case 0x08: { //Ground station ping - start transmitting data!
-                printToTerminal("Ground station ping received!");
+                printToTerminal("Ground station ping received!\n");
                 broadcastTelemFlag = 1;
                 break;
             }
             case 0x09: { //Ground station ping - start transmitting data!
-                printToTerminal("Stopping telem downlink!");
+                printToTerminal("Stopping telem downlink!\n");
                 broadcastTelemFlag = 0;
                 break;
             }

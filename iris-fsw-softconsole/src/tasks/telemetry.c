@@ -132,9 +132,11 @@ void logADCSTelem(char* data, int len) {
         minute = currTime.minute;
         second = currTime.second;
         sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d ", year, month, day, hour, minute, second);
+        vTaskSuspendAll();
         fs_file_write(&adcsTelemFile, timeBuf, strlen(timeBuf));
         fs_file_write(&adcsTelemFile, data, len);
         fs_file_write(&adcsTelemFile, 0x00, 1);
+        xTaskResumeAll();
     }
     return;
 }

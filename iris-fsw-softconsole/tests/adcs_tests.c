@@ -20,6 +20,7 @@ void vTestAdcsDriver(void * pvParameters){
     int misses = 0;
     int lockout = 1;
     uint8_t *buf[6];
+    uint8_t buf_Rx1[32];
     while(1){
         status = pingAdcs();
         if(status != ADCS_DRIVER_NO_ERROR) {
@@ -29,11 +30,34 @@ void vTestAdcsDriver(void * pvParameters){
             misses = 0;
         }
 
-        if(misses > 4 && ADCSPingStatus == PING_FOUND) {
+        if(misses > 4) {
             misses = 4;
             ADCSPingStatus = PING_LOST;
         }
-        vTaskDelay(250);
+
+//        adcsArbCommand(0x02, buf_Rx1, 0x0D);
+//        logADCSTelem(buf_Rx1, 0x0D);
+//        logMessage("\n");
+//
+//        adcsArbCommand(0x03, buf_Rx1, 0x0B);
+//        logADCSTelem(buf_Rx1, 0x0B);
+//        logMessage("\n");
+//
+//
+//        adcsArbCommand(0x07, buf_Rx1, 0x03);
+//        logADCSTelem(buf_Rx1, 0x03);
+//        logMessage("\n");
+//
+//
+//        adcsArbCommand(0x04, buf_Rx1, 0x15);
+//        logADCSTelem(buf_Rx1, 0x15);
+//        logMessage("\n");
+//
+//        adcsArbCommand(0x06, buf_Rx1, 0x05);
+//        logADCSTelem(buf_Rx1, 0x05);
+//        logMessage("\n");
+
+        vTaskDelay(1000);
     }
 
 

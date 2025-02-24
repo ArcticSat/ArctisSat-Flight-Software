@@ -180,7 +180,7 @@ int main( void )
     commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
 
-    logMessage("Power on!");
+    logMessage("Power on!\n");
 
 
     // Start FreeRTOS Tasks
@@ -236,23 +236,15 @@ int main( void )
     status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
     status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
     status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
-    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
     status = xTaskCreate(telemetryManager,"Telem",500,NULL,1,NULL);
 
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
     status = xTaskCreate(vTestUARTTx,"Test UART Tx",700,NULL,1,NULL);
 
-    logMessage("Tasks created!");
-
-
-
-    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
-    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
-    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
-    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet, sizeof(radioPacket_t));
-    printToTerminal("STARTING SCHEDDY!!!");
-    logMessage("Beginning scheduller");
+    printToTerminal("Tasks created!\n");
+    printToTerminal("Starting scheduller!");
 
     vTaskStartScheduler();
 

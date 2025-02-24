@@ -270,7 +270,6 @@ unsigned char resetCamera(unsigned char resetType)
 
     buf_Tx0[2] = resetType; // param1 (reset state machine = 1, hard reset = 0)
 
-
     custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Tx0, sizeof(buf_Tx0));
     vTaskDelay(100);
     MSS_UART_get_rx(&g_mss_uart1, buf_Rx0, sizeof(buf_Rx0));
@@ -278,6 +277,9 @@ unsigned char resetCamera(unsigned char resetType)
     if ((buf_Rx0[0] == 0xAA) && (buf_Rx0[1] == 0x0E))
     {
         cmdSuccess = 1;
+    } else {
+        printToTerminal("Sync failed! Please power cycle camera\n");
+        takeImage = 0;
     }
 
     return cmdSuccess;

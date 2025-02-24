@@ -450,7 +450,7 @@ int fs_file_sync( lfs_file_t *file){
 lfs_ssize_t fs_file_read( lfs_file_t *file, void *buffer, lfs_size_t size){
 	int result = FS_ERR_LOCK;
 
-	if(xSemaphoreTakeRecursive(fs_lock_handle,portMAX_DELAY) == pdTRUE){
+	if(xSemaphoreTakeRecursive(fs_lock_handle,1000) == pdTRUE){
 		 result =  lfs_file_read(&lfs, file, buffer, size);
 		 xSemaphoreGiveRecursive(fs_lock_handle);
 	}
@@ -461,7 +461,7 @@ lfs_ssize_t fs_file_read( lfs_file_t *file, void *buffer, lfs_size_t size){
 lfs_ssize_t fs_file_write( lfs_file_t *file, const void *buffer, lfs_size_t size){
 	int result = FS_ERR_LOCK;
 
-	if(xSemaphoreTakeRecursive(fs_lock_handle,portMAX_DELAY) == pdTRUE){
+	if(xSemaphoreTakeRecursive(fs_lock_handle,1000) == pdTRUE){
 		 result =  lfs_file_write(&lfs, file, buffer, size);
 		 xSemaphoreGiveRecursive(fs_lock_handle);
 	}
@@ -472,7 +472,7 @@ lfs_ssize_t fs_file_write( lfs_file_t *file, const void *buffer, lfs_size_t size
 lfs_soff_t fs_file_seek( lfs_file_t *file, lfs_soff_t off, int whence){
 	int result = FS_ERR_LOCK;
 
-	if(xSemaphoreTakeRecursive(fs_lock_handle,portMAX_DELAY) == pdTRUE){
+	if(xSemaphoreTakeRecursive(fs_lock_handle,1000) == pdTRUE){
 		 result =  lfs_file_seek(&lfs, file, off, whence);
 		 xSemaphoreGiveRecursive(fs_lock_handle);
 	}
