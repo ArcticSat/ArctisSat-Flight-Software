@@ -148,7 +148,7 @@ void commsHandlerTask() {
     telemPacket.data = dataBuf;
     cameraPowerStatus = 1;
     imageFlag = 0;
-    printToTerminal("COMMS TASK STARTED!?!?!?!?!");
+    printToTerminal("COMMS task started!\n");
 
     for (;;) {
         if (xQueueReceive(commsRxQueue, &rxPacket, portMAX_DELAY) == pdTRUE) {

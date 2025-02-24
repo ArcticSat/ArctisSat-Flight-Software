@@ -198,7 +198,7 @@ int main( void )
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+//    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
 //    //      finishes transmission (for the first time). In core_spi.c, the software gets stuck in the
@@ -293,6 +293,8 @@ static void prvSetupHardware( void )
         //Mount the file system.
 
         int err = fs_mount();
+
+//        fs_format();
 
         // reformat if we can't mount the filesystem
         // this should only happen on the first boot

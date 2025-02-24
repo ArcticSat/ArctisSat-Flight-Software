@@ -48,14 +48,18 @@ void telemetryManager() {
     printToTerminal("File system online!");
     flashSystemReady = 1;
     for(;;) {
+            flashSystemReady = 1;
+
             if(broadcastTelemFlag) {
+                flashSystemReady = 0;
+
                 powerWritePos = fs_file_tell(&powerTelemFile);
                 fs_file_seek(&powerTelemFile, powerReadPos, 0);
                 int result = fs_file_read(&powerTelemFile, telemBuf, 64);
                 powerReadPos = 0;
                 while(broadcastTelemFlag && result > 0 && powerReadPos < powerWritePos) {
                     sendDataPacket(telemBuf, 64, 0x19);
-//                    vTaskDelay(100);
+                    vTaskDelay(50);
                     result = fs_file_read(&powerTelemFile, telemBuf, 64);
                     powerReadPos = fs_file_tell(&powerTelemFile);
                 }
@@ -70,7 +74,7 @@ void telemetryManager() {
                 adcsReadPos = 0;
                 while(broadcastTelemFlag && result > 0 && adcsReadPos < adcsWritePos) {
                     sendDataPacket(telemBuf, 64, 0x19);
-//                    vTaskDelay(100);
+                    vTaskDelay(50);
                     result = fs_file_read(&adcsTelemFile, telemBuf, 64);
                     adcsReadPos = fs_file_tell(&adcsTelemFile);
                 }
@@ -85,7 +89,7 @@ void telemetryManager() {
                 logReadPos = 0;
                 while(broadcastTelemFlag && result > 0 && logReadPos < logWritePos) {
                     sendDataPacket(telemBuf, 64, 0x19);
-//                    vTaskDelay(100);
+                    vTaskDelay(50);
                     result = fs_file_read(&logTelemFile, telemBuf, 64);
                     logReadPos = fs_file_tell(&logTelemFile);
                 }
@@ -106,6 +110,7 @@ uint8_t year, month, day, hour, minute, second;
 
 void logPowerTelem(char* data, int len) {
     if(flashSystemReady) {
+
         ds1393_read_time(&currTime);
         year = currTime.year;
         month = currTime.month;
@@ -132,11 +137,9 @@ void logADCSTelem(char* data, int len) {
         minute = currTime.minute;
         second = currTime.second;
         sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d ", year, month, day, hour, minute, second);
-        vTaskSuspendAll();
         fs_file_write(&adcsTelemFile, timeBuf, strlen(timeBuf));
         fs_file_write(&adcsTelemFile, data, len);
         fs_file_write(&adcsTelemFile, 0x00, 1);
-        xTaskResumeAll();
     }
     return;
 }

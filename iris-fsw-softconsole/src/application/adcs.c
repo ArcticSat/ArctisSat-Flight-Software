@@ -22,7 +22,10 @@ Calendar_t * upperBound;
 
 AdcsDriverError_t adcsArbCommand(uint8_t cmd_id, uint8_t* rxBuf, uint8_t expectedLen)
 {
-    while(adcsSyncSpiCommand(cmd_id));
+    uint8_t maxAttempts = 25;
+    uint8_t attempts = 0;
+    while(adcsSyncSpiCommand(cmd_id) && attempts < maxAttempts) attempts++;
+    if(attempts >= maxAttempts) return -1;
     vTaskDelay(100);
     return adcsTxRx(NULL,0,rxBuf,expectedLen);
 

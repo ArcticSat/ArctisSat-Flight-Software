@@ -85,6 +85,8 @@ void ds1393_read_time(Calendar_t * read_buffer)
 			1);
 
 	xTaskResumeAll();
+
+
 	volatile int J = sizeof(buffer);
 
 }

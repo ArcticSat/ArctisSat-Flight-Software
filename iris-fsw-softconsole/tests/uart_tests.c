@@ -278,8 +278,7 @@ unsigned char resetCamera(unsigned char resetType)
     {
         cmdSuccess = 1;
     } else {
-        printToTerminal("Sync failed! Please power cycle camera\n");
-        takeImage = 0;
+
     }
 
     return cmdSuccess;

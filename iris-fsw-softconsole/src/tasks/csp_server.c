@@ -141,11 +141,12 @@ void vCSP_Server(void *pvParameters) {
 				}
 				case 0x05: //powinfo port
 				    sendDataPacket(packet->data, packet->length, 0x05);
-//                    logPowerTelem(packet->data, packet->length);
+                    logPowerTelem(packet->data, packet->length);
 				    break;
 				case 10: //CCLSM DATA PACKET
                     {
                     memcpy(&testCCLSM, packet->data, sizeof(CCLSM_DATA_ENTRY));
+//                    logPowerTelem(packet->data, packet->length);
                     int boi = 50;
                     break;
                     }
