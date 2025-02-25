@@ -77,6 +77,7 @@
 //#include "application/detumbling.h"
 #include "application/sun_pointing.h"
 #include "application/memory_manager.h"
+#include "tasks/comms_handler.h"
 
 
 
@@ -133,7 +134,7 @@ full information - including hardware setup requirements. */
 int main( void )
 {
 	// Initialization
- 	prvSetupHardware();
+   prvSetupHardware();
 
 	// Task Creation
 	//TODO: Are time tagged tasks persistent over restart?
@@ -148,13 +149,11 @@ int main( void )
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
+//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
 #ifdef INCLUDE_TASK_TTT
     status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
 #endif
-    status = xTaskCreate(vCSP_Server, "cspServer", 800, NULL, 3, &vCSP_Server_h);
 #ifdef INCLUDE_TASK_CAN_SERVER
-    status = xTaskCreate(vCanServer,"CAN Rx",500,NULL,3,&vCanServer_h);
 #endif
 #ifdef INCLUDE_TASK_FW_MANAGER
     status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
@@ -169,32 +168,36 @@ int main( void )
 #endif
 //    vTaskSuspend(xUART0RxTaskToNotify);
 #ifdef INCLUDE_TASK_CAN_SERVER
-    vTaskSuspend(vCanServer_h);
 #endif
 #ifdef INCLUDE_TASK_FW_MANAGER
     vTaskSuspend(vFw_Update_Mgr_Task_h);
 #endif
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
-    vTaskSuspend(vSunPointing_h);
+//    vTaskSuspend(vSunPointing_h);
+
+    txQueue = xQueueCreate(10, sizeof(satPacket));
+
+    commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
+    commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
+
+    logMessage("Power on!\n");
+
 
     // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
 //	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
 //	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     // Create UART0 RX Task
-    vTaskStartScheduler();
 
 
 //    // TODO - Starting to run out of heap space for these tasks... should start thinking about
 //    // increasing heap space or managing memory in a smarter manner. First step would be looking
 //    // at the FreeRTOS configurations and the linker file *.ld.
-    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-    status = xTaskCreate(vTestCspClient,"Test CSP Client",500,NULL,1,NULL);
-//    status = xTaskCreate(vTestFS,"Test FS",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
 //    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
@@ -203,45 +206,73 @@ int main( void )
 //    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
 //    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
 //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-	//status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
+//	status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
 //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
 //    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
 //    // Task for testing time tagged task queue.
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
-//    status = xTaskCreate(vTestAdcsDriver,"Test ADCS",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
-//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",1000,NULL,1,NULL);
+
+
+
+/**THESE ARE THE MAIN FUNCTIONS**/
+
+    radioPacket_t packet;
+    int len = strlen("INIT FINISHED!!!");
+    packet.len = len + 1;
+    packet.header = 0xAA;
+    packet.footer = 0xBB;
+    memcpy(packet.data, "INIT FINISHED!!!", len);
+    packet.type = 0x0A;
+
+
+
+    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
+//    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
+//    vTaskSuspend(vCanServer_h);
+    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
+    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
+    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
+    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
+    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
+    status = xTaskCreate(telemetryManager,"Telem",500,NULL,1,NULL);
+
+//    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
+
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",700,NULL,1,NULL);
+
+    printToTerminal("Tasks created!\n");
+    printToTerminal("Starting scheduller!");
 
     vTaskStartScheduler();
 
     return 0;
 }
 
-
+#define USING_DATA_FLASH
+#define USING_PROGRAM_FLASH
 /*-----------------------------------------------------------*/
 FlashStatus_t data_flash_status 	= FLASH_ERROR;
 FlashStatus_t program_flash_status	= FLASH_ERROR;
 static void prvSetupHardware( void )
 {
-#ifdef MAKER2_DEVKIT_CONFIGURATION
-    /* Perform any configuration necessary to use the hardware peripherals on the board. */
 
-    vInitializeLEDs();
-//    /* UARTs are set for 8 data - no parity - 1 stop bit, see the vInitializeUARTs function to modify
-//     * UART 0 set to 115200 to connect to terminal */
     vInitializeUARTs(MSS_UART_115200_BAUD);
-#endif
+//    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-    init_WD();
+
+
+//    init_WD();
     init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    init_mram();
 //    adcs_init_driver();
+
 #if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
-    //init_mram();
+//    init_mram();
 #ifdef USING_DATA_FLASH
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
 #endif
@@ -251,6 +282,26 @@ static void prvSetupHardware( void )
 #endif
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
+
+    FilesystemError_t stat = fs_init();
+
+        if (stat != FS_OK) {
+            while (1) {
+                int j = 20;
+            }
+        }
+        //Mount the file system.
+
+        int err = fs_mount();
+
+//        fs_format();
+
+        // reformat if we can't mount the filesystem
+        // this should only happen on the first boot
+        if (err) {
+            fs_mount();
+            fs_format();
+        }
 
 //    initADC();
 //    asMram_init();
@@ -270,27 +321,27 @@ static void vTestCspServer(void * pvParameters){
     csp_packet_t * packet= NULL;
     csp_socket_t * socket  = NULL;
 
-
-	can_conf.bitrate=250000;
-	can_conf.clock_speed=250000;
-	can_conf.ifc = "CAN";
-
-	/* Init buffer system with 5 packets of maximum 256 bytes each */
-	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
-
-	/* Init CSP with address 0 */
-	csp_init(0);
-
-
-	/* Init the CAN interface with hardware filtering */
-	csp_can_init(CSP_CAN_MASKED, &can_conf);
-
-	/* Setup default route to CAN interface */
-	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
-
-	size_t freSpace = xPortGetFreeHeapSize();
-	/* Start router task with 100 word stack, OS task priority 1 */
-	csp_route_start_task(200, 1);
+//
+//	can_conf.bitrate=250000;
+//	can_conf.clock_speed=250000;
+//	can_conf.ifc = "CAN";
+//
+//	/* Init buffer system with 5 packets of maximum 256 bytes each */
+//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
+//
+//	/* Init CSP with address 0 */
+//	csp_init(0);
+//
+//
+//	/* Init the CAN interface with hardware filtering */
+//	csp_can_init(CSP_CAN_MASKED, &can_conf);
+//
+//	/* Setup default route to CAN interface */
+//	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
+//
+//	size_t freSpace = xPortGetFreeHeapSize();
+//	/* Start router task with 100 word stack, OS task priority 1 */
+//	csp_route_start_task(200, 1);
 
 
 	 conn = NULL;
@@ -323,9 +374,16 @@ static void vTestCspServer(void * pvParameters){
 			}
 	}
 }
+#define CSP_DEFAULT_PRIORITY 2
+#define DEST_ADDRESS 0
+#define DEST_PORT 1
+#define TIMEOUT_MS 1000
+#define OPTIONAL_PARAMS 0
+
 /*-----------------------------------------------------------*/
 static void vTestCspClient(void * pvParameters){
 
+    vTaskDelay(2000);
 	struct csp_can_config can_conf;
 	can_conf.bitrate=250000;
 	can_conf.clock_speed=250000;
@@ -348,28 +406,19 @@ static void vTestCspClient(void * pvParameters){
 //	csp_route_start_task(200, 1);
 
 	int allowChange = 0;
+    satPacket packet;
+    csp_conn_t *txconn;
+    csp_packet_t *cspPacket;
+    uint8_t dest;
 	while(1){
-		csp_conn_t * conn;
-		csp_packet_t * packet;
-		conn = csp_connect(2,0,1,1000,0);	//Create a connection. This tells CSP where to send the data (address and destination port).
-		if(allowChange) {
-		    packet = csp_buffer_get(sizeof(uint8_t));
-            packet->data[0] = 0;
-		} else {
-            packet = csp_buffer_get(sizeof("Hello World")); // Get a buffer large enough to fit our data. Max size is 256.
-            sprintf(packet->data,"Hello World");
-            packet->length=strlen("Hello World");
-		}
-		csp_send(conn,packet,0);
-		csp_close(conn);
-		vTaskDelay(1000);
-
-//		CANMessage_t msg = {0};
-//		msg.id = 0x144;
-//		msg.dlc = 8;
-//		sprintf(msg.data,"SHEEEESH");
-//		CAN_transmit_message(&msg);
-//		vTaskDelay(5000);
+        if(xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
+            dest = packet.dest;
+            cspPacket = packet.packet;
+            txconn = csp_connect(2, 0, dest, 1000, 0);
+            csp_send(txconn, cspPacket, 0);
+            csp_close(txconn);
+            csp_buffer_free(cspPacket);
+        }
 	}
 }
 

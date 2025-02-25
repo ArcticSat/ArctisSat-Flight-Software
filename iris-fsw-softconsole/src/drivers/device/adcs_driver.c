@@ -17,6 +17,7 @@
 #include "drivers/subsystems/eps_driver.h"
 #include "board_definitions.h"
 #include "application/telemetry_manager.h"
+#include "task.h"
 
 //#define SPI_EFFICIENT
 
@@ -302,7 +303,7 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 //	uint8_t cmd[2] = {cmd_id,cmd_id};
 //	status = adcsTxRx(cmd,2,NULL,0);
 	status = adcsTxRx(&cmd_id,1,NULL,0);
-	vTaskDelay(10);
+	vTaskDelay(5);
 	status = adcsTxRx(NULL,0,&cmd_ack,1);
 	// Verify result
 	if(cmd_id == cmd_ack)
@@ -313,8 +314,11 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 	{
 		status = ADCS_ERROR_BAD_ACK;
 	}
+
 	return status;
 }
+
+
 
 AdcsDriverError_t adcsSyncSpi(void)
 {
@@ -503,25 +507,15 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
 	return ADCS_DRIVER_NO_ERROR;
 #else
     // Get command ID
-    uint8_t cmd_id = -1;
-    switch(gyroNumber)
-    {
-    case GYRO_1:
-        cmd_id = ADCS_CMD_GET_MEASUREMENT_GYRO_1;
-        break;
-    case GYRO_2:
-        cmd_id = ADCS_CMD_GET_MEASUREMENT_GYRO_2;
-        break;
-    default:
-        return ADCS_ERROR_BAD_ID;
-    }
+    uint8_t cmd_id = 0x02;
+    uint8_t bruh[12];
     // SPI transactions
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
     status = adcsSyncSpiCommand(cmd_id);
     if(status != ADCS_DRIVER_NO_ERROR)
     	return status;
-	vTaskDelay(10);
+	vTaskDelay(100);
     // Get measurements
 	status = adcsTxRx(NULL,0,gyroMeasurements,ADCS_GYRO_RAW_DATA_SIZE_BYTES);
 	// Check valid data

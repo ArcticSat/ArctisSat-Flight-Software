@@ -43,7 +43,7 @@
 #define FS_LOOKAHEAD_SIZE	512
 #define FS_BLOCK_CYCLES		500
 
-#define FS_MAX_OPEN_FILES	3
+#define FS_MAX_OPEN_FILES	5
 
 //For testing only. This will offset the location where filesystem is mounted.
 //Set to 0!
@@ -202,8 +202,7 @@ int fs_list_dir(char * path,int recursive){
 }
 
 int fs_is_open(lfs_file_t * file){
-
-    return -1; //lfs_mlist_isopen(lfs.mlist, (struct lfs_mlist*)file);
+    lfs_mlist_isopen(lfs.mlist, (struct lfs_mlist*)file);
 }
 
 int fs_file_exist(char * path){

@@ -43,6 +43,8 @@ void ds1393_read_time(Calendar_t * read_buffer)
 
 	uint8_t address = DS1393_REG_SECONDS;
 
+	vTaskSuspendAll();
+
 	spi_transaction_block_read_without_toggle(
 			RTC_SPI_CORE,
 			RTC_SLAVE_CORE,
@@ -81,6 +83,10 @@ void ds1393_read_time(Calendar_t * read_buffer)
 			1,
 			buffer,
 			1);
+
+	xTaskResumeAll();
+
+
 	volatile int J = sizeof(buffer);
 
 }

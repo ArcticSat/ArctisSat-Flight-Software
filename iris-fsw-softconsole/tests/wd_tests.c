@@ -53,13 +53,9 @@ void vTestWD(void *pvParameters) {
 
     int started = 0;
     for (;;) {
-
-        if (last_reboot_wd) {
-
             MSS_GPIO_set_output(MSS_GPIO_18, pinState);
             pinState = ~pinState;
             service_WD();
-            vTaskDelay(pdMS_TO_TICKS(2000));
-        }
+            vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

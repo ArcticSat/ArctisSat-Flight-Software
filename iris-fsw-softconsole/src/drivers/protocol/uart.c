@@ -42,6 +42,8 @@
 #define REPLY_QUEUE_SIZE	5
 
 static const IRQn_Type xUART0_IRQ = UART0_IRQn;
+static const IRQn_Type xUART1_IRQ = UART1_IRQn;
+
 static uint8_t uart0buffer[UART_BUFFER_SIZE];
 static uint8_t copied_buffer[UART_BUFFER_SIZE];
 static size_t uxUART0UnreadBytes;
@@ -73,6 +75,8 @@ void vInitializeUARTs(uint32_t ulBaud0)
 	priority must be at or below the configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 	setting (the higher the numeric priority, the lower the logical priority). */
 	NVIC_SetPriority( xUART0_IRQ, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY );
+    NVIC_SetPriority( xUART1_IRQ, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY );
+
 
 	/* Set the UART Rx notification function to trigger after a single byte is received. */
 //	MSS_UART_set_rx_handler(&g_mss_uart0, prvUARTRxNotificationHandler, MSS_UART_FIFO_SINGLE_BYTE );

@@ -53,4 +53,15 @@ void vTestFS(void * pvParams);
 //Tests the onboard ADC measuring the board temp.
 void vTestADC(void * pvParams);
 
+unsigned char resetCamera(unsigned char resetType);
+unsigned char syncCamera();
+void useless_delay(unsigned long int uselessDel);
+unsigned char initCamera(unsigned char imageFormat, unsigned char resRAW, unsigned char resJPEG);
+unsigned char setPackageSize(unsigned int packSize);
+unsigned char takeSnapShot(unsigned char snapType, unsigned int skipFrames);
+unsigned char getPicture(unsigned char picType, unsigned char getJPEG, unsigned int packSizeJPEG);
+unsigned char readImageData(unsigned int packSize, unsigned char * fullImageData);
+
+
+
 #endif
