@@ -91,6 +91,7 @@ void _exit( int code )
     /* Should we force a system reset? */
     while( 1 )
     {
+        vTaskSuspendAll();
         ;
     }
 }
@@ -173,7 +174,7 @@ int _read(int file, char *ptr, int len)
 
 /*==============================================================================
  * Write to a file. libc subroutines will use this system routine for output to
- * all files, including stdout—so if you need to generate any output, for
+ * all files, including stdoutï¿½so if you need to generate any output, for
  * example to a serial port for debugging, you should make your minimal write
  * capable of doing this.
  */

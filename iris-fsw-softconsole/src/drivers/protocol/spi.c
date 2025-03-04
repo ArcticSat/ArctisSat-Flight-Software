@@ -27,6 +27,7 @@
 #include "firmware/drivers/CoreSPI/core_spi.h"
 #include "firmware/drivers/CoreSPI/corespi_regs.h"
 #include "hal.h"
+#include "task.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -179,13 +180,11 @@ void spi_transaction_block_write_without_toggle(CoreSPIInstance_t core, spi_slav
 void spi_transaction_block_read_without_toggle(CoreSPIInstance_t core, spi_slave_t slave, uint8_t * cmd_buffer, uint16_t cmd_size, uint8_t * rd_buffer, uint16_t rd_size)
 {
     if(core == MSS_SPI_0){
-
         MSS_SPI_set_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
         MSS_SPI_transfer_block(&g_mss_spi0,cmd_buffer, cmd_size, rd_buffer, rd_size);
         MSS_SPI_clear_slave_select(&g_mss_spi0,MSS_SPI_SLAVE_0);
     }
     else{
-
         SPI_set_slave_select(&core_spi[core], slave);
         SPI_transfer_block(&core_spi[core], cmd_buffer, cmd_size, rd_buffer, rd_size);
         SPI_clear_slave_select(&core_spi[core],slave);

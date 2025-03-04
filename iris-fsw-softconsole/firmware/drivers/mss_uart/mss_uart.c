@@ -375,8 +375,13 @@ custom_MSS_UART_polled_tx_string
              * or we reach the NULL terminator byte.
              */
             fill_size = 0u;
-            while((char_idx < buf_length) && (fill_size < TX_FIFO_SIZE))
+            while((char_idx < buf_length))
             {
+                do {
+                    status = this_uart->hw_reg->LSR;
+                    this_uart->status |= status;
+                } while (0u == (status & MSS_UART_THRE));
+
                 /* Send the data byte */
                 this_uart->hw_reg->THR = data_byte;
                 ++fill_size;

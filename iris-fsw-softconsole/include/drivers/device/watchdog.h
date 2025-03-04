@@ -31,7 +31,7 @@
 // <Reload Value> * 64 / (50*10^6) = Period (in seconds)
 //
 // The following Watchdog period assumes a reload value of 0x1800000 (i.e. the minimum possible).
-#define WD_PERIOD_s           32
+#define WD_PERIOD_s           5
 
 #define WD_TASK_PERIOD_ms     WD_PERIOD_s * (1000 / 2)
 

@@ -18,6 +18,7 @@
 //------------------------------------------------------------------------------
 #include "FreeRTOS.h"
 #include "queue.h"
+#include <csp/csp.h>
 
 //------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -29,6 +30,11 @@
 #define CSP_DEFAULT_SIZE_BUFFER         256  //The 256 number is from the MTU of the CAN interface.
 #define CSP_DEFAULT_ROUTER_STACK_SIZE   100
 #define CSP_DEFAULT_ROUTER_PRIORITY     1
+
+typedef struct customPacket {
+    csp_packet_t* packet;
+    uint8_t dest;
+} satPacket;
 
 //------------------------------------------------------------------------------
 // ENUMERATIONS AND STRUCTS
@@ -42,6 +48,12 @@ typedef struct{
     QueueHandle_t data_queue;
 
 } InputQueues_t;
+
+QueueHandle_t txQueue;
+
+
+void sendData(char*, int, int);
+
 
 //------------------------------------------------------------------------------
 // FUNCTION PROTOTYPES

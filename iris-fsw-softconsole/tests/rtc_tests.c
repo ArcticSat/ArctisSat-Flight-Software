@@ -37,7 +37,6 @@ void vTestRTC(void *pvParameters)
 //    ds1393_write_reg(0x8d, 0x38);
 //    ds1393_read_reg(0x0d, buf_readreg);
 
-//    ds1393_write_time(&buffer);
     if (TIME_SUCCESS != resync_rtc())
     {
         error_occurred = 1;
