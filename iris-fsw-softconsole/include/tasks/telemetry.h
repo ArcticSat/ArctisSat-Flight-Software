@@ -49,13 +49,26 @@ typedef struct {
     uint8_t footer;
 } radioPacket_t;
 
+typedef struct {
+    int len;
+    char data[64];
+} telemPacket_t;
+
 QueueHandle_t commsTxQueue;
 QueueHandle_t commsRxQueue;
+
+QueueHandle_t powerLogQueue;
+QueueHandle_t adcsLogQueue;
+QueueHandle_t logLogQueue;
 
 uint8_t imageFlag;
 uint8_t takeImage;
 uint8_t downlinkImage;
 uint8_t broadcastTelemFlag;
+uint8_t formatFSFlag;
+
+extern volatile uint8_t flashSystemReady;
+
 
 uint8_t cameraPowerStatus;
 uint8_t ADCSPowerStatus;

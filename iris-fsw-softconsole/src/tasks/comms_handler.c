@@ -213,6 +213,10 @@ void commsHandlerTask() {
                 dataBuf[2] = cameraPowerStatus;
                 sendDataPacket(dataBuf, 32, 0xAB);
                 break;
+            case 0x99: //format FS
+                flashSystemReady = 0;
+                formatFSFlag = 1;
+                break;
             case 0xCC: //image status
                 if (rxPacket.data[1] == 0xAA) {
                     imageFlag = 0x01;

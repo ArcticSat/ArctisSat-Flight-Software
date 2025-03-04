@@ -175,10 +175,15 @@ int main( void )
 //    vTaskSuspend(vTestAdcsDriverInterface_h);
 //    vTaskSuspend(vSunPointing_h);
 
-    txQueue = xQueueCreate(10, sizeof(satPacket));
+    txQueue = xQueueCreate(5, sizeof(satPacket));
 
     commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
+
+
+    adcsLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
+    powerLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
+    logLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
 
     logMessage("Power on!\n");
 
@@ -237,11 +242,11 @@ int main( void )
     status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
     status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
-    status = xTaskCreate(telemetryManager,"Telem",500,NULL,1,NULL);
+    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
 
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",700,NULL,1,NULL);
+    status = xTaskCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
 
     printToTerminal("Tasks created!\n");
     printToTerminal("Starting scheduller!");

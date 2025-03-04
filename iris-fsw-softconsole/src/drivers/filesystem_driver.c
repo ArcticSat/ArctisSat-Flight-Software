@@ -420,12 +420,14 @@ int fs_file_close( lfs_file_t *file){
 	int result = FS_ERR_LOCK;
 
 	if(xSemaphoreTakeRecursive(fs_lock_handle,portMAX_DELAY) == pdTRUE){
-
+//	    vTaskSuspendAll();
 		result = lfs_file_close(&lfs, file);
-
+//		xTaskResumeAll();
 		if(result >=0){
 			//File close was successful, decrement number of open files.
-			open_files -= 1;
+			if(open_files > 0) {
+			    open_files -= 1;
+			}
 
 			//TODO:Not sure if we should clear the file buffer. Check if lfs does this.
 		}

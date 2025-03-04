@@ -95,15 +95,6 @@ void vCSP_Server(void *pvParameters) {
     powerPingCount = 0;
 
     CCLSM_DATA_ENTRY testCCLSM;
-	//Make sure FS is up before all tasks
-//	filesystem_initialization();
-
-    //Start up any tasks that depend on CSP, FS.
-//    vTaskResume(vCanServer_h);
-//    vTaskResume(vTTTScheduler_h);
-//    if(get_fs_status() == FS_OK){
-//    	vTaskResume(vFw_Update_Mgr_Task_h);
-//    }
 
     int misses = 0;
     int lockout = 0;
