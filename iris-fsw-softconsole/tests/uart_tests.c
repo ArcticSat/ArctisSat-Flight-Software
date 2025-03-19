@@ -75,6 +75,11 @@ lfs_file_t imageFile = { 0 };
 
 int globalFileSize = 0;
 
+struct sPing {
+    uint8_t size;
+    uint8_t data[16];
+};
+
 void vTestUARTTx() {
     const TickType_t delay = pdMS_TO_TICKS(2000);
 
@@ -88,8 +93,41 @@ void vTestUARTTx() {
     uint8_t Tx_Success = 0;
     uint32_t i, useless_number;
 
-    uint8_t buf_Rx0[32];
-    uint8_t buf_Rx1[32];
+    uint8_t buf_Rx0[64];
+    uint8_t buf_Rx1[64];
+
+    struct sPing myPingPacket;
+
+    while(1) {
+        myPingPacket.size = 5;
+        myPingPacket.data[0] = 'h';
+        myPingPacket.data[1] = 'e';
+        myPingPacket.data[2] = 'l';
+        myPingPacket.data[3] = 'l';
+        myPingPacket.data[4] = 'o';
+
+
+        for(int i = 0; i < 10; i++) {
+            buf_Rx0[i] = 0xAA;
+        }
+
+        buf_Rx0[10] = 0x33;
+        buf_Rx0[11] = 0x55;
+        buf_Rx0[12] = 0x33;
+        buf_Rx0[13] = 0x55;
+
+        buf_Rx0[14] = 19;
+        buf_Rx0[15] = 0x32;
+        memcpy(buf_Rx0[16], &myPingPacket, 17);
+
+        custom_MSS_UART_polled_tx_string(&g_mss_uart1, buf_Rx0, 33);
+        vTaskDelay(100);
+        MSS_UART_get_rx(&g_mss_uart1, buf_Rx1, 33);
+
+        vTaskDelay(5000);
+    }
+
+
 
 //    const char message[] = "Test";
 //    memcpy(buf_Tx, message, sizeof(message));

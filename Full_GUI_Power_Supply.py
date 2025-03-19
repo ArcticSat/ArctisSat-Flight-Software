@@ -32,7 +32,7 @@ GUI_loop_rate_anchor_x = 450
 GUI_loop_rate_anchor_y = 15
 
 # Set up the display
-width, height = 1250, 825
+width, height = 1850, 825
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -43,7 +43,7 @@ os.chdir(dname)
 
 pygame.mixer.init()
 pygame.display.set_caption("HAXSat")
-window = pygame.display.set_mode((width, height))
+window = pygame.display.set_mode((width, height), pygame.RESIZABLE)
 font = pygame.font.Font(None, 20)
 small_font = pygame.font.Font(None, 12)
 

@@ -145,7 +145,7 @@ int main( void )
     status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
     status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
 #endif
-    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
+//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
 
 
 //	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
@@ -234,22 +234,22 @@ int main( void )
 
 
 
-    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
+//    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
 //    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
 //    vTaskSuspend(vCanServer_h);
-    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
-    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
-    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
-    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
+//    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
+//    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
+//    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
+//    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
     status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
-    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
+//    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
 
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-    status = xTaskCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
+//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
 
-    printToTerminal("Tasks created!\n");
-    printToTerminal("Starting scheduller!");
+//    printToTerminal("Tasks created!\n");
+//    printToTerminal("Starting scheduller!");
 
     vTaskStartScheduler();
 
@@ -270,7 +270,7 @@ static void prvSetupHardware( void )
 
 
 //    init_WD();
-    init_rtc();
+//    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
 //    init_mram();
@@ -288,25 +288,25 @@ static void prvSetupHardware( void )
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
 
-    FilesystemError_t stat = fs_init();
+//    FilesystemError_t stat = fs_init();
 
-        if (stat != FS_OK) {
-            while (1) {
-                int j = 20;
-            }
-        }
-        //Mount the file system.
-
-        int err = fs_mount();
-
-//        fs_format();
-
-        // reformat if we can't mount the filesystem
-        // this should only happen on the first boot
-        if (err) {
-            fs_mount();
-            fs_format();
-        }
+//        if (stat != FS_OK) {
+//            while (1) {
+//                int j = 20;
+//            }
+//        }
+//        //Mount the file system.
+//
+//        int err = fs_mount();
+//
+////        fs_format();
+//
+//        // reformat if we can't mount the filesystem
+//        // this should only happen on the first boot
+//        if (err) {
+//            fs_mount();
+//            fs_format();
+//        }
 
 //    initADC();
 //    asMram_init();
