@@ -19,7 +19,7 @@
 #include "application/telemetry_manager.h"
 #include "task.h"
 
-//#define SPI_EFFICIENT
+#define SPI_EFFICIENT
 
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
@@ -32,7 +32,7 @@
 #define SPACECRAFT_ORBIT_TIME_MINUTES 	32
 #define SPACECRAFT_ORBIT_TIME_SECONDS 	18
 
-#define SPI_EFFICIENT
+//#define SPI_EFFICIENT
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

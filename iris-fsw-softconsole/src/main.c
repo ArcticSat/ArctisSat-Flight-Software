@@ -246,7 +246,7 @@ int main( void )
 
 //    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
 
-//    status = xTaskCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
+//    status = xTas/kCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
 
 //    printToTerminal("Tasks created!\n");
 //    printToTerminal("Starting scheduller!");
@@ -416,6 +416,7 @@ static void vTestCspClient(void * pvParameters){
     csp_packet_t *cspPacket;
     uint8_t dest;
 	while(1){
+	    sendData("Hello world!", strlen("Hello world!"),0);
         if(xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
             dest = packet.dest;
             cspPacket = packet.packet;

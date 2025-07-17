@@ -75,21 +75,15 @@ int talkToWheels() {
 
     //D0 07 00 00 E8 03
     txData[0] = 0x7E;
-
-
     txData[1] = 0x06;
-
     txData[2] = 0x30;
     txData[3] = 0x75;
     txData[4] = 0x00;
     txData[5] = 0x00;
-
     txData[6] = 0x88;
     txData[7] = 0x13;
-
     txData[8] = 0xD5;
     txData[9] = 0xF1;
-
     txData[10] = 0x7E;
 
     adcsTxRx(txData, 11, NULL, 0);
@@ -97,13 +91,9 @@ int talkToWheels() {
     adcsTxRx(NULL, 0, rxData, 11);
 
     txData[0] = 0x7E;
-
-
     txData[1] = 0x04;
-
     txData[2] = 0x74;
     txData[3] = 0xA1;
-
     txData[4] = 0x7E;
 
 
@@ -112,15 +102,11 @@ int talkToWheels() {
     adcsTxRx(NULL, 0, rxData, 15);
 
     txData[0] = 0x7E;
-
-
     txData[1] = 0x06;
-
     txData[2] = 0x00;
     txData[3] = 0x00;
     txData[4] = 0x00;
     txData[5] = 0x00;
-
     txData[6] = 0x64;
     txData[7] = 0x00;
 
@@ -145,12 +131,30 @@ void vTestAdcsDriver(void * pvParameters){
     int lockout = 1;
     uint8_t *buf[6];
     uint8_t buf_Rx1[32];
+    uint8_t sunSensorResponse[164];
+    char* test1 = "SUNSENSOR1";
+    char* test2 = "SUNSENSOR2";
+
     while(1){
-
-
-        talkToWheels();
-        vTaskDelay(1000);
+//        talkToWheels();
+        vTaskDelay(250);
 //        status = pingAdcs();
+
+        adcsArbCommand(15, sunSensorResponse, 4);
+        adcsArbCommand(19, sunSensorResponse, 164);
+
+//        sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
+//        custom_MSS_UART_polled_tx_string(&g_mss_uart0, test1, strlen(test1));
+        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &sunSensorResponse, 164);
+
+//        vTaskDelay(10);
+
+        adcsArbCommand(16, sunSensorResponse, 4);
+        adcsArbCommand(19, sunSensorResponse, 164);
+
+        //        sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
+//        custom_MSS_UART_polled_tx_string(&g_mss_uart0, test2, strlen(test2));
+        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &sunSensorResponse, 164);
 //        if(status != ADCS_DRIVER_NO_ERROR) {
 //            misses++;
 //        } else {
@@ -185,7 +189,7 @@ void vTestAdcsDriver(void * pvParameters){
 //        logADCSTelem(buf_Rx1, 0x05);
 //        logMessage("\n");
 
-        vTaskDelay(1000);
+//        vTaskDelay(1000);
     }
 
 

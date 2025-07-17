@@ -117,7 +117,7 @@ void sendDataPacket(char *data, int len, uint8_t type) {
 }
 
 void printToTerminal(char *msg) {
-    logMessage(msg);
+//    logMessage(msg);
     radioPacket_t packet;
     int len = strlen(msg);
     packet.len = len + 1;

@@ -426,7 +426,7 @@ void SPI_transfer_block
                         ++transit;
                     }
                 }
-                if( !HAL_get_8bit_reg_field(this_spi->base_addr, STATUS_RXEMPTY ) )
+                if( !HAL_get_8bit_reg_field(this_spi->base_addr, STATUS_RXEMPTY ))
                 {
                     /* Read and discard. */
                     HAL_get_32bit_reg( this_spi->base_addr, RXDATA );
@@ -446,7 +446,7 @@ void SPI_transfer_block
                     ++tx_idx;
                     ++transit;
                 }
-                if( !HAL_get_8bit_reg_field(this_spi->base_addr, STATUS_RXEMPTY ) )
+                if( !HAL_get_8bit_reg_field(this_spi->base_addr, STATUS_RXEMPTY ))
                 {
                     /* Process received byte. */
                     rx_buffer[rx_idx] = (uint8_t)HAL_get_32bit_reg( this_spi->base_addr, RXDATA );
