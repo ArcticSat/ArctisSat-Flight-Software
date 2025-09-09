@@ -131,7 +131,7 @@ void vTestAdcsDriver(void * pvParameters){
     int lockout = 1;
     uint8_t *buf[6];
     uint8_t buf_Rx1[32];
-    uint8_t sunSensorResponse[164];
+    uint8_t sunSensorResponse[10];
     char* test1 = "SUNSENSOR1";
     char* test2 = "SUNSENSOR2";
 
@@ -140,21 +140,21 @@ void vTestAdcsDriver(void * pvParameters){
         vTaskDelay(250);
 //        status = pingAdcs();
 
-        adcsArbCommand(15, sunSensorResponse, 4);
-        adcsArbCommand(19, sunSensorResponse, 164);
+        adcsArbCommand(22, sunSensorResponse, 6);
+        adcsArbCommand(24, sunSensorResponse, 6);
 
 //        sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
 //        custom_MSS_UART_polled_tx_string(&g_mss_uart0, test1, strlen(test1));
-        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &sunSensorResponse, 164);
+//        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &sunSensorResponse, 164);
 
 //        vTaskDelay(10);
 
-        adcsArbCommand(16, sunSensorResponse, 4);
-        adcsArbCommand(19, sunSensorResponse, 164);
+//        adcsArbCommand(16, sunSensorResponse, 4);
+//        adcsArbCommand(19, sunSensorResponse, 164);
 
         //        sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
 //        custom_MSS_UART_polled_tx_string(&g_mss_uart0, test2, strlen(test2));
-        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &sunSensorResponse, 164);
+//        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &sunSensorResponse, 164);
 //        if(status != ADCS_DRIVER_NO_ERROR) {
 //            misses++;
 //        } else {

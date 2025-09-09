@@ -305,10 +305,10 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 //	uint8_t cmd[2] = {cmd_id,cmd_id};
 //	status = adcsTxRx(cmd,2,NULL,0);
 	status = adcsTxRx(&cmd_id,1,NULL,0);
-	vTaskDelay(5);
-	status = adcsTxRx(NULL,0,&cmd_ack,1);
+	 vTaskDelay(5);
+	 status = adcsTxRx(NULL,0,&cmd_ack,1);
 	// Verify result
-	if(cmd_id == cmd_ack)
+	if(cmd_ack == cmd_id)
 	{
 		status = ADCS_DRIVER_NO_ERROR;
 	}
