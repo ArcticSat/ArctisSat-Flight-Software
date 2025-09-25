@@ -86,170 +86,99 @@
 //#define CAN_SERVER
 #define CSP_SERVER
 
-
-/* External variables */
-
-
-//TaskHandles
-//This is how we are able to disable/enable tasks, either for operations managment or proper startup order.
 TaskHandle_t xUART0RxTaskToNotify;
 TaskHandle_t vTTTScheduler_h;
 TaskHandle_t vFw_Update_Mgr_Task_h;
 TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
-//TaskHandle_t vDetumbleDriver_h;
 TaskHandle_t vSunPointing_h;
 TaskHandle_t vTestAdcsDriverInterface_h;
-//Debug Only:
-TaskHandle_t vTaskSpinLEDs_h;
 
 
 HardwareCheck_t setupHardwareStatus = {0};
 
 
-/*
- * Set up the hardware ready to run this demo.
- */
 static void prvSetupHardware( void );
-
-//static void vTestCanServer(void * pvParameters);
 
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
 static void vTestingTask(void * pvParams);
 
-/* Prototypes for the standard FreeRTOS callback/hook functions implemented
-within this file. */
 void vApplicationMallocFailedHook( void );
 void vApplicationIdleHook( void );
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName );
 void vApplicationTickHook( void );
 
-/*-----------------------------------------------------------*/
-/* See the documentation page for this demo on the FreeRTOS.org web site for
-full information - including hardware setup requirements. */
-
-
 int main( void )
 {
-	// Initialization
-   prvSetupHardware();
+    prvSetupHardware();
 
-	// Task Creation
-	//TODO: Are time tagged tasks persistent over restart?
 	BaseType_t status;
 
-#ifdef MAKER2_DEVKIT_CONFIGURATION
-    // Create LED spinning task
-    status = xTaskCreate(vTaskSpinLEDs,"LED Spinner",150,NULL,3,NULL);
-    status = xTaskCreate(vTaskUARTBridge,"UART0 Receiver",200,(void *) &g_mss_uart0,3,&xUART0RxTaskToNotify);
-#endif
-//    status = xTaskCreate(vTestWD,"Test WD",configMINIMAL_STACK_SIZE,NULL,3,&vTestWD_h);
-
-
-//	status = xTaskCreate(vDetumbleDriver,"detumbling",800,NULL,2,&vDetumbleDriver_h);
-//	status = xTaskCreate(vSunPointing,"sunpointing",800,NULL,2,&vSunPointing_h);
-#ifdef INCLUDE_TASK_TTT
-    status = xTaskCreate(vTTT_Scheduler,"TTT",400,NULL,3,&vTTTScheduler_h);
-#endif
-#ifdef INCLUDE_TASK_CAN_SERVER
-#endif
-#ifdef INCLUDE_TASK_FW_MANAGER
-    status = xTaskCreate(vFw_Update_Mgr_Task,"FwManager",800,NULL,2,&vFw_Update_Mgr_Task_h);
-#endif
-
-    // status = xTaskCreate(vTestAdcsDriverInterface,"testAdcs",400,NULL,2,&vTestAdcsDriverInterface_h);
-
-//    //Suspend these because csp server will start once csp is up.
-//    vTaskSuspend(vDetumbleDriver_h);
-#ifdef INCLUDE_TASK_TTT
-    vTaskSuspend(vTTTScheduler_h);
-#endif
-//    vTaskSuspend(xUART0RxTaskToNotify);
-#ifdef INCLUDE_TASK_CAN_SERVER
-#endif
-#ifdef INCLUDE_TASK_FW_MANAGER
-    vTaskSuspend(vFw_Update_Mgr_Task_h);
-#endif
-//    vTaskSuspend(vTestAdcsDriverInterface_h);
-//    vTaskSuspend(vSunPointing_h);
-
     txQueue = xQueueCreate(5, sizeof(satPacket));
-
     commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
-
 
     adcsLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
     powerLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
     logLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
 
-    logMessage("Power on!\n");
-
-
-    // Start FreeRTOS Tasks
 //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
-//	status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
-//	status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
-    // Create UART0 RX Task
-
-
-//    // TODO - Starting to run out of heap space for these tasks... should start thinking about
-//    // increasing heap space or managing memory in a smarter manner. First step would be looking
-//    // at the FreeRTOS configurations and the linker file *.ld.
+//	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
+//	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+//	  status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
+//    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+//    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
 //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
 //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-//    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-//    // TR - Not quite sure of the reason, but it appears that when we have a task created for both
-//    //      vTestRTC and vTestMRAM, the device stops communicating over SPI after the vTestRTC task
-//    //      finishes transmission (for the first time). In core_spi.c, the software gets stuck in the
-//    //      while loop "while ( transfer_idx < transfer_size )" on line 134 in "SPI_block_read". The
-//    //      rx_data_ready variable never evaluates to "true", and so the software is entering an infinite
-//    //      loop, waiting for the CoreSPI status to be "rx ready" to perform the final read.
-//    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-//	status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
 //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
-//    // Task for testing priority queue data structure.
 //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
-//    // Task for testing time tagged task queue.
 //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
 //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
 //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
 
 
 
+
+
+ 
 /**THESE ARE THE MAIN FUNCTIONS**/
 
-    radioPacket_t packet;
-    int len = strlen("INIT FINISHED!!!");
-    packet.len = len + 1;
-    packet.header = 0xAA;
-    packet.footer = 0xBB;
-    memcpy(packet.data, "INIT FINISHED!!!", len);
-    packet.type = 0x0A;
+    //TODO add handling and logging to all the task status
 
+    //This task handles all incoming CSP packets and routes them to the appropriate handler.
+    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
 
+    //This task 
+    //Need to suspend this task until the CSP stack is up and running.
+    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
+    vTaskSuspend(vCanServer_h);
 
-//    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
-//    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
-//    vTaskSuspend(vCanServer_h);
-//    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
-//    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
-//    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
-//    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
-    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
-//    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
+    //This task reads from the tx queue and sends packets out over CSP.
+    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
 
-//    status = xTaskCreate(vTestFS,"Test FS",500,NULL,1,NULL);
+    //This task reads from the UART Rx queue and handles them
+    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
 
-//    status = xTas/kCreate(vTestUARTTx,"Test UART Tx",500,NULL,1,NULL);
+    //This task dispatches packets in the TX queue over UART
+    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
 
-//    printToTerminal("Tasks created!\n");
-//    printToTerminal("Starting scheduller!");
+    //This task reads from the UART and puts packets in the Rx queue
+    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
+
+    //This task drives ADCS
+    status = xTaskCreate(vADCSDriver,"ADCS handler",500,NULL,1,NULL);
+
+    //This task drives power
+    status = xTaskCreate(vPowerDriver, "PWR handler", 500, NULL, 2, NULL);
+
+    //TODO fix this task
+    //    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
+
 
     vTaskStartScheduler();
 
@@ -265,120 +194,32 @@ static void prvSetupHardware( void )
 {
 
     vInitializeUARTs(MSS_UART_115200_BAUD);
-//    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-
-
-//    init_WD();
-//    init_rtc();
+    init_WD();
+    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
-//    init_mram();
-//    adcs_init_driver();
 
-#if defined(FLIGHT_MODEL_CONFIGURATION) || defined(ENGINEERING_MODEL_CONFIGURATION)
-//    init_mram();
-#ifdef USING_DATA_FLASH
+    setupHardwareStatus.CSP_init = configure_csp();
+
+    init_mram();
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-#endif
-#ifdef USING_PROGRAM_FLASH
     program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
-#endif
-#endif
+#
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
 
-//    FilesystemError_t stat = fs_init();
-
-//        if (stat != FS_OK) {
-//            while (1) {
-//                int j = 20;
-//            }
-//        }
-//        //Mount the file system.
-//
-//        int err = fs_mount();
-//
-////        fs_format();
-//
-//        // reformat if we can't mount the filesystem
-//        // this should only happen on the first boot
-//        if (err) {
-//            fs_mount();
-//            fs_format();
-//        }
-
-//    initADC();
-//    asMram_init();
-
-//    vTestUARTTx();
-//    vTestSPI();
-
+   //TODO make this better
+    FilesystemError_t stat = fs_init();
+   int err = fs_mount();
+    if (err) {
+        fs_mount();
+        fs_format();
+    }
 }
 
 
 
-/*-----------------------------------------------------------*/
-static void vTestCspServer(void * pvParameters){
-
-	struct csp_can_config can_conf = {0};
-    csp_conn_t * conn = NULL;
-    csp_packet_t * packet= NULL;
-    csp_socket_t * socket  = NULL;
-
-//
-//	can_conf.bitrate=250000;
-//	can_conf.clock_speed=250000;
-//	can_conf.ifc = "CAN";
-//
-//	/* Init buffer system with 5 packets of maximum 256 bytes each */
-//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
-//
-//	/* Init CSP with address 0 */
-//	csp_init(0);
-//
-//
-//	/* Init the CAN interface with hardware filtering */
-//	csp_can_init(CSP_CAN_MASKED, &can_conf);
-//
-//	/* Setup default route to CAN interface */
-//	csp_rtable_set(0,0, &csp_if_can,CSP_NODE_MAC);
-//
-//	size_t freSpace = xPortGetFreeHeapSize();
-//	/* Start router task with 100 word stack, OS task priority 1 */
-//	csp_route_start_task(200, 1);
-
-
-	 conn = NULL;
-	 packet= NULL;
-	socket = csp_socket(0);
-	csp_bind(socket, CSP_TELEM_PORT);
-	csp_listen(socket,4);
-
-	while(1) {
-
-			conn = csp_accept(socket, 1000);
-			if(conn){
-				packet = csp_read(conn,0);
-				//prvUARTSend(&g_mss_uart0, packet->data, packet->length);
-				//printf(“%S\r\n”, packet->data);
-				uint32_t addr = packet->id.src;
-				if(addr ==  PAYLOAD_CSP_ADDRESS){
-
-				    telemetryPacket_t t = {0};
-				    unpackTelemetry(packet->data, &t);
-
-				    double temp = *(double *)t.data;
-
-				    double a = temp;//Does nothing... just a place for breakpoint, while temp is in scope.
-				}
-
-
-				csp_buffer_free(packet);
-				csp_close(conn);
-			}
-	}
-}
 #define CSP_DEFAULT_PRIORITY 2
 #define DEST_ADDRESS 0
 #define DEST_PORT 1
@@ -389,34 +230,13 @@ static void vTestCspServer(void * pvParameters){
 static void vTestCspClient(void * pvParameters){
 
     vTaskDelay(2000);
-	struct csp_can_config can_conf;
-	can_conf.bitrate=250000;
-	can_conf.clock_speed=250000;
-	can_conf.ifc = "CAN";
 
-//	/* Init buffer system with 5 packets of maximum 256 bytes each */
-//	csp_buffer_init(5, 256);//The 256 number is from the MTU of the CAN interface.
-//
-//	/* Init CSP with address 1 */
-//	csp_init(1);
-//
-//	/* Init the CAN interface with hardware filtering */
-//	csp_can_init(CSP_CAN_MASKED, &can_conf);
-//
-//	/* Setup address 0 to route to CAN interface */
-//	csp_rtable_set(4,0, &csp_if_can,0);
-//
-//	size_t freSpace = xPortGetFreeHeapSize();
-//	/* Start router task with 100 word stack, OS task priority 1 */
-//	csp_route_start_task(200, 1);
-
-	int allowChange = 0;
     satPacket packet;
     csp_conn_t *txconn;
     csp_packet_t *cspPacket;
     uint8_t dest;
+    //TODO Add timeout and error checking.
 	while(1){
-	    sendData("Hello world!", strlen("Hello world!"),0);
         if(xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
             dest = packet.dest;
             cspPacket = packet.packet;
