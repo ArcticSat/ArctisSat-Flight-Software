@@ -209,7 +209,7 @@ static void prvSetupHardware( void )
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
 
-   //TODO make this better
+   //TODO make this better - this might crash???
     FilesystemError_t stat = fs_init();
    int err = fs_mount();
     if (err) {
