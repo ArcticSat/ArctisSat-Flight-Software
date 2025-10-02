@@ -131,17 +131,27 @@ void vTestAdcsDriver(void * pvParameters){
     int lockout = 1;
     uint8_t *buf[6];
     uint8_t buf_Rx1[32];
-    uint8_t sunSensorResponse[10];
+    uint8_t sensorResponse[7];
+    unsigned char gyroAdd = 22;
+    unsigned char magAdd = 24;
     char* test1 = "SUNSENSOR1";
     char* test2 = "SUNSENSOR2";
 
     while(1){
 //        talkToWheels();
-        vTaskDelay(250);
+        vTaskDelay(200);
 //        status = pingAdcs();
 
-        adcsArbCommand(22, sunSensorResponse, 6);
-        adcsArbCommand(24, sunSensorResponse, 6);
+        adcsArbCommand(gyroAdd, sensorResponse[1], 6);
+        sensorResponse[0] = gyroAdd;
+//        custom_MSS_UART_polled_tx_string(&g_mss_uart0, gyroAdd, 1);
+        custom_MSS_UART_polled_tx_string(&g_mss_uart0, sensorResponse, 7);
+        vTaskDelay(10);
+        adcsArbCommand(magAdd, sensorResponse[1], 6);
+//        custom_MSS_UART_polled_tx_string(&g_mss_uart0, magAdd, 1);
+        sensorResponse[0] = magAdd;
+        custom_MSS_UART_polled_tx_string(&g_mss_uart0, sensorResponse, 7);
+        vTaskDelay(10);
 
 //        sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
 //        custom_MSS_UART_polled_tx_string(&g_mss_uart0, test1, strlen(test1));
