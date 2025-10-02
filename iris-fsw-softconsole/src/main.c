@@ -151,34 +151,35 @@ int main( void )
     //TODO add handling and logging to all the task status
 
     //This task handles all incoming CSP packets and routes them to the appropriate handler.
-    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
+//    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
 
     //This task 
     //Need to suspend this task until the CSP stack is up and running.
-    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
-    vTaskSuspend(vCanServer_h);
+//    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
+//    vTaskSuspend(vCanServer_h);
 
     //This task reads from the tx queue and sends packets out over CSP.
-    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
+//    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
 
     //This task reads from the UART Rx queue and handles them
-    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
+//    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
 
     //This task dispatches packets in the TX queue over UART
-    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
+//    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
 
     //This task reads from the UART and puts packets in the Rx queue
-    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
+//    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
 
     //This task drives ADCS
-    status = xTaskCreate(vADCSDriver,"ADCS handler",500,NULL,1,NULL);
+//    status = xTaskCreate(vADCSDriver,"ADCS handler",500,NULL,1,NULL);
 
     //This task drives power
-    status = xTaskCreate(vPowerDriver, "PWR handler", 500, NULL, 2, NULL);
+//    status = xTaskCreate(vPowerDriver, "PWR handler", 500, NULL, 2, NULL);
 
     //TODO fix this task
     //    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
 
+    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
 
     vTaskStartScheduler();
 
@@ -194,28 +195,32 @@ static void prvSetupHardware( void )
 {
 
     vInitializeUARTs(MSS_UART_115200_BAUD);
+//    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-    init_WD();
-    init_rtc();
+
+
+//    init_WD();
+//    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
+//    init_mram();
+//    adcs_init_driver();
+//    setupHardwareStatus.CSP_init = configure_csp();
 
-    setupHardwareStatus.CSP_init = configure_csp();
+//    init_mram();
+//    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+//    program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
 
-    init_mram();
-    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-    program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
-#
-    setupHardwareStatus.data_flash_init = data_flash_status;
-    setupHardwareStatus.program_flash_init = program_flash_status;
+//    setupHardwareStatus.data_flash_init = data_flash_status;
+//    setupHardwareStatus.program_flash_init = program_flash_status;
 
    //TODO make this better - this might crash???
-    FilesystemError_t stat = fs_init();
-   int err = fs_mount();
-    if (err) {
-        fs_mount();
-        fs_format();
-    }
+//    FilesystemError_t stat = fs_init();
+//   int err = fs_mount();
+//    if (err) {
+//        fs_mount();
+//        fs_format();
+//    }
 }
 
 
