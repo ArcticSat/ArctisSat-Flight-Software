@@ -99,6 +99,7 @@ void vCSP_Server(void *pvParameters) {
     int misses = 0;
     int lockout = 0;
     //TODO: Check return of csp_bind and listen, then handle errors.
+    //TODO make this so much better!
     while(1) {
 		conn = csp_accept(socket, CSP_MAX_DELAY);
 		if(conn){
@@ -107,17 +108,12 @@ void vCSP_Server(void *pvParameters) {
             int dest_port = csp_conn_dport(conn);
 
 			switch(sourceID){
-			case 0x06:
-			    break;
-			case 0x01:
-			    break;
-			case 0x00: //power ID
-			    {
-			    powerPingCount = 0;
-			    powerPingStatus = PING_FOUND;
-			    int boi = 50;
-			    break;
-			    }
+                case 0x00: //power ID
+                {
+                    powerPingCount = 0;
+                    powerPingStatus = PING_FOUND;
+                    break;
+                }
 			}
 
 			switch(dest_port){

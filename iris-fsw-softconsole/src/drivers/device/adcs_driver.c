@@ -61,6 +61,12 @@ volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+void vADCSDriver(void * pvParameters) {
+	for(;;) {
+		vTaskDelay(500);
+	}
+}
+
 void vTestAdcsDriverInterface(void * pvParameters)
 {
 	int i;

@@ -139,3 +139,10 @@ void HandlePowerCommand(telemetryPacket_t * cmd_pkt)
 		}
 	} // switch(cmd_pkt->telem_id)
 }
+
+void vPowerDriver(void * pvParameters){
+	for(;;) {
+		vTaskDelay(500);
+	}
+	return;
+}
