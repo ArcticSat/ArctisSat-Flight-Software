@@ -117,7 +117,7 @@ void sendDataPacket(char *data, int len, uint8_t type) {
 }
 
 void printToTerminal(char *msg) {
-    logMessage(msg);
+//    logMessage(msg);
     radioPacket_t packet;
     int len = strlen(msg);
     packet.len = len + 1;
@@ -136,114 +136,14 @@ char timeBuf[32];
 
 
 void commsHandlerTask() {
-    uint8_t buf_Rx0[32];
-    uint8_t buf_Rx1[32];
-
-    uint8_t dataBuf[64];
-
     radioPacket_t packet;
     radioPacket_t rxPacket;
 
-    telemetryPacket_t telemPacket = { 0 };
-    telemPacket.data = dataBuf;
-    cameraPowerStatus = 1;
-    imageFlag = 0;
     printToTerminal("COMMS task started!\n");
 
     for (;;) {
         if (xQueueReceive(commsRxQueue, &rxPacket, portMAX_DELAY) == pdTRUE) {
-            int cmd_id = rxPacket.type;
-            int size = rxPacket.len;
-            switch (cmd_id) {
-            case 0x00: //passthrough to power
-                printToTerminal("Sending to power\n");
-                sendData(rxPacket.data, size, 2);
-                break;
-            case 0x01: //passthrough to ADCS
-                printToTerminal("Sending to ADCS\n");
-                if (rxPacket.data[1] == 0x11) {
-                    cameraPowerStatus = 0;
-                }
-                if (rxPacket.data[1] == 0x12) {
-                    cameraPowerStatus = 1;
-                }
-                if (rxPacket.data[2] > 32)
-                    rxPacket.data[2] = 31;
-                adcsArbCommand(rxPacket.data[1], buf_Rx1, rxPacket.data[2]);
-                sendDataPacket(buf_Rx1, rxPacket.data[2], 0x10);
-                break;
-            case 0x02: { //CDH command
-                int cdhCommand = rxPacket.data[1];
-                switch (cdhCommand) {
-                case 0x01:
-                    printToTerminal("Take image request received!\n");
-                    takeImage = 1;
-                    break;
-                case 0x02:
-                    printToTerminal("Downlink image request received!\n");
-                    downlinkImage = 1;
-                    break;
-                case 0x03:
-                    ds1393_read_time(&currTime);
-                    year = currTime.year;
-                    month = currTime.month;
-                    day = currTime.day;
-                    hour = currTime.hour;
-                    minute = currTime.minute;
-                    second = currTime.second;
-                    sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
-                    printToTerminal(timeBuf);
-                    break;
-                }
-                break;
-            }
-            case 0x08: { //Ground station ping - start transmitting data!
-                printToTerminal("Ground station ping received!\n");
-                broadcastTelemFlag = 1;
-                break;
-            }
-            case 0x09: { //Ground station ping - start transmitting data!
-                printToTerminal("Stopping telem downlink!\n");
-                broadcastTelemFlag = 0;
-                break;
-            }
-            case 0xAB: //CDH status ping
-                dataBuf[0] = powerPingStatus;
-                dataBuf[1] = ADCSPingStatus;
-                dataBuf[2] = cameraPowerStatus;
-                sendDataPacket(dataBuf, 32, 0xAB);
-                break;
-            case 0x99: //format FS
-                flashSystemReady = 0;
-                formatFSFlag = 1;
-                break;
-            case 0xCC: //image status
-                if (rxPacket.data[1] == 0xAA) {
-                    imageFlag = 0x01;
-                    //image ok, send next
-                } else {
-                    imageFlag = 0xFF;
-                    //image bad, resend
-                }
-                break;
-            case 0xDD: //calendar with time
-                year = rxPacket.data[1];
-                month = rxPacket.data[2];
-                day = rxPacket.data[3];
-                hour = rxPacket.data[4];
-                minute = rxPacket.data[5];
-                second = rxPacket.data[6];
-                time.year = year;
-                time.month = month;
-                time.day = day;
-                time.hour = hour;
-                time.minute = minute;
-                time.second = second;
-                time.weekday = 2;
-                time.week = 2;
-                set_rtc(&time);
-                break;
-            }
+            
         }
     }
 }

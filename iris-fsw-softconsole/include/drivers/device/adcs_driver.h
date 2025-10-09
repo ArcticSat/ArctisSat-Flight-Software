@@ -246,6 +246,8 @@ void setEclipseBounds(Calendar_t * lowerBound, Calendar_t * upperBound);
 bool spacecraftInEclipse(void);
 bool sunSensorsOutOfRange(double x_comp, double z_comp);
 
+void vADCSDriver(void*);
+
 
 
 #endif //ADCS_DRIVER_H_

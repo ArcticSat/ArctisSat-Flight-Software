@@ -19,7 +19,7 @@
 #include "application/telemetry_manager.h"
 #include "task.h"
 
-//#define SPI_EFFICIENT
+#define SPI_EFFICIENT
 
 #define ADCS_ACK_PREFIX 0x01
 #define MAX_SYNC_CYCLES 180
@@ -32,7 +32,7 @@
 #define SPACECRAFT_ORBIT_TIME_MINUTES 	32
 #define SPACECRAFT_ORBIT_TIME_SECONDS 	18
 
-#define SPI_EFFICIENT
+//#define SPI_EFFICIENT
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // VARIABLES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -60,6 +60,12 @@ volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+void vADCSDriver(void * pvParameters) {
+	for(;;) {
+		vTaskDelay(500);
+	}
+}
 
 void vTestAdcsDriverInterface(void * pvParameters)
 {
@@ -305,10 +311,10 @@ AdcsDriverError_t adcsSyncSpiCommand(uint8_t cmd_id)
 //	uint8_t cmd[2] = {cmd_id,cmd_id};
 //	status = adcsTxRx(cmd,2,NULL,0);
 	status = adcsTxRx(&cmd_id,1,NULL,0);
-	vTaskDelay(5);
-	status = adcsTxRx(NULL,0,&cmd_ack,1);
+	 vTaskDelay(5);
+	 status = adcsTxRx(NULL,0,&cmd_ack,1);
 	// Verify result
-	if(cmd_id == cmd_ack)
+	if(cmd_ack == cmd_id)
 	{
 		status = ADCS_DRIVER_NO_ERROR;
 	}

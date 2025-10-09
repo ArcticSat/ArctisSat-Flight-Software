@@ -14,5 +14,6 @@
 #define POW_TXID 0x824
 
 void HandlePowerCommand(telemetryPacket_t * cmd_pkt);
+void vPowerDriver(void * pvParameters);
 
 #endif /* INCLUDE_APPLICATION_EPS_H_ */
