@@ -100,7 +100,6 @@ HardwareCheck_t setupHardwareStatus = {0};
 
 
 static void prvSetupHardware( void );
-
 static void vTestCspServer(void * pvParameters);
 static void vTestCspClient(void * pvParameters);
 static void vTestingTask(void * pvParams);
@@ -114,72 +113,67 @@ int main( void )
 {
     prvSetupHardware();
 
-	BaseType_t status;
+    BaseType_t status;
 
     txQueue = xQueueCreate(5, sizeof(satPacket));
     commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
 
-    adcsLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
-    powerLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
-    logLogQueue = xQueueCreate(5, sizeof(telemPacket_t));
+    telemetryQueue = xQueueCreate(20, sizeof(telemPacket_t));
 
-//    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
-//	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
-//	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
-//	  status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
-//    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-//    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-//    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
-//    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
-//    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
-//    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
-//    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
-//    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
-//    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
-//    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
-//    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
-//    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+    //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
+    //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
+    //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
+    //	  status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
+    //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+    //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+    //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
+    //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+    //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
+    //    status = xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL);
+    //    status = xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
+    //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
+    //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
+    //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
+    //    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+    //    status = xTaskCreate(vTestAdcsDriver, "ADCS handler", 500, NULL, 1, NULL);
 
+    /**THESE ARE THE MAIN FUNCTIONS**/
 
+    // TODO add handling and logging to all the task status
 
+    // This task handles all incoming CSP packets and routes them to the appropriate handler.
+    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
 
+    // Need to suspend this task until the CSP stack is up and running.
+    // If we start pumping CAN messages into CSP before it is ready it will crash.
+    // The task is resumed in the CSP server once it is ready.
+    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
+    vTaskSuspend(vCanServer_h);
 
- 
-/**THESE ARE THE MAIN FUNCTIONS**/
+    // This task reads from the tx queue and sends packets out over CSP.
+    // TODO rename this task
+    status = xTaskCreate(vTestCspClient, "CSP Tx", 500, NULL, 1, NULL);
 
-    //TODO add handling and logging to all the task status
+    // This task reads from the UART Rx queue and handles them
+    status = xTaskCreate(commsHandlerTask, "UART Handle", 500, NULL, 1, NULL);
 
-    //This task handles all incoming CSP packets and routes them to the appropriate handler.
-//    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
+    // This task dispatches packets in the TX queue over UART
+    status = xTaskCreate(commsTransmitterTask, "UART Tx", 500, NULL, 2, NULL);
 
-    //This task 
-    //Need to suspend this task until the CSP stack is up and running.
-//    status = xTaskCreate(vCanServer,"CAN Rx",300,NULL,1,&vCanServer_h);
-//    vTaskSuspend(vCanServer_h);
+    // This task reads from the UART and puts packets in the Rx queue
+    status = xTaskCreate(commsReceiverTask, "UART Rx", 500, NULL, 2, NULL);
 
-    //This task reads from the tx queue and sends packets out over CSP.
-//    status = xTaskCreate(vTestCspClient,"CSP Tx",500,NULL,1,NULL);
+    // This task drives ADCS
+    status = xTaskCreate(vADCSDriver, "ADCS handler", 500, NULL, 1, NULL);
 
-    //This task reads from the UART Rx queue and handles them
-//    status = xTaskCreate(commsHandlerTask,"UART Handle",500,NULL,1,NULL);
+    // This task drives power
+    status = xTaskCreate(vPowerDriver, "PWR handler", 500, NULL, 2, NULL);
 
-    //This task dispatches packets in the TX queue over UART
-//    status = xTaskCreate(commsTransmitterTask,"UART Tx",500,NULL,2,NULL);
+    // TODO fix this task
+    status = xTaskCreate(telemetryManager, "Telem", 1000, NULL, 1, NULL);
 
-    //This task reads from the UART and puts packets in the Rx queue
-//    status = xTaskCreate(commsReceiverTask,"UART Rx",500,NULL,2,NULL);
-
-    //This task drives ADCS
-//    status = xTaskCreate(vADCSDriver,"ADCS handler",500,NULL,1,NULL);
-
-    //This task drives power
-//    status = xTaskCreate(vPowerDriver, "PWR handler", 500, NULL, 2, NULL);
-
-    //TODO fix this task
-    //    status = xTaskCreate(telemetryManager,"Telem",1000,NULL,1,NULL);
-
-    status = xTaskCreate(vTestAdcsDriver,"ADCS handler",500,NULL,1,NULL);
 
     vTaskStartScheduler();
 
@@ -197,30 +191,24 @@ static void prvSetupHardware( void )
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-
-
-//    init_WD();
-//    init_rtc();
+    init_WD();
+    init_rtc();
     setupHardwareStatus.spi_init = init_spi();
-    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K,NULL);
-//    init_mram();
-//    adcs_init_driver();
-//    setupHardwareStatus.CSP_init = configure_csp();
+    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K, NULL);
+    init_mram();
+    adcs_init_driver();
+    setupHardwareStatus.CSP_init = configure_csp();
 
-//    init_mram();
-//    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-//    program_flash_status =flash_device_init(flash_devices[PROGRAM_FLASH]);
+    init_mram();
+    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+    program_flash_status = flash_device_init(flash_devices[PROGRAM_FLASH]);
 
-//    setupHardwareStatus.data_flash_init = data_flash_status;
-//    setupHardwareStatus.program_flash_init = program_flash_status;
+    setupHardwareStatus.data_flash_init = data_flash_status;
+    setupHardwareStatus.program_flash_init = program_flash_status;
 
-   //TODO make this better - this might crash???
-//    FilesystemError_t stat = fs_init();
-//   int err = fs_mount();
-//    if (err) {
-//        fs_mount();
-//        fs_format();
-//    }
+    // TODO make this better - this might crash???
+    FilesystemError_t stat = fs_init();
+    int err = fs_mount();
 }
 
 
@@ -233,14 +221,12 @@ static void prvSetupHardware( void )
 
 /*-----------------------------------------------------------*/
 static void vTestCspClient(void * pvParameters){
-
-    vTaskDelay(2000);
-
     satPacket packet;
     csp_conn_t *txconn;
     csp_packet_t *cspPacket;
     uint8_t dest;
     //TODO Add timeout and error checking.
+    //TODO Clean up the magic numbers
 	while(1){
         if(xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
             dest = packet.dest;
@@ -260,43 +246,6 @@ void vTestingTask(void * pvParams){
 
     while(1){
         vTaskDelay(pdMS_TO_TICKS(5000));
-        static Calendar_t buffer = {
-                59u, // seconds
-                59u, // minutes
-                23u, // hours
-                28u, // day
-                2u, // February
-                20u, // year (2020)
-                1u, // weekday
-                1u, // week (not used), HOWEVER it must be 1 or greater.
-        };
-
-
-        conn = csp_connect(2,PAYLOAD_CSP_ADDRESS,CSP_CMD_PORT,1000,0);    //Create a connection. This tells CSP where to send the data (address and destination port).
-        outPacket = csp_buffer_get(sizeof(Calendar_t)+2);
-//        uint8_t testbuff[20];
-        TelemetryId_t cmd = PAYLOAD_BOARD_TEMP_ID;
-        uint8_t length = 0;///cmd so no data.
-
-
-//        memcpy(&testbuff[0],&buffer,sizeof(Calendar_t));
-//        memcpy(&testbuff[sizeof(Calendar_t)],&cmd,1);
-//        memcpy(&testbuff[sizeof(Calendar_t)+1],&length,1);
-
-        memcpy(&outPacket->data[0],&buffer,sizeof(Calendar_t));
-        memcpy(&outPacket->data[sizeof(Calendar_t)],&cmd,1);
-        memcpy(&outPacket->data[sizeof(Calendar_t)+1],&length,1);
-        outPacket->length = sizeof(Calendar_t )+2;
-
-        int good = csp_send(conn,outPacket,0);
-        csp_close(conn);
-
-        if(!good){
-
-            csp_buffer_free(outPacket);
-        }
-
-
     }
 }
 /*-----------------------------------------------------------*/

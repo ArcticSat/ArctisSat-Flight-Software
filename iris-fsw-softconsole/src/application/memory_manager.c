@@ -54,21 +54,6 @@ static int readScStatus(ScStatus_t* sc);
 
 void init_memory_manager(void)
 {
-	// Verbosity
-#ifdef TM_VERBOSITY
-	verbosity = true;
-#else
-	verbosity = false;
-#endif
-	// File creation
-//	int i;
-//    int result_fs;
-//	lfs_file_t file = {0};
-//	for(i=0; i < NUM_FILES; i++){
-//		result_fs = fs_file_open(&file, filenames[i], LFS_O_CREAT);
-//		result_fs = fs_file_close(&file);
-//	}
-
 
 }
 
@@ -78,10 +63,6 @@ void set_telemetry_verbose(bool verbose)
 }
 void log_telemetry(telemetryPacket_t * pkt)
 {
-	// Debugging
-    return;
-	if (verbosity)
-		sendTelemetryAddr(pkt, GROUND_CSP_ADDRESS);
 
 }
 
@@ -98,23 +79,6 @@ void log_event(telemetryPacket_t * pkt)
 /*** Spacecraft status utilities ***/
 int InitSpacecraftStatus(void)
 {
-//	lfs_file_t file = {0};
-//	lfs_ssize_t bytesRead = 0;
-//	// Open detumble_state file
-//	char filename[MM_FILENAME_MAX];
-//	sprintf(filename,"%s",filenames[SC_STATUS_FILE_IDX]);
-////	const char * filename = filenames[SC_STATUS_FILE_IDX];
-//	sc_status_read_result_fs = fs_file_open( &file, filename, LFS_O_RDWR);
-//	if(sc_status_read_result_fs != FS_OK) return sc_status_read_result_fs;
-//	// Read state
-//	bytesRead = fs_file_read( &file, (void *) &scStatus, sizeof(scStatus));
-//	// TODO: error handling on bytes read?
-//	// Close file
-//	sc_status_read_result_fs = fs_file_close( &file);
-//	// Return
-//	return sc_status_read_result_fs; // If state is zero, then detumble
-
-    //should be equal to FLASH_OK (0) which is also equal to FS_OK(0)
     sc_status_read_result_fs = readScStatus(&scStatus);
 
 
@@ -170,13 +134,9 @@ int CommitSpacecraftStatus(void)
 	sc_status_read_result_fs = readScStatus(&readBack);
 
 	if(scStatus.deployment_state != readBack.deployment_state || scStatus.detumble_state != readBack.detumble_state || scStatus.last_reboot_reason != readBack.last_reboot_reason){
-
 	    sc_status_read_result_fs = MEM_MGR_WRITE_ERR;
 	}
 
-
-
-	// Return
 	return sc_status_read_result_fs; // If state is zero, then detumble
 }
 

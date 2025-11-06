@@ -28,256 +28,98 @@ void unpackTelemetry(uint8_t *data, telemetryPacket_t *output) {
 
 }
 
-lfs_soff_t powerWritePos = 0;
-lfs_soff_t powerReadPos = 0;
-
-lfs_soff_t adcsWritePos = 0;
-lfs_soff_t adcsReadPos = 0;
-
-lfs_soff_t logWritePos = 0;
-lfs_soff_t logReadPos = 0;
-
-telemPacket_t packet;
-
 Calendar_t currTime;
 char timeBuf[32];
 uint8_t year, month, day, hour, minute, second;
 
 void telemetryManager() {
-    char telemBuf[64];
-
-//    fs_file_open(&powerTelemFile, "powerTelem.log", LFS_O_RDWR | LFS_O_CREAT);
-//    fs_file_open(&adcsTelemFile, "adcsTelem.log", LFS_O_RDWR | LFS_O_CREAT);
-//    fs_file_open(&logTelemFile, "logTelem.log", LFS_O_RDWR | LFS_O_CREAT);
+    telemetryPacket_t telem;
+    lfs_file_t telemFile;
+    int fileStatus;
 
     printToTerminal("File system online!");
-    flashSystemReady = 1;
-    formatFSFlag = 0;
     for (;;) {
-        flashSystemReady = 1;
-
-        if (xQueueReceive(powerLogQueue, &packet, 0) == pdTRUE) {
-            ds1393_read_time(&currTime);
-            year = currTime.year;
-            month = currTime.month;
-            day = currTime.day;
-            hour = currTime.hour;
-            minute = currTime.minute;
-            second = currTime.second;
-
-            sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d ", year, month, day,
-                    hour, minute, second);
-
-            int result = fs_file_open(&powerTelemFile, "powerTelem.log",
-                    LFS_O_APPEND | LFS_O_CREAT);
-            if (FS_OK == result) {
-                fs_file_write(&powerTelemFile, timeBuf, strlen(timeBuf));
-                fs_file_write(&powerTelemFile, packet.data, packet.len);
-                fs_file_write(&powerTelemFile, 0x00, 1);
-                fs_file_close(&powerTelemFile);
-            } else {
-                if (result == LFS_ERR_CORRUPT) {
-                    printToTerminal(
-                            " - WARNING - File powerTelem.log detected as corrupt\n");
-                    fs_remove("powerTelem.log");
-                }
-            }
-        }
-
-        if (xQueueReceive(adcsLogQueue, &packet, 0) == pdTRUE) {
-            ds1393_read_time(&currTime);
-            year = currTime.year;
-            month = currTime.month;
-            day = currTime.day;
-            hour = currTime.hour;
-            minute = currTime.minute;
-            second = currTime.second;
-
-            sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d ", year, month, day,
-                    hour, minute, second);
-
-            int result = fs_file_open(&adcsTelemFile, "adcsTelem.log",
-                    LFS_O_APPEND | LFS_O_CREAT);
-            if (FS_OK == result) {
-                fs_file_write(&adcsTelemFile, timeBuf, strlen(timeBuf));
-                fs_file_write(&adcsTelemFile, packet.data, packet.len);
-                fs_file_write(&adcsTelemFile, 0x00, 1);
-                fs_file_close(&adcsTelemFile);
-            } else {
-                if (result == LFS_ERR_CORRUPT) {
-                    printToTerminal(
-                            " - WARNING - File powerTelem.log detected as corrupt\n");
-                    fs_remove("adcsTelem.log");
-                }
-            }
-        }
-
-        if (xQueueReceive(logLogQueue, &packet, 0) == pdTRUE) {
-            ds1393_read_time(&currTime);
-            year = currTime.year;
-            month = currTime.month;
-            day = currTime.day;
-            hour = currTime.hour;
-            minute = currTime.minute;
-            second = currTime.second;
-
-            sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d ", year, month, day,
-                    hour, minute, second);
-
-            int result = fs_file_open(&logTelemFile, "logTelem.log",
-                    LFS_O_APPEND | LFS_O_CREAT);
-            if (FS_OK == result) {
-                fs_file_write(&logTelemFile, timeBuf, strlen(timeBuf));
-                fs_file_write(&logTelemFile, packet.data, packet.len);
-                fs_file_write(&logTelemFile, 0x00, 1);
-                fs_file_close(&logTelemFile);
-            } else {
-                if (result == LFS_ERR_CORRUPT) {
-                    printToTerminal(
-                            " - WARNING - File powerTelem.log detected as corrupt\n");
-                    fs_remove("logTelem.log");
-                }
-            }
-        }
-
-        if (formatFSFlag) {
-            flashSystemReady = 0;
-            printToTerminal("Formatting FS...");
-            vTaskDelay(1000);
-//                fs_file_close(&adcsTelemFile);
-//                fs_file_close(&powerTelemFile);
-//                fs_file_close(&logTelemFile);
-            fs_format();
-            fs_mount();
-            printToTerminal("Format complete!!");
-//                fs_file_open(&adcsTelemFile, "adcsTelem.log", LFS_O_RDWR | LFS_O_CREAT);
-            vTaskDelay(5000);
-            printToTerminal("File system online!");
-            formatFSFlag = 0;
-            flashSystemReady = 1;
-        }
-
-        if (broadcastTelemFlag) {
-            flashSystemReady = 0;
-            if (fs_file_open(&powerTelemFile, "powerTelem.log",
-                    LFS_O_RDWR | LFS_O_CREAT) == FS_OK) {
-                fs_file_rewind(&powerTelemFile);
-                int result = fs_file_read(&powerTelemFile, telemBuf, 64);
-                while (broadcastTelemFlag && result > 0) {
-                    sendDataPacket(telemBuf, 64, 0x19);
-                    vTaskDelay(50);
-                    result = fs_file_read(&powerTelemFile, telemBuf, 64);
-                }
-                fs_file_close(&powerTelemFile);
-                fs_remove("powerTelem.log");
-            }
-            if (fs_file_open(&adcsTelemFile, "adcsTelem.log",
-                    LFS_O_RDWR | LFS_O_CREAT) == FS_OK) {
-                fs_file_rewind(&adcsTelemFile);
-                int result = fs_file_read(&adcsTelemFile, telemBuf, 64);
-                while (broadcastTelemFlag && result > 0) {
-                    sendDataPacket(telemBuf, 64, 0x19);
-                    vTaskDelay(50);
-                    result = fs_file_read(&adcsTelemFile, telemBuf, 64);
-                }
-                fs_file_close(&adcsTelemFile);
-                fs_remove("adcsTelem.log");
+        if(xQueueReceive(telemetryQueue, &telem, portMAX_DELAY) == pdTRUE) {
+            switch(telem.reporting_device) {
+                case 1:
+                    fileStatus = fs_file_open(&telemFile, "power_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                    break;
+                case 2:
+                    fileStatus = fs_file_open(&telemFile, "adcs_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                    break;
+                case 3: //cdh
+                    fileStatus = fs_file_open(&telemFile, "cdh_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                    break;
+                default: //default generic file
+                    fileStatus = fs_file_open(&telemFile, "generic_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                    break;
             }
 
-            if (fs_file_open(&logTelemFile, "logTelem.log",
-                    LFS_O_RDWR | LFS_O_CREAT) == FS_OK) {
-                fs_file_rewind(&logTelemFile);
-                int result = fs_file_read(&logTelemFile, telemBuf, 64);
-                while (broadcastTelemFlag && result > 0) {
-                    sendDataPacket(telemBuf, 64, 0x19);
-                    vTaskDelay(50);
-                    result = fs_file_read(&logTelemFile, telemBuf, 64);
-                }
-                fs_file_close(&logTelemFile);
-                fs_remove("logTelem.log");
+            if(fileStatus < 0) {
+                printToTerminal("Error opening telemetry log file!");
+                continue;
             }
 
-            broadcastTelemFlag = 0;
+            //write telem to file
+            fs_file_write(&telemFile, (void*)&telem, sizeof(Calendar_t) + 2 + telem.length);
+            fileStatus = fs_file_close(&telemFile);
+            if(fileStatus < 0) {
+                printToTerminal("Error closing telemetry log file!");
+            }
+
         }
         vTaskDelay(100);
     }
 }
 
 void logPowerTelem(char *data, int len) {
-    if (flashSystemReady) {
-        telemPacket_t tPacket;
-        memcpy(tPacket.data, data, len);
-        tPacket.len = len;
-        xQueueSendToBack(powerLogQueue, &tPacket, 0);
-    }
+    telemetryPacket_t telemetry;
+    Calendar_t time = {0};
+
+    MSS_RTC_get_calendar_count(&time);
+
+    memcpy(&telemetry.timestamp, &time, sizeof(Calendar_t));
+    telemetry.timestamp = time;
+    telemetry.telem_id = 1; //todo change later
+    telemetry.length = len;
+    memcpy(telemetry.data, data, len);
+    
+    xQueueSendToBack(telemetryQueue, &telemetry, 0);
     return;
 }
 
 void logADCSTelem(char *data, int len) {
-    if (flashSystemReady) {
-        telemPacket_t tPacket;
-        memcpy(tPacket.data, data, len);
-        tPacket.len = len;
-        xQueueSendToBack(adcsLogQueue, &tPacket, 0);
-    }
+    telemetryPacket_t telemetry;
+    Calendar_t time = {0};
+    MSS_RTC_get_calendar_count(&time);
+    memcpy(&telemetry.timestamp, &time, sizeof(Calendar_t));
+    telemetry.timestamp = time;
+    telemetry.telem_id = 2; //todo change later
+    telemetry.length = len;
+    memcpy(telemetry.data, data, len);
+    xQueueSendToBack(telemetryQueue, &telemetry, 0);
     return;
 }
 
 void logMessage(char *data) {
-    uint16_t len = strlen(data);
-    if (flashSystemReady) {
-        telemPacket_t tPacket;
-        memcpy(tPacket.data, data, len);
-        tPacket.len = len;
-        xQueueSendToBack(logLogQueue, &tPacket, 0);
-    }
+    telemetryPacket_t telemetry;
+    Calendar_t time = {0};
+    int len = strlen(data) + 1;
+    MSS_RTC_get_calendar_count(&time);
+    memcpy(&telemetry.timestamp, &time, sizeof(Calendar_t));
+    telemetry.timestamp = time;
+    telemetry.telem_id = 3; //todo change later
+    telemetry.length = len;
+    memcpy(telemetry.data, data, len);
+    xQueueSendToBack(telemetryQueue, &telemetry, 0);
 }
 
 void logTelem(char *data, int len) {
-    logMessage(data);
-    return;
-    if (flashSystemReady) {
-        ds1393_read_time(&currTime);
-        year = currTime.year;
-        month = currTime.month;
-        day = currTime.day;
-        hour = currTime.hour;
-        minute = currTime.minute;
-        second = currTime.second;
-        sprintf(timeBuf, "%02d/%02d/%02d %02d:%02d:%02d ", year, month, day,
-                hour, minute, second);
-        fs_file_write(&logTelemFile, timeBuf, strlen(timeBuf));
-        fs_file_write(&logTelemFile, data, len);
-    }
     return;
 }
 
 void sendTelemetry(telemetryPacket_t *packet) {
 
-    csp_conn_t *conn;
-    csp_packet_t *outPacket;
-    conn = csp_connect(2, CDH_CSP_ADDRESS, CSP_TELEM_PORT, 1000, 0); //Create a connection. This tells CSP where to send the data (address and destination port).
-    outPacket = csp_buffer_get(TELEM_HEADER_SIZE + packet->length);
-
-    memcpy(&outPacket->data[0], &packet->timestamp, sizeof(Calendar_t));
-    memcpy(&outPacket->data[sizeof(Calendar_t)], &packet->telem_id, 1);
-    memcpy(&outPacket->data[sizeof(Calendar_t) + 1], &packet->length, 1);
-
-    //Only do this if there is data.
-    if (packet->length) {
-        memcpy(&outPacket->data[sizeof(Calendar_t) + 2], packet->data,
-                packet->length);
-    }
-
-    outPacket->length = TELEM_HEADER_SIZE + packet->length;
-
-    int good = csp_send(conn, outPacket, 0);
-    csp_close(conn);
-
-    if (!good) {
-
-        csp_buffer_free(outPacket);
-    }
 }
 
 void sendTelemetry_direct(telemetryPacket_t *packet, csp_conn_t *conn) {
@@ -310,30 +152,6 @@ void sendTelemetry_direct(telemetryPacket_t *packet, csp_conn_t *conn) {
 
 void sendCommand(telemetryPacket_t *packet, uint8_t addr) {
 
-    csp_conn_t *conn;
-    csp_packet_t *outPacket;
-    conn = csp_connect(2, addr, CSP_CMD_PORT, 1000, 0); //Create a connection. This tells CSP where to send the data (address and destination port).
-    outPacket = csp_buffer_get(TELEM_HEADER_SIZE + packet->length);
-
-    memcpy(&outPacket->data[0], &packet->timestamp, sizeof(Calendar_t));
-    memcpy(&outPacket->data[sizeof(Calendar_t)], &packet->telem_id, 1);
-    memcpy(&outPacket->data[sizeof(Calendar_t) + 1], &packet->length, 1);
-
-    //Only do this if there is data.
-    if (packet->length) {
-        memcpy(&outPacket->data[sizeof(Calendar_t) + 2], packet->data,
-                packet->length);
-    }
-
-    outPacket->length = TELEM_HEADER_SIZE + packet->length;
-
-    int good = csp_send(conn, outPacket, 0);
-    csp_close(conn);
-
-    if (!good) {
-
-        csp_buffer_free(outPacket);
-    }
 }
 
 void sendTelemetryAddr(telemetryPacket_t *packet, uint8_t addr) {

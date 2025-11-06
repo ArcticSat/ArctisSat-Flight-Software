@@ -127,31 +127,10 @@ void InitMissionOperations(void)
 
 void InitNormalOperations(void)
 {
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-		InitiateSpacecraftDeployment();
-		setDeploymentStartupState(DPL_STATE_DEPLOYED);
-	}
 
-	// Resume tasks
-//	vTaskResume(vCanServer_h);
-//	vTaskResume(vTTTScheduler_h);
-//	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 
 void HandleTm(csp_conn_t * conn, csp_packet_t * packet)
 {
-	int src = csp_conn_src(conn);
-	switch(src){
-		case PAYLOAD_CSP_ADDRESS:{
-			HandlePayloadTlm(conn,packet);
-			break;
-		}
-		default:{
-			break;
-		}
-	}
+
 }

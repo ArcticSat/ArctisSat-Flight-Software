@@ -39,6 +39,14 @@ typedef enum {
 } pingStatus_t;
 
 typedef struct {
+	Calendar_t timestamp;
+	uint8_t reporting_device;
+	uint8_t telem_id;
+	uint8_t length;
+	uint8_t *data;
+} telemetryPacket_t;
+
+typedef struct {
     uint8_t header;
     uint8_t type;
     uint8_t len;
@@ -57,15 +65,8 @@ typedef struct {
 QueueHandle_t commsTxQueue;
 QueueHandle_t commsRxQueue;
 
-QueueHandle_t powerLogQueue;
-QueueHandle_t adcsLogQueue;
-QueueHandle_t logLogQueue;
+QueueHandle_t telemetryQueue;
 
-uint8_t imageFlag;
-uint8_t takeImage;
-uint8_t downlinkImage;
-uint8_t broadcastTelemFlag;
-uint8_t formatFSFlag;
 
 extern volatile uint8_t flashSystemReady;
 
@@ -73,10 +74,6 @@ extern volatile uint8_t flashSystemReady;
 uint8_t cameraPowerStatus;
 uint8_t ADCSPowerStatus;
 uint8_t OtherPowerStatus;
-
-lfs_file_t powerTelemFile;
-lfs_file_t adcsTelemFile;
-lfs_file_t logTelemFile;
 
 typedef struct {
   uint16_t VOLTAGE_IN;
@@ -121,29 +118,7 @@ typedef enum
     POWER_GET_ALL_SOLAR_ARRAY_CURRENTS_ID,
     POWER_TELEMETRY_END,
 	/*** PAYLOAD TELEMETRY ***/
-	PAYLOAD_POWER_GOOD_ID,
-	PAYLOAD_BOARD_TEMP_ID,
-	PAYLOAD_SAMPLE_TEMP_ID,
-	PAYLOAD_FULL_IMAGE_ID,
-	PAYLOAD_SAMPLE_LOC_ID,
-	PAYLOAD_CAMERA_TIME_ID,
-	PAYLOAD_ERROR_ID,
-	PAYLOAD_FULL_IMAGE_RX, //Only for debugging remove later
-	PAYLOAD_FILE_LIST_ID,
-	PAYLOAD_META_ID,
-	PAYLOAD_IMAGE_INFO,
-	PAYLOAD_IMAGE_CAPTURE_ERROR_ID,
-	PAYLOAD_ACK,
-	PAYLOAD_MSG_ID,
-	PAYLOAD_CMD_CONFIRM_ID,
-	PAYLOAD_CMD_ERROR_ID,
-	PAYLOAD_I2C_REG_READ16_CMD,
-	PAYLIAD_I2C_RECEIVE_CMD,
-	PAYLOAD_CAMERA_SELECT_CMD,
-	PAYLOAD_WRITE_CUSTOM_REGLIST_CMD,
-	PAYLOAD_REGLIST_CONFIG_CMD,
-	PAYLOAD_GET_IMAGE_TX_DEST_ADDR_ID,
-	PAYLOAD_TELEMETRY_END,
+	//TBD
 	/*** ADCS TELEMETRY ***/
 	ADCS_MESAUREMENT_GYRO_ID,
 	ADCS_MESAUREMENT_MAGNETOMETER_ID,
@@ -222,44 +197,7 @@ typedef enum
 	// POWER COMMANDS END
 	POWER_COMMANDS_END,
 	/*** PAYLOAD COMMANDS ***/
-	PAYLOAD_POWER_GOOD_CMD,
-	PAYLOAD_BOARD_TEMP_CMD,
-	PAYLOAD_SAMPLE_TEMP_CMD,
-	PAYLOAD_FULL_IMAGE_CMD,
-	PAYLOAD_TAKE_IMAGE_CAM1_CMD,
-	PAYLOAD_TAKE_IMAGE_CAM2_CMD,
-	PAYLOAD_CAM1_ON_CMD,
-	PAYLOAD_CAM2_ON_CMD,
-	PAYLOAD_CAM1_OFF_CMD,
-	PAYLOAD_CAM2_OFF_CMD,
-	PAYLOAD_CAM1_RESET_CMD,
-	PAYLOAD_CAM2_RESET_CMD,
-	PAYLOAD_ENTER_LOW_POWER_CMD,
-	PAYLOAD_EXIT_LOW_POWER_CMD,
-	PAYLOAD_FILE_LIST_CMD,
-	PAYLOAD_SHUTDOWN_CMD,
-	PAYLOAD_TURNONCAM1_CMD,
-	PAYLOAD_CAMERA_SENSOR_INIT,
-	PAYLOAD_CAMERA_HANDSHAKE,
-	PAYLOAD_CAMERA_SET_I2C_WRITE_ADDRESS,
-	PAYLOAD_CAMERA_SET_I2C_READ_ADDRESS,
-	PAYLOAD_CAMERA_SET_I2C_TIMEOUT,
-	PAYLOAD_CAMERA_I2C_TRANSMIT,
-	PAYLOAD_CAMERA_I2C_RECEIVE,
-	PAYLOAD_CAMERA_WRITE_REG_LIST,
-	PAYLOAD_CAMERA_TEST_INIT,
-	PAYLOAD_MOUNT_FS,
-	PAYLOAD_UNMOUNT_FS,
-	PAYLOAD_RESTART_FS,
-	PAYLOAD_DELETE_IMG,
-	PAYLOAD_TRANSFER_META,
-	PAYLOAD_SWAP_MODE,
-	PAYLOAD_TRANSFER_IMAGE_CMD,
-	PAYLOAD_FORMAT_FS_CMD,
-	PAYLOAD_SET_AUTO_EXPOSURE_CMD,
-	PAYLOAD_GET_IMAGE_TX_DEST_ADDR_CMD,
-	PAYLOAD_SET_IMAGE_TX_DEST_ADDR_CMD,
-	PAYLOAD_COMMANDS_END,
+	//TBD
 	/*** ADCS COMMANDS ***/
 	ADCS_INIT_CMD,
 	ADCS_TX_RX_CMD,
@@ -397,15 +335,15 @@ typedef enum {
 //}Calendar_t;
 
 
-typedef struct{
-
-	Calendar_t timestamp;
-	CommandId_t telem_id;		//Make sure there is less than 255 commands/telemetry ids for any subsystem. Or change to uint16_t.
-	uint8_t length;
-	uint8_t* data;
-
-} telemetryPacket_t;
-
+//typedef struct{
+//
+//	Calendar_t timestamp;
+//	CommandId_t telem_id;		//Make sure there is less than 255 commands/telemetry ids for any subsystem. Or change to uint16_t.
+//	uint8_t length;
+//	uint8_t* data;
+//
+//} telemetryPacket_t;
+//
 
 /**********************************************************/
 void unpackTelemetry(uint8_t * data, telemetryPacket_t* output);//Unpacks the telemetry into the telemetry packet struct.
