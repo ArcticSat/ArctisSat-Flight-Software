@@ -32,86 +32,137 @@ Calendar_t currTime;
 char timeBuf[32];
 uint8_t year, month, day, hour, minute, second;
 
+int telemReadFlag = 0;
+
+telemetryPacket_t readTelem;
+lfs_file_t readFile;
+int readStatus;
+lfs_file_t powerFile;
+lfs_file_t adcsFile;
+lfs_file_t cdhFile;
+lfs_file_t payloadFile;
+lfs_file_t genericFile;
+
+void openFiles() {
+    fs_file_open(&powerFile, "power_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
+    fs_file_open(&adcsFile, "adcs_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
+    fs_file_open(&cdhFile, "cdh_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
+    fs_file_open(&payloadFile, "payload_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
+    fs_file_open(&genericFile, "generic_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
+}
+
 void telemetryManager() {
-    telemetryPacket_t telem;
+    mytelemetryPacket_t *pkt;
     lfs_file_t telemFile;
     int fileStatus;
 
+    openFiles();
+
     printToTerminal("File system online!");
     for (;;) {
-        if(xQueueReceive(telemetryQueue, &telem, portMAX_DELAY) == pdTRUE) {
-            switch(telem.reporting_device) {
+        if(xQueueReceive(telemetryQueue, &pkt, pdMS_TO_TICKS(50)) == pdTRUE) {
+            size_t totalSize = sizeof(mytelemetryPacket_t) + pkt->length;
+            switch(pkt->reporting_device) {
+                case 0:
+                    telemFile = cdhFile;
+                    break;                
                 case 1:
-                    fileStatus = fs_file_open(&telemFile, "power_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                    telemFile = powerFile;
                     break;
                 case 2:
-                    fileStatus = fs_file_open(&telemFile, "adcs_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                    telemFile = adcsFile;
                     break;
-                case 3: //cdh
-                    fileStatus = fs_file_open(&telemFile, "cdh_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                case 3:
+                    telemFile = cdhFile;
                     break;
-                default: //default generic file
-                    fileStatus = fs_file_open(&telemFile, "generic_telem.log", LFS_O_WRONLY | LFS_O_APPEND | LFS_O_CREAT);
+                case 4: 
+                    telemFile = payloadFile;
+                    break;
+                default:
+                    telemFile = genericFile;
                     break;
             }
 
-            if(fileStatus < 0) {
-                printToTerminal("Error opening telemetry log file!");
+            if(telemFile.cfg == NULL) {
+                //file not open?
+                vPortFree(pkt);
                 continue;
             }
 
             //write telem to file
-            fs_file_write(&telemFile, (void*)&telem, sizeof(Calendar_t) + 2 + telem.length);
-            fileStatus = fs_file_close(&telemFile);
-            if(fileStatus < 0) {
-                printToTerminal("Error closing telemetry log file!");
-            }
+            fs_file_write(&telemFile, pkt, totalSize);
 
+            vPortFree(pkt);
+            // fileStatus = fs_file_close(&telemFile);
+
+        }
+
+        if(telemReadFlag) {
+            readFile = powerFile;
+            fs_file_rewind(&readFile);
+            char buf[64];
+            int fileSize;
+            while(1) {
+                readStatus = fs_file_read(&readFile, &buf, 64);
+                fileSize = fs_file_size(&readFile);
+                if(readStatus <= 0) {
+                    fs_file_truncate(&readFile, 0); //clear file after reading
+                    break;
+                }
+            }
+            telemReadFlag = 0;
         }
         vTaskDelay(100);
     }
 }
 
-void logPowerTelem(char *data, int len) {
-    telemetryPacket_t telemetry;
-    Calendar_t time = {0};
-
-    MSS_RTC_get_calendar_count(&time);
-
-    memcpy(&telemetry.timestamp, &time, sizeof(Calendar_t));
-    telemetry.timestamp = time;
-    telemetry.telem_id = 1; //todo change later
-    telemetry.length = len;
-    memcpy(telemetry.data, data, len);
+void requestTelem() {
     
-    xQueueSendToBack(telemetryQueue, &telemetry, 0);
-    return;
+}
+
+void logTelemCustom(char* data, int len, int reporting_device) {
+    // Allocate enough memory for header + data
+        mytelemetryPacket_t *pkt = pvPortMalloc(sizeof(mytelemetryPacket_t) + len);
+            if (!pkt) return;
+
+                MSS_RTC_get_calendar_count(&pkt->timestamp);
+                    pkt->reporting_device = reporting_device;
+                        pkt->telem_id = 2;
+                            pkt->length = len;
+
+                                memcpy(pkt->data, data, len);  // copies the string bytes
+
+                                    volatile char swag = pkt->data[5]; //contains 1s
+                                        swag = data[5]; //contains 32
+
+                                            // **Send pointer to queue** (queue holds telemetryPacket_t*)
+                                                xQueueSendToBack(telemetryQueue, &pkt, portMAX_DELAY);
+}
+
+void logPowerTelem(char *data, int len) {
+    logTelemCustom(data, len, 1);
 }
 
 void logADCSTelem(char *data, int len) {
-    telemetryPacket_t telemetry;
-    Calendar_t time = {0};
-    MSS_RTC_get_calendar_count(&time);
-    memcpy(&telemetry.timestamp, &time, sizeof(Calendar_t));
-    telemetry.timestamp = time;
-    telemetry.telem_id = 2; //todo change later
-    telemetry.length = len;
-    memcpy(telemetry.data, data, len);
-    xQueueSendToBack(telemetryQueue, &telemetry, 0);
-    return;
+    logTelemCustom(data, len, 2);
 }
 
 void logMessage(char *data) {
-    telemetryPacket_t telemetry;
-    Calendar_t time = {0};
-    int len = strlen(data) + 1;
-    MSS_RTC_get_calendar_count(&time);
-    memcpy(&telemetry.timestamp, &time, sizeof(Calendar_t));
-    telemetry.timestamp = time;
-    telemetry.telem_id = 3; //todo change later
-    telemetry.length = len;
-    memcpy(telemetry.data, data, len);
-    xQueueSendToBack(telemetryQueue, &telemetry, 0);
+    mytelemetryPacket_t *pkt = pvPortMalloc(sizeof(mytelemetryPacket_t) + strlen(data) + 1);
+    if (!pkt) return;
+
+    MSS_RTC_get_calendar_count(&pkt->timestamp);
+    pkt->reporting_device = 0;
+    pkt->telem_id = 2;
+    pkt->length = strlen(data) + 1;
+
+    memcpy(pkt->data, data, pkt->length);  // copies the string bytes
+
+    volatile char swag = pkt->data[5]; //contains 1s
+    swag = data[5]; //contains 32
+
+    // **Send pointer to queue** (queue holds telemetryPacket_t*)
+    xQueueSendToBack(telemetryQueue, &pkt, portMAX_DELAY);
 }
 
 void logTelem(char *data, int len) {
@@ -124,30 +175,6 @@ void sendTelemetry(telemetryPacket_t *packet) {
 
 void sendTelemetry_direct(telemetryPacket_t *packet, csp_conn_t *conn) {
 
-    //csp_conn_t * conn;
-    csp_packet_t *outPacket;
-    //conn = csp_connect(2,addr,CSP_CMD_PORT,1000,0);   //Create a connection. This tells CSP where to send the data (address and destination port).
-    outPacket = csp_buffer_get(TELEM_HEADER_SIZE + packet->length);
-
-    memcpy(&outPacket->data[0], &packet->timestamp, sizeof(Calendar_t));
-    memcpy(&outPacket->data[sizeof(Calendar_t)], &packet->telem_id, 1);
-    memcpy(&outPacket->data[sizeof(Calendar_t) + 1], &packet->length, 1);
-
-    //Only do this if there is data.
-    if (packet->length) {
-        memcpy(&outPacket->data[sizeof(Calendar_t) + 2], packet->data,
-                packet->length);
-    }
-
-    outPacket->length = TELEM_HEADER_SIZE + packet->length;
-
-    int good = csp_send(conn, outPacket, 0);
-    csp_close(conn);
-
-    if (!good) {
-
-        csp_buffer_free(outPacket);
-    }
 }
 
 void sendCommand(telemetryPacket_t *packet, uint8_t addr) {
@@ -156,31 +183,6 @@ void sendCommand(telemetryPacket_t *packet, uint8_t addr) {
 
 void sendTelemetryAddr(telemetryPacket_t *packet, uint8_t addr) {
 
-    return;
-    csp_conn_t *conn;
-    csp_packet_t *outPacket;
-    conn = csp_connect(2, addr, CSP_TELEM_PORT, 100, 0); //Create a connection. This tells CSP where to send the data (address and destination port).
-    outPacket = csp_buffer_get(TELEM_HEADER_SIZE + packet->length);
-
-    memcpy(&outPacket->data[0], &packet->timestamp, sizeof(Calendar_t));
-    memcpy(&outPacket->data[sizeof(Calendar_t)], &packet->telem_id, 1);
-    memcpy(&outPacket->data[sizeof(Calendar_t) + 1], &packet->length, 1);
-
-    //Only do this if there is data.
-    if (packet->length) {
-        memcpy(&outPacket->data[sizeof(Calendar_t) + 2], packet->data,
-                packet->length);
-    }
-
-    outPacket->length = TELEM_HEADER_SIZE + packet->length;
-
-    int good = csp_send(conn, outPacket, 0);
-    csp_close(conn);
-
-    if (!good) {
-
-        csp_buffer_free(outPacket);
-    }
 }
 void printMsg(char *msg) {
     telemetryPacket_t telemetry;
@@ -200,7 +202,7 @@ int printf(const char *fmt, ...) {
     va_start(argp, fmt);
 
     vsnprintf(str, 255, fmt, argp);
-    printToTerminal(str);
+//    printToTerminal(str);
 
     return 0;
 

@@ -47,14 +47,22 @@ typedef struct {
 } telemetryPacket_t;
 
 typedef struct {
+    Calendar_t timestamp;
+    uint8_t reporting_device;
+    uint8_t telem_id;
+    uint8_t length;
+    uint8_t data[];
+} mytelemetryPacket_t;
+
+typedef struct {
     uint8_t header;
     uint8_t type;
     uint8_t len;
     uint8_t continued;
     uint16_t index;
-    uint8_t data[64];
     uint32_t crc;
     uint8_t footer;
+    uint8_t data[];
 } radioPacket_t;
 
 typedef struct {

@@ -23,7 +23,6 @@
 // 2020-01-03 by Joseph Howarth
 // - Add test code for ADCS driver.
 
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 /******************************************************************************
  * This project provides two demo applications.  A simple blinky style project,
@@ -78,8 +77,7 @@
 #include "application/sun_pointing.h"
 #include "application/memory_manager.h"
 #include "tasks/comms_handler.h"
-
-
+#include "application/application.h"
 
 //#define SERVER
 //#define CLIENT
@@ -95,31 +93,27 @@ TaskHandle_t vTestWD_h;
 TaskHandle_t vSunPointing_h;
 TaskHandle_t vTestAdcsDriverInterface_h;
 
+HardwareCheck_t setupHardwareStatus = { 0 };
 
-HardwareCheck_t setupHardwareStatus = {0};
+static void prvSetupHardware(void);
+static void vTestCspServer(void *pvParameters);
+static void vTestCspClient(void *pvParameters);
+static void vTestingTask(void *pvParams);
 
+void vApplicationMallocFailedHook(void);
+void vApplicationIdleHook(void);
+void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
+void vApplicationTickHook(void);
 
-static void prvSetupHardware( void );
-static void vTestCspServer(void * pvParameters);
-static void vTestCspClient(void * pvParameters);
-static void vTestingTask(void * pvParams);
-
-void vApplicationMallocFailedHook( void );
-void vApplicationIdleHook( void );
-void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName );
-void vApplicationTickHook( void );
-
-int main( void )
-{
+int main(void) {
     prvSetupHardware();
 
     BaseType_t status;
 
     txQueue = xQueueCreate(5, sizeof(satPacket));
-    commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t));
+    commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t*));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
-
-    telemetryQueue = xQueueCreate(20, sizeof(telemPacket_t));
+    telemetryQueue = xQueueCreate(5, sizeof(mytelemetryPacket_t*));
 
     //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
     //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
@@ -142,37 +136,64 @@ int main( void )
     /**THESE ARE THE MAIN FUNCTIONS**/
 
     // TODO add handling and logging to all the task status
-
-    // This task handles all incoming CSP packets and routes them to the appropriate handler.
-    status = xTaskCreate(vCSP_Server, "cspServer", 500, NULL, 1, &vCSP_Server_h);
-
     // Need to suspend this task until the CSP stack is up and running.
     // If we start pumping CAN messages into CSP before it is ready it will crash.
     // The task is resumed in the CSP server once it is ready.
-    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
-    vTaskSuspend(vCanServer_h);
+//    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
+//    vTaskSuspend(vCanServer_h);
+    // This task handles all incoming CSP packets and routes them to the appropriate handler.
+    status = xTaskCreate(vCSP_Server, "cspServer", 200, NULL, 1,
+            &vCSP_Server_h);
+
+    volatile int j = xPortGetFreeHeapSize();
 
     // This task reads from the tx queue and sends packets out over CSP.
     // TODO rename this task
-    status = xTaskCreate(vTestCspClient, "CSP Tx", 500, NULL, 1, NULL);
+    status = xTaskCreate(vTestCspClient, "CSP Tx", 100, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
 
     // This task reads from the UART Rx queue and handles them
-    status = xTaskCreate(commsHandlerTask, "UART Handle", 500, NULL, 1, NULL);
+    status = xTaskCreate(commsHandlerTask, "UART Handle", 100, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
 
     // This task dispatches packets in the TX queue over UART
-    status = xTaskCreate(commsTransmitterTask, "UART Tx", 500, NULL, 2, NULL);
+    status = xTaskCreate(commsTransmitterTask, "UART Tx", 100, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
 
     // This task reads from the UART and puts packets in the Rx queue
-    status = xTaskCreate(commsReceiverTask, "UART Rx", 500, NULL, 2, NULL);
+    status = xTaskCreate(commsReceiverTask, "UART Rx", 100, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
 
     // This task drives ADCS
-    status = xTaskCreate(vADCSDriver, "ADCS handler", 500, NULL, 1, NULL);
+    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
 
     // This task drives power
-    status = xTaskCreate(vPowerDriver, "PWR handler", 500, NULL, 2, NULL);
+    status = xTaskCreate(vPowerDriver, "PWR handler", 400, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
 
     // TODO fix this task
-    status = xTaskCreate(telemetryManager, "Telem", 1000, NULL, 1, NULL);
+    status = xTaskCreate(telemetryManager, "Telem", 500, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
+
+
+    //Main loop, does all the typical stuff
+    status = xTaskCreate(vMissionLoop, "Mission", 100, NULL, 1, NULL);
+
+    j = xPortGetFreeHeapSize();
 
 
     vTaskStartScheduler();
@@ -183,21 +204,21 @@ int main( void )
 #define USING_DATA_FLASH
 #define USING_PROGRAM_FLASH
 /*-----------------------------------------------------------*/
-FlashStatus_t data_flash_status 	= FLASH_ERROR;
-FlashStatus_t program_flash_status	= FLASH_ERROR;
-static void prvSetupHardware( void )
-{
+FlashStatus_t data_flash_status = FLASH_ERROR;
+FlashStatus_t program_flash_status = FLASH_ERROR;
+static void prvSetupHardware(void) {
 
     vInitializeUARTs(MSS_UART_115200_BAUD);
 //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-    init_WD();
+//    init_WD();
     init_rtc();
     setupHardwareStatus.spi_init = init_spi();
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K, NULL);
-    init_mram();
+//    init_mram();
     adcs_init_driver();
     setupHardwareStatus.CSP_init = configure_csp();
+    set_csp_init(1);
 
     init_mram();
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
@@ -209,9 +230,12 @@ static void prvSetupHardware( void )
     // TODO make this better - this might crash???
     FilesystemError_t stat = fs_init();
     int err = fs_mount();
+
+    if(err) {
+        fs_format();
+        fs_mount();
+    }
 }
-
-
 
 #define CSP_DEFAULT_PRIORITY 2
 #define DEST_ADDRESS 0
@@ -220,15 +244,15 @@ static void prvSetupHardware( void )
 #define OPTIONAL_PARAMS 0
 
 /*-----------------------------------------------------------*/
-static void vTestCspClient(void * pvParameters){
     satPacket packet;
     csp_conn_t *txconn;
     csp_packet_t *cspPacket;
+static void vTestCspClient(void *pvParameters) {
     uint8_t dest;
     //TODO Add timeout and error checking.
     //TODO Clean up the magic numbers
-	while(1){
-        if(xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
+    while (1) {
+        if (xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
             dest = packet.dest;
             cspPacket = packet.packet;
             txconn = csp_connect(2, 0, dest, 1000, 0);
@@ -236,90 +260,81 @@ static void vTestCspClient(void * pvParameters){
             csp_close(txconn);
             csp_buffer_free(cspPacket);
         }
-	}
+    }
 }
 
-void vTestingTask(void * pvParams){
+void vTestingTask(void *pvParams) {
 
-    csp_conn_t * conn = NULL;
-    csp_packet_t * outPacket = NULL;
+    csp_conn_t *conn = NULL;
+    csp_packet_t *outPacket = NULL;
 
-    while(1){
+    while (1) {
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationMallocFailedHook( void )
-{
+void vApplicationMallocFailedHook(void) {
     /* vApplicationMallocFailedHook() will only be called if
-    configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
-    function that will get called if a call to pvPortMalloc() fails.
-    pvPortMalloc() is called internally by the kernel whenever a task, queue,
-    timer or semaphore is created.  It is also called by various parts of the
-    demo application.  If heap_1.c or heap_2.c are used, then the size of the
-    heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
-    FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
-    to query the size of free heap space that remains (although it does not
-    provide information on how the remaining heap might be fragmented). */
+     configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
+     function that will get called if a call to pvPortMalloc() fails.
+     pvPortMalloc() is called internally by the kernel whenever a task, queue,
+     timer or semaphore is created.  It is also called by various parts of the
+     demo application.  If heap_1.c or heap_2.c are used, then the size of the
+     heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+     FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+     to query the size of free heap space that remains (although it does not
+     provide information on how the remaining heap might be fragmented). */
 
- // TODO - Log event!
-
+    // TODO - Log event!
 //    taskDISABLE_INTERRUPTS();
 //    for( ;; );
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationIdleHook( void )
-{
+void vApplicationIdleHook(void) {
 
     /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-    to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
-    task.  It is essential that code added to this hook function never attempts
-    to block in any way (for example, call xQueueReceive() with a block time
-    specified, or call vTaskDelay()).  If the application makes use of the
-    vTaskDelete() API function (as this demo application does) then it is also
-    important that vApplicationIdleHook() is permitted to return to its calling
-    function, because it is the responsibility of the idle task to clean up
-    memory allocated by the kernel to any task that has since been deleted. */
+     to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
+     task.  It is essential that code added to this hook function never attempts
+     to block in any way (for example, call xQueueReceive() with a block time
+     specified, or call vTaskDelay()).  If the application makes use of the
+     vTaskDelete() API function (as this demo application does) then it is also
+     important that vApplicationIdleHook() is permitted to return to its calling
+     function, because it is the responsibility of the idle task to clean up
+     memory allocated by the kernel to any task that has since been deleted. */
 
 }
 /*-----------------------------------------------------------*/
 
-
-void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
-{
-    ( void ) pcTaskName;
-    ( void ) pxTask;
+void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
+    (void) pcTaskName;
+    (void) pxTask;
 
     /* Run time stack overflow checking is performed if
-    configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
-    function is called if a stack overflow is detected. */
+     configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
+     function is called if a stack overflow is detected. */
 
     // TODO - Log event!
-
     //Try and log to Filesystem if it still works...
     //It doesn't work since this is in an interrupt, so things like the mutex used by FS are broken.
-
     //So the  flash_write()/flsh_erase() doesn't work either since it calls vTaskDelay.
     //The drivers already skip the delay if the scheduler is not running but I guess that check fails
     //It should definitely be possible to get this working...
-
 //    uint8_t reason=0;
 //    getLastRebootReason(&reason);
 //    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
-
     taskDISABLE_INTERRUPTS();
-    for( ;; );
+    for (;;)
+        ;
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationTickHook( void )
-{
+void vApplicationTickHook(void) {
     /* This function will be called by each tick interrupt if
-    configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
-    added here, but the tick hook is called from an interrupt context, so
-    code must not attempt to block, and only the interrupt safe FreeRTOS API
-    functions can be used (those that end in FromISR()). */
+     configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
+     added here, but the tick hook is called from an interrupt context, so
+     code must not attempt to block, and only the interrupt safe FreeRTOS API
+     functions can be used (those that end in FromISR()). */
 }
 /*-----------------------------------------------------------*/

@@ -73,13 +73,8 @@ void sendData(char* buffer, int len, int dest) {
 // FUNCTIONS
 //------------------------------------------------------------------------------
 
+
 void vCSP_Server(void *pvParameters) {
-
-    uint8_t result = configure_csp();
-    if (result) {
-        set_csp_init(1);
-    }
-
     csp_conn_t *conn = NULL;
     csp_packet_t *packet = NULL;
     csp_socket_t *socket = csp_socket(0);
@@ -95,7 +90,7 @@ void vCSP_Server(void *pvParameters) {
     powerPingCount = 0;
 
     CCLSM_DATA_ENTRY testCCLSM;
-
+    
     int misses = 0;
     int lockout = 0;
     //TODO: Check return of csp_bind and listen, then handle errors.
@@ -117,26 +112,6 @@ void vCSP_Server(void *pvParameters) {
 			}
 
 			switch(dest_port){
-				case CSP_COMMS_PASSTHROUGH:{
-				    printToTerminal(packet->data);
-				    logPowerTelem(packet->data, packet->length);
-				    break;
-				}
-				case 0x04: {
-				    printToTerminal(packet->data);
-				    break;
-				}
-				case 0x05: //powinfo port
-				    sendDataPacket(packet->data, packet->length, 0x05);
-                    logPowerTelem(packet->data, packet->length);
-				    break;
-				case 10: //CCLSM DATA PACKET
-                    {
-                    memcpy(&testCCLSM, packet->data, sizeof(CCLSM_DATA_ENTRY));
-//                    logPowerTelem(packet->data, packet->length);
-                    int boi = 50;
-                    break;
-                    }
 				default:{
 						csp_service_handler(conn,packet);
 						break;

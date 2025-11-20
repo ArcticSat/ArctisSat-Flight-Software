@@ -40,58 +40,58 @@ uint8_t configure_csp();
 // FUNCTIONS
 //------------------------------------------------------------------------------
 
-void vCSP_Server(void * pvParameters){
+// void vCSP_Server(void * pvParameters){
 
-    InputQueues_t * queues = (InputQueues_t *) pvParameters;
+//     InputQueues_t * queues = (InputQueues_t *) pvParameters;
 
-    uint8_t result = configure_csp();
+//     uint8_t result = configure_csp();
 
-    csp_conn_t * conn = NULL;
-	csp_packet_t * packet= NULL;
-	csp_socket_t * socket = csp_socket(0);
+//     csp_conn_t * conn = NULL;
+// 	csp_packet_t * packet= NULL;
+// 	csp_socket_t * socket = csp_socket(0);
 
-    //Listen for messages to all ports.
-    csp_bind(socket, CSP_ANY);
+//     //Listen for messages to all ports.
+//     csp_bind(socket, CSP_ANY);
 
-    //Have up to 4 backlog connections.
-    csp_listen(socket,4);
+//     //Have up to 4 backlog connections.
+//     csp_listen(socket,4);
 
-    //TODO: Check return of csp_bind and listen, then handle errors.
-    while(1) {
+//     //TODO: Check return of csp_bind and listen, then handle errors.
+//     while(1) {
 
-		conn = csp_accept(socket, 1000);
+// 		conn = csp_accept(socket, 1000);
 
-		if(conn){
+// 		if(conn){
 
-			packet = csp_read(conn,0);
+// 			packet = csp_read(conn,0);
 
-            #ifdef DEBUG
-                //prvUARTSend(&g_mss_uart0, packet->data, packet->length);
-			#endif
+//             #ifdef DEBUG
+//                 //prvUARTSend(&g_mss_uart0, packet->data, packet->length);
+// 			#endif
 
-            //Handle the message based on the port it was sent to.
-            int dest_port = csp_conn_dst(conn);
+//             //Handle the message based on the port it was sent to.
+//             int dest_port = csp_conn_dst(conn);
 
-            switch(dest_port){
+//             switch(dest_port){
 
-                CSP_COMMAND_PORT:
-                    xQueueSendToBack(queues->command_queue,packet->data,100);
-                    break;
+//                 CSP_COMMAND_PORT:
+//                     xQueueSendToBack(queues->command_queue,packet->data,100);
+//                     break;
 
-                CSP_DATA_PORT:
-                    xQueueSendToBack(queues->data_queue,packet->data,100);
-                    break;
+//                 CSP_DATA_PORT:
+//                     xQueueSendToBack(queues->data_queue,packet->data,100);
+//                     break;
 
-                default:
-                    csp_service_handler(conn,packet);
-                    break;
-            }
-            //Should buffer free be here? Example doesn't call this after csp_service handler.
-            csp_buffer_free(packet);
-			csp_close(conn);
-		}
-	}
-}
+//                 default:
+//                     csp_service_handler(conn,packet);
+//                     break;
+//             }
+//             //Should buffer free be here? Example doesn't call this after csp_service handler.
+//             csp_buffer_free(packet);
+// 			csp_close(conn);
+// 		}
+// 	}
+// }
 
 uint8_t configure_csp(){
 

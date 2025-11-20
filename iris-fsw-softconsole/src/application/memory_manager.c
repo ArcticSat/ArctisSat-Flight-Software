@@ -107,26 +107,6 @@ int readScStatus(ScStatus_t* sc){
 
 int CommitSpacecraftStatus(void)
 {
-
-//	if(sc_status_read_result_fs != FS_OK)
-//	{
-//		return sc_status_read_result_fs;
-//	}
-
-////	lfs_file_t file = {0};
-////	lfs_ssize_t bytesWritten = 0;
-//	// Open detumble_state file
-////	char filename[MM_FILENAME_MAX];
-////	sprintf(filename,"%s",filenames[SC_STATUS_FILE_IDX]);
-////	const char * filename = filenames[SC_STATUS_FILE_IDX];
-//	sc_status_read_result_fs = flash_read(flash_devices[PROGRAM_FLASH],SC_STATUS_LOCATION,(uint8_t*)&scStatus,sizeof(ScStatus_t));
-//	if(sc_status_read_result_fs != FS_OK) return sc_status_read_result_fs;
-//	// Write state
-//	bytesWritten = fs_file_write( &file, (void *) &scStatus, sizeof(scStatus));
-//	// TODO: error handling on bytes written?
-//	// Close file
-//	sc_status_read_result_fs = fs_file_close( &file);
-
 	flash_erase(MEM_MANAGER_FLASH_DEVICE,SC_STATUS_LOCATION);
 	sc_status_read_result_fs = flash_write(MEM_MANAGER_FLASH_DEVICE, SC_STATUS_LOCATION, (uint8_t*)&scStatus, sizeof(ScStatus_t));
 

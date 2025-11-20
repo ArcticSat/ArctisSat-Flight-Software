@@ -44,85 +44,21 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+void vMissionLoop() {
+    for(;;) {
+        vTaskDelay(1000);
+        //Gather telemetry
+        //Handle errors
+        //Execute ground commands
+        //Maintain health of subsystems
+        //Check time tagged tasks
+        //Handle mission states
+    }
+}
+
 void InitMissionOperations(void)
 {
-#ifdef INIT_COMMS
-    // Turn on comms
-    setLoadSwitch(LS_COMS, SWITCH_ON);
-#endif
-	// Initialize the memory manager
-	init_memory_manager();
-	// Initialize the spacecraft's status
-	int result_fs;
-	result_fs = InitSpacecraftStatus();
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-#ifdef DEPLOYMENT_CONFIG
-		InitiateSpacecraftDeployment();
-#endif
-		setDeploymentStartupState(DPL_STATE_DEPLOYED);
-	}
 
-	uint8_t rebootReason=REBOOT_UNKNOWN;
-	getLastRebootReason(&rebootReason);
-	if((rebootReason & REBOOT_OTA_UPDATE) && rebootReason != 0xFF){
-
-	    //We need to powercycle the cdh for the FS, coreSPI etc to work.
-	    //But first, SET the reboot reason to "request" so we don't boot loop.
-	    int res = setLastRebootReason(REBOOT_POWER_REQUEST);
-
-	    //Only request if the last step passes.
-	    if(res == MEM_MGR_OK){
-
-	        //Send command to power to reset.
-	        //printf("Power cycled CDH\n ");
-	    	//powercycleCDH();
-	    	resetLoadSwitch(LS_CDH);
-
-	        //Shouldn't ever get here, if we do... just continue on, we will have to manually fix.
-	        printf("cdh request pwr cycle failed!\n");
-	    }
-
-	}
-
-	int result;
-	ScStatus_t sc_status;
-	result = getScStatus(&sc_status);
-	// Format data
-	uint8_t buf[sizeof(result)+SC_STATUS_SIZE_BYTES] = {0};
-	memcpy(buf,&result,sizeof(result));
-	memcpy(&buf[sizeof(result)],&sc_status,sizeof(SC_STATUS_SIZE_BYTES));
-	// Send telemetry packet
-	telemetryPacket_t tmpkt = {0};
-	tmpkt.telem_id = CDH_SPACECRAFT_STATUS_ID;
-	tmpkt.length = sizeof(result)+SC_STATUS_SIZE_BYTES;
-	tmpkt.data = buf;
-	sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-
-	//Send the results of the prvSetupHardware.
-    telemetryPacket_t hwStatPkt = {0};
-    hwStatPkt.telem_id = CDH_HW_STATUS_ID;
-    hwStatPkt.length = sizeof(HardwareCheck_t);
-    hwStatPkt.data = (uint8_t*)&setupHardwareStatus;
-    sendTelemetryAddr(&hwStatPkt, GROUND_CSP_ADDRESS);
-
-
-	// Resume tasks
-	vTaskResume(vSunPointing_h);
-#ifdef INCLUDE_TASK_CAN_SERVER
-	vTaskResume(vCanServer_h);
-#endif
-#ifdef INCLUDE_TASK_TTT
-	vTaskResume(vTTTScheduler_h);
-#endif
-#ifdef INCLUDE_TASK_FW_MANAGER
-    if(get_fs_status() == FS_OK){
-    	vTaskResume(vFw_Update_Mgr_Task_h);
-    }
-#endif
 }
 
 void InitNormalOperations(void)

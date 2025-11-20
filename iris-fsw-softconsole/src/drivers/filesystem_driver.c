@@ -43,7 +43,7 @@
 #define FS_LOOKAHEAD_SIZE	512
 #define FS_BLOCK_CYCLES		500
 
-#define FS_MAX_OPEN_FILES	5
+#define FS_MAX_OPEN_FILES	8
 
 //For testing only. This will offset the location where filesystem is mounted.
 //Set to 0!

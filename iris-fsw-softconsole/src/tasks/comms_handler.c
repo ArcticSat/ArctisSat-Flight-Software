@@ -51,14 +51,14 @@ void sendImagePacket(char *data, int len, int index) {
 }
 
 void commsTransmitterTask() {
-    radioPacket_t packet;
+    radioPacket_t *packet;
     xTaskToNotify = xTaskGetCurrentTaskHandle();
     uint32_t *notVal;
     for (;;) {
-        xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
+        // xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
         if (xQueueReceive(commsTxQueue, &packet, portMAX_DELAY) == pdTRUE) {
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (char*) &packet,
-                    sizeof(radioPacket_t));
+            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) &packet->data, packet->len);
+            vPortFree(packet);
         }
     }
 }
@@ -117,15 +117,20 @@ void sendDataPacket(char *data, int len, uint8_t type) {
 }
 
 void printToTerminal(char *msg) {
-//    logMessage(msg);
-    radioPacket_t packet;
-    int len = strlen(msg);
-    packet.len = len + 1;
-    packet.header = 0xAA;
-    packet.footer = 0xBB;
-    memcpy(packet.data, msg, len);
-    packet.type = 0x0A;
-    xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
+    // Allocate enough memory for header + data
+    radioPacket_t *pkt = pvPortMalloc(sizeof(radioPacket_t) + strlen(msg) + 1);
+    if (!pkt) return;
+
+    pkt->header = 0xAA;
+    pkt->footer = 0xBB;
+    pkt->type = 0x01; // Terminal message type
+    pkt->len = strlen(msg) + 1;
+    pkt->index = 0;
+    
+    memcpy(pkt->data, msg, strlen(msg) + 1);  // copies the string bytes
+
+    // **Send pointer to queue** (queue holds telemetryPacket_t*)
+    xQueueSendToBack(commsTxQueue, &pkt, portMAX_DELAY);
 }
 
 uint8_t year, month, day, hour, minute, second;
@@ -143,7 +148,7 @@ void commsHandlerTask() {
 
     for (;;) {
         if (xQueueReceive(commsRxQueue, &rxPacket, portMAX_DELAY) == pdTRUE) {
-            
+            volatile int j = 5;
         }
     }
 }

@@ -143,6 +143,7 @@ void HandlePowerCommand(telemetryPacket_t * cmd_pkt)
 void vPowerDriver(void * pvParameters){
 	for(;;) {
 		vTaskDelay(500);
+		logPowerTelem("Power driver alive\0", strlen("Power driver alive\0")+1);
 	}
 	return;
 }

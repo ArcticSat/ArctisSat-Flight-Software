@@ -19,7 +19,6 @@
 enum{
     FW_GOLDEN_INDEX,
     FW_UPDATE_INDEX,
-
 };
 
 //Will compare the current running firmware with a fw file on the program flash.
