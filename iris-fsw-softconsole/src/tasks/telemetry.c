@@ -35,7 +35,6 @@ uint8_t year, month, day, hour, minute, second;
 int telemReadFlag = 0;
 
 telemetryPacket_t readTelem;
-lfs_file_t readFile;
 int readStatus;
 lfs_file_t powerFile;
 lfs_file_t adcsFile;
@@ -43,75 +42,105 @@ lfs_file_t cdhFile;
 lfs_file_t payloadFile;
 lfs_file_t genericFile;
 
+lfs_file_t *files[5];
+
 void openFiles() {
-    fs_file_open(&powerFile, "power_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
-    fs_file_open(&adcsFile, "adcs_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
-    fs_file_open(&cdhFile, "cdh_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
-    fs_file_open(&payloadFile, "payload_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
-    fs_file_open(&genericFile, "generic_telem.log", LFS_O_RDWR | LFS_O_APPEND | LFS_O_CREAT);
+    int status;
+    status = fs_file_open(&powerFile, "power_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    files[0] = &powerFile;
+    status = fs_file_open(&adcsFile, "adcs_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    files[1] = &adcsFile;
+    status = fs_file_open(&cdhFile, "cdh_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    files[2] = &cdhFile;
+    status = fs_file_open(&payloadFile, "payload_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    files[3] = &payloadFile;
+    status = fs_file_open(&genericFile, "generic_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    files[4] = &genericFile;
 }
+
 
 void telemetryManager() {
     mytelemetryPacket_t *pkt;
-    lfs_file_t telemFile;
+    lfs_file_t *telemFile;
+    lfs_file_t *readFile;
     int fileStatus;
+
+    printToTerminal("Begin open files...\n");
 
     openFiles();
 
-    printToTerminal("File system online!");
+    printToTerminal("File telemetry manager started.\n");
     for (;;) {
         if(xQueueReceive(telemetryQueue, &pkt, pdMS_TO_TICKS(50)) == pdTRUE) {
             size_t totalSize = sizeof(mytelemetryPacket_t) + pkt->length;
             switch(pkt->reporting_device) {
                 case 0:
-                    telemFile = cdhFile;
+                    telemFile = &cdhFile;
                     break;                
                 case 1:
-                    telemFile = powerFile;
+                    telemFile = &powerFile;
                     break;
                 case 2:
-                    telemFile = adcsFile;
+                    telemFile = &adcsFile;
                     break;
                 case 3:
-                    telemFile = cdhFile;
+                    telemFile = &cdhFile;
                     break;
                 case 4: 
-                    telemFile = payloadFile;
+                    telemFile = &payloadFile;
                     break;
                 default:
-                    telemFile = genericFile;
+                    telemFile = &genericFile;
                     break;
             }
 
-            if(telemFile.cfg == NULL) {
+            if(telemFile->cfg == NULL) {
                 //file not open?
                 vPortFree(pkt);
                 continue;
             }
 
+            fs_file_seek(telemFile, 0, LFS_SEEK_END);
+
             //write telem to file
-            fs_file_write(&telemFile, pkt, totalSize);
+            fs_file_write(telemFile, pkt, totalSize);
+
+            fs_file_sync(telemFile);
+
+            int fileSize = fs_file_size(telemFile);
+            printToTerminal("Telem logged, file size: ");
+            snprintf(timeBuf, 32, "%d bytes\n", fileSize);
+            printToTerminal(timeBuf);
 
             vPortFree(pkt);
-            // fileStatus = fs_file_close(&telemFile);
-
         }
 
-        if(telemReadFlag) {
-            readFile = powerFile;
-            fs_file_rewind(&readFile);
+        if (telemReadFlag){
+            readFile = &powerFile;
             char buf[64];
             int fileSize;
-            while(1) {
-                readStatus = fs_file_read(&readFile, &buf, 64);
-                fileSize = fs_file_size(&readFile);
-                if(readStatus <= 0) {
-                    fs_file_truncate(&readFile, 0); //clear file after reading
-                    break;
+            printToTerminal("###BEGIN TELEM DOWNLINK###\n");
+            for (int i = 0; i < 5; i++)
+            {
+                readFile = files[i];
+                fs_file_seek(readFile, 0, LFS_SEEK_SET);
+                while (1)
+                {
+                    fileSize = fs_file_size(readFile);
+                    readStatus = fs_file_read(readFile, &buf, 64);
+                    if (readStatus <= 0)
+                    {
+                        // file is empty, delete and reopen
+                        fs_file_truncate(readFile, 0);
+                        fileSize = fs_file_size(readFile);
+                        break;
+                    } else {
+                        sendRawData(&buf, readStatus);
+                    }
                 }
             }
-            telemReadFlag = 0;
         }
+        telemReadFlag = 0;
         vTaskDelay(100);
     }
 }

@@ -54,6 +54,9 @@ void commsTransmitterTask() {
     radioPacket_t *packet;
     xTaskToNotify = xTaskGetCurrentTaskHandle();
     uint32_t *notVal;
+
+//    vTaskDelay(50000);
+    printToTerminal("COMMS Transmitter task started.\n");
     for (;;) {
         // xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
         if (xQueueReceive(commsTxQueue, &packet, portMAX_DELAY) == pdTRUE) {
@@ -65,6 +68,8 @@ void commsTransmitterTask() {
 
 void commsReceiverTask() {
     int i;
+    vTaskDelay(500);
+    printToTerminal("COMMS Receiver task started.\n");
     for (;;) {
         uint8_t buf_Rx0[32];
         i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
@@ -85,7 +90,7 @@ void commsReceiverTask() {
 
 void sendDataPacket(char *data, int len, uint8_t type) {
     int remLen = len;
-    int copyLen = 64;
+    int copyLen = (remLen > 64) ? 64 : remLen;
     int index = 0;
 
     do {
@@ -100,7 +105,7 @@ void sendDataPacket(char *data, int len, uint8_t type) {
         memcpy(packet.data, data, copyLen);
         remLen -= copyLen;
         packet.type = type;
-        uint32_t tempCRC = crc32b((char*) &packet, 6 + 64);
+        uint32_t tempCRC = 69; //crc32b((char*) &packet, 6 + 64);
         packet.crc = tempCRC;
 
         if (remLen > 64) {
@@ -116,7 +121,28 @@ void sendDataPacket(char *data, int len, uint8_t type) {
 
 }
 
+void sendRawData(char* data, int len) {
+    // Allocate enough memory for header + data
+    radioPacket_t *pkt = pvPortMalloc(sizeof(radioPacket_t) + len);
+    if (!pkt) return;
+
+    pkt->header = 0xAA;
+    pkt->footer = 0xBB;
+    pkt->type = 0x01; // Terminal message type
+    pkt->len = len;
+    pkt->index = 0;
+
+    memcpy(pkt->data, data, len);  // copies the string bytes
+
+    // **Send pointer to queue** (queue holds telemetryPacket_t*)
+    xQueueSendToBack(commsTxQueue, &pkt, portMAX_DELAY);
+}
+
 void printToTerminal(char *msg) {
+    if(preRtosPrintRaw) {
+        custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) msg, strlen(msg));
+        return;
+    }
     // Allocate enough memory for header + data
     radioPacket_t *pkt = pvPortMalloc(sizeof(radioPacket_t) + strlen(msg) + 1);
     if (!pkt) return;
@@ -143,6 +169,8 @@ char timeBuf[32];
 void commsHandlerTask() {
     radioPacket_t packet;
     radioPacket_t rxPacket;
+
+    vTaskDelay(1000);
 
     printToTerminal("COMMS task started!\n");
 

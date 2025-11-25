@@ -79,6 +79,8 @@
 #include "tasks/comms_handler.h"
 #include "application/application.h"
 
+#include "tasks/healthAndSafety.h"
+
 //#define SERVER
 //#define CLIENT
 //#define CAN_SERVER
@@ -105,15 +107,30 @@ void vApplicationIdleHook(void);
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
 void vApplicationTickHook(void);
 
+static void delay_cycles(volatile uint32_t incycles)
+{
+    uint32_t cycles = incycles * 10;
+    while (cycles--) {
+        __asm volatile("nop");
+    }
+}
+
 int main(void) {
+    preRtosPrintRaw = 1;
     prvSetupHardware();
 
     BaseType_t status;
+
+    printToTerminal("\n\n###########  Queue init...  ############\n");
 
     txQueue = xQueueCreate(5, sizeof(satPacket));
     commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t*));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
     telemetryQueue = xQueueCreate(5, sizeof(mytelemetryPacket_t*));
+
+    errorQueue = xQueueCreate(5, sizeof(caughtError_t));
+
+    printToTerminal("Queue init done.\n");
 
     //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
     //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
@@ -135,6 +152,9 @@ int main(void) {
 
     /**THESE ARE THE MAIN FUNCTIONS**/
 
+    printToTerminal("\n\n###########  Begin task init...  ############\n");
+
+
     // TODO add handling and logging to all the task status
     // Need to suspend this task until the CSP stack is up and running.
     // If we start pumping CAN messages into CSP before it is ready it will crash.
@@ -144,56 +164,91 @@ int main(void) {
     // This task handles all incoming CSP packets and routes them to the appropriate handler.
     status = xTaskCreate(vCSP_Server, "cspServer", 200, NULL, 1,
             &vCSP_Server_h);
-
+    printToTerminal("CSP Server task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     volatile int j = xPortGetFreeHeapSize();
+
 
     // This task reads from the tx queue and sends packets out over CSP.
     // TODO rename this task
     status = xTaskCreate(vTestCspClient, "CSP Tx", 100, NULL, 1, NULL);
-
+    printToTerminal("CSP Client task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
     // This task reads from the UART Rx queue and handles them
     status = xTaskCreate(commsHandlerTask, "UART Handle", 100, NULL, 1, NULL);
-
+    printToTerminal("UART Handler task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
     // This task dispatches packets in the TX queue over UART
     status = xTaskCreate(commsTransmitterTask, "UART Tx", 100, NULL, 1, NULL);
-
+    printToTerminal("UART Transmitter task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");    
     j = xPortGetFreeHeapSize();
 
 
     // This task reads from the UART and puts packets in the Rx queue
     status = xTaskCreate(commsReceiverTask, "UART Rx", 100, NULL, 1, NULL);
-
+    printToTerminal("UART Receiver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
     // This task drives ADCS
     status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
-
+    printToTerminal("ADCS Driver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
     // This task drives power
-    status = xTaskCreate(vPowerDriver, "PWR handler", 400, NULL, 1, NULL);
-
+    status = xTaskCreate(vPowerDriver, "PWR handler", 200, NULL, 1, NULL);
+    printToTerminal("Power Driver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
     // TODO fix this task
-    status = xTaskCreate(telemetryManager, "Telem", 500, NULL, 1, NULL);
-
+    status = xTaskCreate(telemetryManager, "Telem", 600, NULL, 1, NULL);
+    printToTerminal("Telemetry Manager task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
     //Main loop, does all the typical stuff
     status = xTaskCreate(vMissionLoop, "Mission", 100, NULL, 1, NULL);
-
+    printToTerminal("Mission Operations Loop task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
+
+
+    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 100, NULL, 1,
+            NULL);
+    printToTerminal("Health and Safety task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
+
+
+    printToTerminal("Free heap bytes before scheduler start: ");
+    char heapStr[20];
+    snprintf(heapStr, 20, "%lu\n", j);
+    printToTerminal(heapStr);
+    printToTerminal("\n\n###########  Starting scheduler...  ############\n");
+    preRtosPrintRaw = 0;
 
 
     vTaskStartScheduler();
@@ -209,31 +264,80 @@ FlashStatus_t program_flash_status = FLASH_ERROR;
 static void prvSetupHardware(void) {
 
     vInitializeUARTs(MSS_UART_115200_BAUD);
+    printToTerminal("\n\n\n\n\n\n###########  System init...  ############\n");
+
+    delay_cycles(10000);
+
+    printToTerminal("UART INIT\n");
+    delay_cycles(10000);
+
 //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
 //    init_WD();
     init_rtc();
+    printToTerminal("RTC INIT\n");
+    delay_cycles(10000);
+
     setupHardwareStatus.spi_init = init_spi();
+    printToTerminal("SPI INIT\n");
+    delay_cycles(10000);
+
     setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K, NULL);
+    printToTerminal("CAN INIT\n");
+    delay_cycles(10000);
+
 //    init_mram();
     adcs_init_driver();
+    printToTerminal("ADCS DRIVER INIT\n");
+    delay_cycles(10000);
+
     setupHardwareStatus.CSP_init = configure_csp();
+    printToTerminal("CSP CONFIGURED\n");
+    delay_cycles(10000);
+
     set_csp_init(1);
+    printToTerminal("CSP INIT SET\n");
+    delay_cycles(10000);
+
 
     init_mram();
+    printToTerminal("MRAM INIT\n");
+    delay_cycles(10000);
+
     data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+    printToTerminal("DATA FLASH INIT\n");
+    delay_cycles(10000);
+
     program_flash_status = flash_device_init(flash_devices[PROGRAM_FLASH]);
+    printToTerminal("PROGRAM FLASH INIT\n");
+    delay_cycles(10000);
+
 
     setupHardwareStatus.data_flash_init = data_flash_status;
     setupHardwareStatus.program_flash_init = program_flash_status;
 
     // TODO make this better - this might crash???
     FilesystemError_t stat = fs_init();
-    int err = fs_mount();
+    setupHardwareStatus.fs_init = stat;
+    printToTerminal("FILESYSTEM INIT\n");
+    delay_cycles(10000);
 
-    if(err) {
+    printToTerminal("MOUNTING FILESYSTEM\n");
+    delay_cycles(10000);
+
+    int err = fs_mount();
+    printToTerminal("FILESYSTEM MOUNTED\n");
+    delay_cycles(10000);
+
+    
+    
+    if (err) {
+        printToTerminal("FORMATTING FILESYSTEM\n");
         fs_format();
+        printToTerminal("FILESYSTEM FORMATTED\n");
+        printToTerminal("MOUNTING FILESYSTEM\n");
         fs_mount();
+        printToTerminal("FILESYSTEM MOUNTED\n");
     }
 }
 
@@ -244,13 +348,16 @@ static void prvSetupHardware(void) {
 #define OPTIONAL_PARAMS 0
 
 /*-----------------------------------------------------------*/
-    satPacket packet;
-    csp_conn_t *txconn;
-    csp_packet_t *cspPacket;
+satPacket packet;
+csp_conn_t *txconn;
+csp_packet_t *cspPacket;
 static void vTestCspClient(void *pvParameters) {
     uint8_t dest;
+    vTaskDelay(2000);
+
     //TODO Add timeout and error checking.
     //TODO Clean up the magic numbers
+    printToTerminal("CSP Client started\n");
     while (1) {
         if (xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
             dest = packet.dest;

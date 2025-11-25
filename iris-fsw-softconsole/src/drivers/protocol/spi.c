@@ -70,7 +70,7 @@ uint8_t spi_temp_buff[SPI_BUFF_SIZE];
 int init_spi()
 {
     int rc = 1;
-    //MSS_SPI_init(&g_mss_spi0);
+//    MSS_SPI_init(&g_mss_spi0);
     for (int ix = 0; ix < NUM_SPI_INSTANCES; ix++)
     {
         core_lock[ix] = xSemaphoreCreateMutex();

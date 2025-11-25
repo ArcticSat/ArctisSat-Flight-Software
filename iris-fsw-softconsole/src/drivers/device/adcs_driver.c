@@ -18,6 +18,7 @@
 #include "board_definitions.h"
 #include "application/telemetry_manager.h"
 #include "task.h"
+#include "tasks/healthAndSafety.h"
 
 #define SPI_EFFICIENT
 
@@ -62,8 +63,13 @@ volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 
 
 void vADCSDriver(void * pvParameters) {
+    vTaskDelay(700);
+
+	printToTerminal("ADCS Driver Task started.\n");
 	for(;;) {
+	    AdcsDriverError_t status = pingAdcs();
 		vTaskDelay(500);
+		// logError(ERR_ADCS_LOST, NULL, 0);
 	}
 }
 

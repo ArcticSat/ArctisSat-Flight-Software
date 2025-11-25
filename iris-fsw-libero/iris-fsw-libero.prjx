@@ -708,22 +708,22 @@ PARENT="<project>\component\Actel\DirectCore\CORESPI\5.2.104\CORESPI.cxf"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.so,so"
 STATE="utd"
-TIME="1745958375"
+TIME="1746214323"
 SIZE="238"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0.vm,syn_vm"
 STATE="utd"
-TIME="1745958374"
+TIME="1746214321"
 SIZE="1115813"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0_syn.prj,prj"
 STATE="utd"
-TIME="1745958375"
+TIME="1746214324"
 SIZE="5593"
 ENDFILE
 VALUE "<project>\synthesis\MSS_C0_vm.sdc,syn_sdc"
 STATE="utd"
-TIME="1745958374"
+TIME="1746214322"
 SIZE="1310"
 ENDFILE
 ENDLIST
@@ -1047,8 +1047,8 @@ NAME="Synplify Pro ME"
 FUNCTION="Synthesis"
 TOOL="Synplify Pro ME"
 LOCATION="C:\Microchip\Libero_SoC_v2022.2\SynplifyPro\bin\synplify_pro.exe"
-PARAM="-licensetype synplifypro_actel -batch -log synplify.log"
-BATCH=1
+PARAM=""
+BATCH=0
 LICENSE=""
 IS32BIT="1"
 EndProfile
@@ -1229,11 +1229,8 @@ LIST UserCustomizedFileList
 ENDLIST
 LIST OpenedFileList
 ORIENTATION;HORIZONTAL
-Reports;Reports;0
-ReportsCurrentItem;Run Programming Action:MSS_C0_PROGRAM.log
-Constraint Manager;Constraint Manager;0
 StartPage;StartPage;0
-ACTIVEVIEW;Reports
+ACTIVEVIEW;StartPage
 ENDLIST
 LIST ModuleSubBlockList
 LIST "CoreAPB3_C0::work","component\work\CoreAPB3_C0\CoreAPB3_C0.v","TRUE","FALSE"

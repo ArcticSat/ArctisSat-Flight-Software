@@ -9,15 +9,6 @@
 #include "application/application.h"
 #include "tasks/telemetry.h"
 
-typedef enum
-{
-	CAMERA_SENSOR_INIT_ERROR,
-	START_JPEG_MODE_ERROR,
-	DO_CAPTURE_ERROR,
-	SIZE_THRESHOLD_ERROR,
-	PIXEL_AVG_THRESHOLD_ERROR,
-} ImageCaptureError_t ;
-
 void HandlePayloadTlm(csp_conn_t * conn, csp_packet_t * packet)
 {
 	

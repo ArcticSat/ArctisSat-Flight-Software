@@ -8,6 +8,10 @@
 #include "application/eps.h"
 #include "drivers/subsystems/eps_driver.h"
 #include "drivers/protocol/can.h"
+#include "tasks/healthAndSafety.h"
+#include "tasks/telemetry.h"
+
+#include "tasks/csp_server.h"
 
 void HandlePowerCommand(telemetryPacket_t * cmd_pkt)
 {
@@ -141,9 +145,11 @@ void HandlePowerCommand(telemetryPacket_t * cmd_pkt)
 }
 
 void vPowerDriver(void * pvParameters){
+	printToTerminal("Power Driver Task started.\n");
 	for(;;) {
-		vTaskDelay(500);
-		logPowerTelem("Power driver alive\0", strlen("Power driver alive\0")+1);
+		vTaskDelay(1000);
+		char* dataForPower = "Ping from CDH\0";
+		sendData(dataForPower, strlen(dataForPower)+1, POWER_CSP_ADDRESS);
 	}
 	return;
 }

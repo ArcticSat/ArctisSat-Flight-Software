@@ -33,6 +33,8 @@
 // Maximum CSP packet size
 #define DLC_MAX 256 // TBC
 
+uint8_t preRtosPrintRaw;
+
 typedef enum {
     PING_LOST = 0x00,
     PING_FOUND = 0x01
@@ -62,7 +64,7 @@ typedef struct {
     uint16_t index;
     uint32_t crc;
     uint8_t footer;
-    uint8_t data[];
+    uint8_t data[64];
 } radioPacket_t;
 
 typedef struct {

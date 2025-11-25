@@ -36,6 +36,8 @@
 #include "taskhandles.h"
 #include "drivers/protocol/uart.h"
 
+#include "tasks/healthAndSafety.h"
+
 //#include "version.h"
 
 #include "FreeRTOS.h"
@@ -73,8 +75,10 @@ void sendData(char* buffer, int len, int dest) {
 // FUNCTIONS
 //------------------------------------------------------------------------------
 
+int lossLockout = 0;
 
 void vCSP_Server(void *pvParameters) {
+    vTaskDelay(1000);
     csp_conn_t *conn = NULL;
     csp_packet_t *packet = NULL;
     csp_socket_t *socket = csp_socket(0);
@@ -95,8 +99,9 @@ void vCSP_Server(void *pvParameters) {
     int lockout = 0;
     //TODO: Check return of csp_bind and listen, then handle errors.
     //TODO make this so much better!
+    printToTerminal("CSP Server starting\n");
     while(1) {
-		conn = csp_accept(socket, CSP_MAX_DELAY);
+		conn = csp_accept(socket, 500);
 		if(conn){
 			packet = csp_read(conn,0);
 			int sourceID = csp_conn_src(conn);
@@ -106,7 +111,13 @@ void vCSP_Server(void *pvParameters) {
                 case 0x00: //power ID
                 {
                     powerPingCount = 0;
+                    if(lockout) {
+                        logError(WARN_POWER_COMMS_RESTORED, SEV_WARNING, NULL, 0);
+                        // logPowerTelem("Power restored!\n", strlen("Power restored!\n")+1);
+                    }
+                    lockout = 0;
                     powerPingStatus = PING_FOUND;
+
                     break;
                 }
 			}
@@ -127,6 +138,11 @@ void vCSP_Server(void *pvParameters) {
 		if(powerPingCount > 5) {
 		    powerPingStatus = PING_LOST;
 		    powerPingCount = 5;
+            if(lockout == 0){
+                lockout = 1;
+                logPowerTelem("Power lost!\n", strlen("Power lost!\n")+1);
+                logError(ERR_POWER_LOST, SEV_CRITICAL, NULL, 0);
+            }
         }
 //		vTaskDelay(500);
 	} // while(1)

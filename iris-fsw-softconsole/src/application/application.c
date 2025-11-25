@@ -45,10 +45,12 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 void vMissionLoop() {
+    printToTerminal("Mission Operations Loop started.\n");
     for(;;) {
+        size_t freeHeapBytes = xPortGetFreeHeapSize();
         vTaskDelay(1000);
+        printToTerminal(".");
         //Gather telemetry
-        //Handle errors
         //Execute ground commands
         //Maintain health of subsystems
         //Check time tagged tasks
