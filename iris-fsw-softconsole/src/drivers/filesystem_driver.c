@@ -34,14 +34,18 @@
 //#define FS_CACHE_SIZE		256
 //#define FS_LOOKAHEAD_SIZE   2048  //Should probably be much smaller...
 
-//The following parameters seems to work for the W25N.
+#define FS_CACHE_SIZE       512
 #define FS_READ_SIZE        512
-#define FS_PROG_SIZE		512
-#define FS_BLOCK_SIZE		(64 * 2048) //Must be in brackets since we divide by this in the code!
-#define FS_CACHE_SIZE		512
+#define FS_PROG_SIZE        512
+#define FS_LOOKAHEAD_SIZE   32
 
-#define FS_LOOKAHEAD_SIZE	512
-#define FS_BLOCK_CYCLES		500
+
+// LittleFS block size is ONE ERASE BLOCK
+#define FS_BLOCK_SIZE       (128 * 1024)
+
+// How many blocks the FS should track
+
+#define FS_BLOCK_CYCLES     200
 
 #define FS_MAX_OPEN_FILES	8
 

@@ -36,13 +36,19 @@ int telemReadFlag = 0;
 
 telemetryPacket_t readTelem;
 int readStatus;
-lfs_file_t powerFile;
-lfs_file_t adcsFile;
-lfs_file_t cdhFile;
-lfs_file_t payloadFile;
-lfs_file_t genericFile;
 
-lfs_file_t *files[5];
+lfs_file_t *files[6];
+
+void syncFiles() {
+    // Placeholder for file sync logic
+    printToTerminal("Syncing files to storage...\n");
+    for(int i = 0; i < 5; i++) {
+        if (files[i] != NULL) {
+            fs_file_sync(files[i]);
+        }
+    }
+    printToTerminal("Files synced.\n");
+}
 
 void openFiles() {
     int status;
@@ -56,6 +62,8 @@ void openFiles() {
     files[3] = &payloadFile;
     status = fs_file_open(&genericFile, "generic_telem.log", LFS_O_RDWR | LFS_O_CREAT);
     files[4] = &genericFile;
+    status = fs_file_open(&timeTaggedTaskFile, "timeTaggedTasks.dat", LFS_O_RDWR | LFS_O_CREAT);
+    files[5] = &timeTaggedTaskFile;
 }
 
 
@@ -104,9 +112,7 @@ void telemetryManager() {
 
             //write telem to file
             fs_file_write(telemFile, pkt, totalSize);
-
-            fs_file_sync(telemFile);
-
+            
             int fileSize = fs_file_size(telemFile);
             printToTerminal("Telem logged, file size: ");
             snprintf(timeBuf, 32, "%d bytes\n", fileSize);

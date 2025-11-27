@@ -35,6 +35,13 @@
 
 uint8_t preRtosPrintRaw;
 
+lfs_file_t powerFile;
+lfs_file_t adcsFile;
+lfs_file_t cdhFile;
+lfs_file_t payloadFile;
+lfs_file_t genericFile;
+lfs_file_t timeTaggedTaskFile;
+
 typedef enum {
     PING_LOST = 0x00,
     PING_FOUND = 0x01
@@ -64,6 +71,7 @@ typedef struct {
     uint16_t index;
     uint32_t crc;
     uint8_t footer;
+    uint8_t headerStr[16];
     uint8_t data[64];
 } radioPacket_t;
 
@@ -370,6 +378,8 @@ void logPowerTelem(char*, int);
 void logADCSTelem(char*, int);
 void logTelem(char*, int);
 void logMessage(char*);
+
+void syncFiles();
 
 int powerPingStatus;
 int powerPingCount;

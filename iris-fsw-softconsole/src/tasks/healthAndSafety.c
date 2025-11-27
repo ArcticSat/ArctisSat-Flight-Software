@@ -35,11 +35,16 @@ void handlePowerError(errorType_t errorType) {
     }
 }
 
+
 void vHealthAndSafety() {
     caughtError_t receivedError;
+    uint8_t loopCount = 0;
+    char buf[32];
     printToTerminal("Health and Safety Task started.\n");
     for(;;) {
-        if(xQueueReceive(errorQueue, &receivedError, portMAX_DELAY) == pdTRUE) {
+        size_t freeHeapBytes = xPortGetFreeHeapSize();
+
+        if(xQueueReceive(errorQueue, &receivedError, 0) == pdTRUE) {
             printToTerminal("\n\n\n");
             switch(receivedError.severity) {
                 case SEV_WARNING:
@@ -75,6 +80,14 @@ void vHealthAndSafety() {
                 printToTerminal("ERROR: ");
             }
             printToTerminal("\n\n\n");
+        } else {
+            if(loopCount++ >= 10) {
+                syncFiles();
+                loopCount = 0;
+            }
+            sprintf(buf, "H&S Loop %d - Free Heap: %u bytes\n", loopCount++, (unsigned int)freeHeapBytes);
+            printToTerminal(buf);
+            vTaskDelay(1000);
         }
     }
 }

@@ -136,7 +136,7 @@ int main(void) {
     //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
     //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
     //	  status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void *)flash_devices[PROGRAM_FLASH],1,NULL);
-    //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+//        status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
     //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
     //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
     //    status = xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL);
@@ -172,7 +172,7 @@ int main(void) {
 
     // This task reads from the tx queue and sends packets out over CSP.
     // TODO rename this task
-    status = xTaskCreate(vTestCspClient, "CSP Tx", 100, NULL, 1, NULL);
+    status = xTaskCreate(vTestCspClient, "CSP Tx", 200, NULL, 1, NULL);
     printToTerminal("CSP Client task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -180,7 +180,7 @@ int main(void) {
 
 
     // This task reads from the UART Rx queue and handles them
-    status = xTaskCreate(commsHandlerTask, "UART Handle", 100, NULL, 1, NULL);
+    status = xTaskCreate(commsHandlerTask, "UART Handle", 300, NULL, 1, NULL);
     printToTerminal("UART Handler task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -188,7 +188,7 @@ int main(void) {
 
 
     // This task dispatches packets in the TX queue over UART
-    status = xTaskCreate(commsTransmitterTask, "UART Tx", 100, NULL, 1, NULL);
+    status = xTaskCreate(commsTransmitterTask, "UART Tx", 200, NULL, 1, NULL);
     printToTerminal("UART Transmitter task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");    
@@ -196,7 +196,7 @@ int main(void) {
 
 
     // This task reads from the UART and puts packets in the Rx queue
-    status = xTaskCreate(commsReceiverTask, "UART Rx", 100, NULL, 1, NULL);
+    status = xTaskCreate(commsReceiverTask, "UART Rx", 300, NULL, 1, NULL);
     printToTerminal("UART Receiver task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -228,14 +228,14 @@ int main(void) {
 
 
     //Main loop, does all the typical stuff
-    status = xTaskCreate(vMissionLoop, "Mission", 500, NULL, 1, NULL);
+    status = xTaskCreate(vMissionLoop, "Mission", 500, NULL, 2, NULL);
     printToTerminal("Mission Operations Loop task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
-    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 200, NULL, 1,
+    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 200, NULL, 3,
             NULL);
     printToTerminal("Health and Safety task created. Status: ");
     delay_cycles(100000);

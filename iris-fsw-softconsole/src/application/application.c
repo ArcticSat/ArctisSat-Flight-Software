@@ -16,6 +16,8 @@
 #include "application/memory_manager.h"
 #include "application/sc_deployment.h"
 
+#include "tasks/telemetry.h"
+
 #include "application/cdh.h"
 #include "application/eps.h"
 #include "application/payload.h"
@@ -45,18 +47,14 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int canWrite = 0;
-lfs_file_t timeTaggedTaskFile;
 char buf[32];
 
 void vMissionLoop() {
-    printToTerminal("Opening TTT file\n");
-    fs_file_open(&timeTaggedTaskFile, "timeTaggedTasks.dat", LFS_O_RDWR | LFS_O_CREAT);
-    printToTerminal("Mission Operations Loop started.\n");
     timeTaggedTask_t task;
     int seconds = 0;
     uint8_t remainingTasks;
+    printToTerminal("Mission Operations Loop started.\n");
     for(;;) {
-        size_t freeHeapBytes = xPortGetFreeHeapSize();
         vTaskDelay(1000);
         printToTerminal(".");
         int result;
@@ -67,41 +65,38 @@ void vMissionLoop() {
             //Append task to file
             fs_file_seek(&timeTaggedTaskFile, 0, LFS_SEEK_END);
             fs_file_write(&timeTaggedTaskFile, &task, sizeof(task));
-            fs_file_sync(&timeTaggedTaskFile);
             printToTerminal("Task scheduled.\n");
         }
         fs_file_rewind(&timeTaggedTaskFile);
         while(1) {
             result = fs_file_read(&timeTaggedTaskFile, &task, sizeof(task));
             if (result <= 0) {
-                printToTerminal("End of time-tagged tasks\n");
+                if(fs_file_size(&timeTaggedTaskFile) > 0) {
+                    printToTerminal("End of time-tagged tasks\n");
+                }
                 if(!remainingTasks && fs_file_size(&timeTaggedTaskFile) > 0) {
                     printToTerminal("No remaining tasks. Formatting file\n");
                     fs_file_rewind(&timeTaggedTaskFile);
                     fs_file_truncate(&timeTaggedTaskFile, 0);
                     fs_file_sync(&timeTaggedTaskFile);
                 }
-                //no more tasks to read
                 break;
             } else {
-                printToTerminal("Found time tagged task...\n");
-                sprintf(buf, "Task seconds: %u\n", task.executionTime.second);
+                printToTerminal("Found time tagged task... ");
+                sprintf(buf, "Task seconds: %u ", task.executionTime.second);
                 printToTerminal(buf);
                 if(task.executionTime.second == 255) {
                     printToTerminal("Invalid task, skipping...\n");
                     continue;
                 }
                 if(task.executionTime.second <= seconds) {
-                    printToTerminal("Executing time-tagged task...\n");
+                    printToTerminal("Executing time-tagged task!\n");
                     //Execute task
-                    printToTerminal("Task executed.\n");
                     //Mark task as executed by setting time to invalid value
                     task.executionTime.second = 255;
                     //Seek back to the position of this task
                     fs_file_seek(&timeTaggedTaskFile, -((lfs_soff_t)sizeof(task)), LFS_SEEK_CUR);
-                    //Write the updated task
                     fs_file_write(&timeTaggedTaskFile, &task, sizeof(task));
-                    fs_file_sync(&timeTaggedTaskFile);
                     printToTerminal("Task marked as executed.\n");
                 } else {
                     printToTerminal("Task not due yet.\n");
