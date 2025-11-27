@@ -16,6 +16,7 @@
 #include "drivers/protocol/uart.h"
 #include "tasks/telemetry.h"
 #include "application/adcs.h"
+#include "application/application.h"
 
 uint32_t crc32b(unsigned char *data, int size) {
     int byteIdx, bitIdx;
@@ -77,11 +78,17 @@ void commsReceiverTask() {
             if (buf_Rx0[0] == 0xAA && buf_Rx0[1] == 0xBB && buf_Rx0[2] == 0xCC && xTaskToNotify) {
                 xTaskNotify(xTaskToNotify, 0, eNoAction);
             } else {
-                radioPacket_t packet;
-                packet.len = i;
-                memcpy(packet.data, buf_Rx0, i);
-                packet.type = buf_Rx0[0];
-                xQueueSendToBack(commsRxQueue, &packet, portMAX_DELAY);
+                timeTaggedTask_t task;
+                task.taskFunction = NULL;
+                task.executionTime.second = i;
+                task.period = 0;
+                task.isRecurring = false;
+                scheduleTimeTaggedTask(&task);
+                // radioPacket_t packet;
+                // packet.len = i;
+                // memcpy(packet.data, buf_Rx0, i);
+                // packet.type = buf_Rx0[0];
+                // xQueueSendToBack(commsRxQueue, &packet, portMAX_DELAY);
             }
         }
         vTaskDelay(5);

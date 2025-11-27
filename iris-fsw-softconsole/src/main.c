@@ -127,7 +127,7 @@ int main(void) {
     commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t*));
     commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
     telemetryQueue = xQueueCreate(5, sizeof(mytelemetryPacket_t*));
-
+    taskQueue = xQueueCreate(3, sizeof(timeTaggedTask_t));
     errorQueue = xQueueCreate(5, sizeof(caughtError_t));
 
     printToTerminal("Queue init done.\n");
@@ -220,7 +220,7 @@ int main(void) {
 
 
     // TODO fix this task
-    status = xTaskCreate(telemetryManager, "Telem", 600, NULL, 1, NULL);
+    status = xTaskCreate(telemetryManager, "Telem", 500, NULL, 1, NULL);
     printToTerminal("Telemetry Manager task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -228,14 +228,14 @@ int main(void) {
 
 
     //Main loop, does all the typical stuff
-    status = xTaskCreate(vMissionLoop, "Mission", 100, NULL, 1, NULL);
+    status = xTaskCreate(vMissionLoop, "Mission", 500, NULL, 1, NULL);
     printToTerminal("Mission Operations Loop task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
-    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 100, NULL, 1,
+    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 200, NULL, 1,
             NULL);
     printToTerminal("Health and Safety task created. Status: ");
     delay_cycles(100000);
@@ -432,6 +432,10 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
 //    getLastRebootReason(&reason);
 //    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
     taskDISABLE_INTERRUPTS();
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0,
+            (const uint8_t*) "Stack Overflow! ", strlen("Stack Overflow! ") + 1);
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0,
+            (const uint8_t*) pcTaskName, strlen(pcTaskName) + 1);
     for (;;)
         ;
 }
