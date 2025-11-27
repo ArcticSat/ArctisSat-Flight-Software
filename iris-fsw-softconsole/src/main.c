@@ -132,6 +132,8 @@ int main(void) {
 
     printToTerminal("Queue init done.\n");
 
+//    vTestFlashFull((void *)flash_devices[DATA_FLASH]);
+
     //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
     //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
     //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void *)flash_devices[DATA_FLASH],1,NULL);
@@ -228,14 +230,14 @@ int main(void) {
 
 
     //Main loop, does all the typical stuff
-    status = xTaskCreate(vMissionLoop, "Mission", 500, NULL, 2, NULL);
+    status = xTaskCreate(vMissionLoop, "Mission", 500, NULL, 1, NULL);
     printToTerminal("Mission Operations Loop task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
-    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 200, NULL, 3,
+    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 700, NULL, 1,
             NULL);
     printToTerminal("Health and Safety task created. Status: ");
     delay_cycles(100000);

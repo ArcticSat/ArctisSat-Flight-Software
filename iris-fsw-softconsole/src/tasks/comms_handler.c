@@ -61,9 +61,9 @@ void commsTransmitterTask() {
     for (;;) {
         // xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
         if (xQueueReceive(commsTxQueue, &packet, portMAX_DELAY) == pdTRUE) {
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) "[", 1);
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) &packet->headerStr, strlen((char*)packet->headerStr));
-            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) "] ", 2);
+//            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) "[", 1);
+//            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) &packet->headerStr, strlen((char*)packet->headerStr));
+//            custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) "] ", 2);
             custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) &packet->data, packet->len);
             vPortFree(packet);
         }
