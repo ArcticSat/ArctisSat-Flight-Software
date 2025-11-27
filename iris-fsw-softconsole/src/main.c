@@ -206,11 +206,11 @@ int main(void) {
 
 
     // This task drives ADCS
-    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
-    printToTerminal("ADCS Driver task created. Status: ");
-    delay_cycles(100000);
-    printToTerminal(status ? "Success\n" : "Failure\n");
-    j = xPortGetFreeHeapSize();
+//    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
+//    printToTerminal("ADCS Driver task created. Status: ");
+//    delay_cycles(100000);
+//    printToTerminal(status ? "Success\n" : "Failure\n");
+//    j = xPortGetFreeHeapSize();
 
 
     // This task drives power
@@ -288,6 +288,10 @@ static void prvSetupHardware(void) {
     printToTerminal("CAN INIT\n");
     delay_cycles(10000);
 
+    int test = 0;
+    if(test) {
+        FlashStatus_t res=flash_erase_device(flash_devices[DATA_FLASH]);
+    }
 //    init_mram();
     adcs_init_driver();
     printToTerminal("ADCS DRIVER INIT\n");

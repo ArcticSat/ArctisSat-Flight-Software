@@ -42,7 +42,7 @@ lfs_file_t *files[6];
 void syncFiles() {
     // Placeholder for file sync logic
     printToTerminal("Syncing files to storage...\n");
-    for(int i = 0; i < 5; i++) {
+    for(int i = 0; i < 6; i++) {
         if (files[i] != NULL) {
             fs_file_sync(files[i]);
         }
@@ -111,8 +111,8 @@ void telemetryManager() {
             fs_file_seek(telemFile, 0, LFS_SEEK_END);
 
             //write telem to file
-            fs_file_write(telemFile, pkt, totalSize);
-            
+            int stuff = fs_file_write(telemFile, pkt, totalSize);
+//            fs_file_sync(telemFile);
             int fileSize = fs_file_size(telemFile);
             printToTerminal("Telem logged, file size: ");
             snprintf(timeBuf, 32, "%d bytes\n", fileSize);
@@ -138,6 +138,8 @@ void telemetryManager() {
                     {
                         // file is empty, delete and reopen
                         fs_file_truncate(readFile, 0);
+                        fs_file_sync(readFile);
+                        
                         fileSize = fs_file_size(readFile);
                         break;
                     } else {
@@ -237,7 +239,7 @@ int printf(const char *fmt, ...) {
     va_start(argp, fmt);
 
     vsnprintf(str, 255, fmt, argp);
-//    printToTerminal(str);
+    printToTerminal(str);
 
     return 0;
 

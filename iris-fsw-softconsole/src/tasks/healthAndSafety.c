@@ -81,9 +81,8 @@ void vHealthAndSafety() {
             }
             printToTerminal("\n\n\n");
         } else {
-            if(loopCount++ >= 10) {
+            if(loopCount % 10 == 0) {
                 syncFiles();
-                loopCount = 0;
             }
             sprintf(buf, "H&S Loop %d - Free Heap: %u bytes\n", loopCount++, (unsigned int)freeHeapBytes);
             printToTerminal(buf);

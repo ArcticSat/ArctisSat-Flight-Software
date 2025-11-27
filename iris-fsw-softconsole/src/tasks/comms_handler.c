@@ -77,7 +77,7 @@ void commsReceiverTask() {
     printToTerminal("COMMS Receiver task started.\n");
     for (;;) {
         uint8_t buf_Rx0[32];
-        i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, sizeof(buf_Rx0));
+        i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, 32);
         if (i) {
             if (buf_Rx0[0] == 0xAA && buf_Rx0[1] == 0xBB && buf_Rx0[2] == 0xCC && xTaskToNotify) {
                 xTaskNotify(xTaskToNotify, 0, eNoAction);

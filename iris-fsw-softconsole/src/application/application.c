@@ -65,6 +65,7 @@ void vMissionLoop() {
             //Append task to file
             fs_file_seek(&timeTaggedTaskFile, 0, LFS_SEEK_END);
             fs_file_write(&timeTaggedTaskFile, &task, sizeof(task));
+            fs_file_sync(&timeTaggedTaskFile);
             printToTerminal("Task scheduled.\n");
         }
         fs_file_rewind(&timeTaggedTaskFile);
@@ -97,6 +98,8 @@ void vMissionLoop() {
                     //Seek back to the position of this task
                     fs_file_seek(&timeTaggedTaskFile, -((lfs_soff_t)sizeof(task)), LFS_SEEK_CUR);
                     fs_file_write(&timeTaggedTaskFile, &task, sizeof(task));
+                    fs_file_sync(&timeTaggedTaskFile);
+
                     printToTerminal("Task marked as executed.\n");
                 } else {
                     printToTerminal("Task not due yet.\n");

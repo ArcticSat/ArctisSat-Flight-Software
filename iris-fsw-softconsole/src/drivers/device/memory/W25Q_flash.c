@@ -26,7 +26,7 @@ FlashStatus_t W25Q_setup_flash(W25Q_Device_t * dev){
 	MSS_SPI_init(&g_mss_spi0);
 
 	//Clock div of 256 to get 250khz SPI clock rate.
-	MSS_SPI_configure_master_mode(&g_mss_spi0,MSS_SPI_SLAVE_0,MSS_SPI_MODE0,16,MSS_SPI_BLOCK_TRANSFER_FRAME_SIZE);
+	MSS_SPI_configure_master_mode(&g_mss_spi0,MSS_SPI_SLAVE_0,MSS_SPI_MODE0,32,MSS_SPI_BLOCK_TRANSFER_FRAME_SIZE);
 
 
 
