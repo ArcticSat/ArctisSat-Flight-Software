@@ -32,8 +32,6 @@ Calendar_t currTime;
 char timeBuf[32];
 uint8_t year, month, day, hour, minute, second;
 
-int telemReadFlag = 0;
-
 telemetryPacket_t readTelem;
 int readStatus;
 
@@ -53,18 +51,38 @@ void syncFiles() {
 void openFiles() {
     int status;
     status = fs_file_open(&powerFile, "power_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    if(status < 0) {
+        printToTerminal("Error opening power telem file.\n");
+    }
     files[0] = &powerFile;
     status = fs_file_open(&adcsFile, "adcs_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    if(status < 0) {
+        printToTerminal("Error opening adcs telem file.\n");
+    }
     files[1] = &adcsFile;
     status = fs_file_open(&cdhFile, "cdh_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    if(status < 0) {
+        printToTerminal("Error opening cdh telem file.\n");
+    }
     files[2] = &cdhFile;
     status = fs_file_open(&payloadFile, "payload_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    if(status < 0) {
+        printToTerminal("Error opening payload telem file.\n");
+    }
     files[3] = &payloadFile;
     status = fs_file_open(&genericFile, "generic_telem.log", LFS_O_RDWR | LFS_O_CREAT);
+    if(status < 0) {
+        printToTerminal("Error opening generic telem file.\n");
+    }
     files[4] = &genericFile;
     status = fs_file_open(&timeTaggedTaskFile, "timeTaggedTasks.dat", LFS_O_RDWR | LFS_O_CREAT);
+    if(status < 0) {
+        printToTerminal("Error opening time tagged tasks file.\n");
+    }
     files[5] = &timeTaggedTaskFile;
 }
+
+static int fileSystemReady = 0;
 
 
 void telemetryManager() {
@@ -73,9 +91,22 @@ void telemetryManager() {
     lfs_file_t *readFile;
     int fileStatus;
 
+//    vTaskDelay(pdMS_TO_TICKS(5000)); //make this boot last so filesystem is ready
+
     printToTerminal("Begin open files...\n");
 
-    openFiles();
+    fileSystemReady = 1;
+
+//    openFiles();
+    char bruh;
+    uint32_t addr;
+
+    asMram_read(0x00, (char*)&addr, 4);
+
+    for(int i = addr; i < addr + 60; i++) {
+        asMram_read(addr + i, &bruh, 1);
+        printToTerminal((char[]){bruh, '\0'});
+    }
 
     printToTerminal("File telemetry manager started.\n");
     for (;;) {
@@ -185,6 +216,20 @@ void logADCSTelem(char *data, int len) {
 }
 
 void logMessage(char *data) {
+
+    if(fileSystemReady == 0) {
+        //write them to mram instead
+        uint32_t writePointer = 0;
+        //the log write pointer is stored at 0x00, read that first
+        asMram_read(0x00, (char*)&writePointer, 4);
+        //then write the data at that location
+        asMram_write(writePointer, data, strlen(data));
+        //update the write pointer
+        writePointer += strlen(data);
+        asMram_write(0x00, (char*)&writePointer, 4);
+        return;
+    }
+
     mytelemetryPacket_t *pkt = pvPortMalloc(sizeof(mytelemetryPacket_t) + strlen(data) + 1);
     if (!pkt) return;
 

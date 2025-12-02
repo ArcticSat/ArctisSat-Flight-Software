@@ -109,7 +109,7 @@ void vApplicationTickHook(void);
 
 static void delay_cycles(volatile uint32_t incycles)
 {
-    uint32_t cycles = incycles * 10;
+    uint32_t cycles = incycles * 3;
     while (cycles--) {
         __asm volatile("nop");
     }
@@ -131,6 +131,8 @@ int main(void) {
     errorQueue = xQueueCreate(5, sizeof(caughtError_t));
 
     printToTerminal("Queue init done.\n");
+
+    logMessage("System booting...\n");
 
 
     //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
@@ -205,11 +207,11 @@ int main(void) {
 
 
     // This task drives ADCS
-//    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
-//    printToTerminal("ADCS Driver task created. Status: ");
-//    delay_cycles(100000);
-//    printToTerminal(status ? "Success\n" : "Failure\n");
-//    j = xPortGetFreeHeapSize();
+    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
+    printToTerminal("ADCS Driver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
 
     // This task drives power
@@ -280,6 +282,7 @@ static void prvSetupHardware(void) {
     delay_cycles(10000);
 
     setupHardwareStatus.spi_init = init_spi();
+
     printToTerminal("SPI INIT\n");
     delay_cycles(10000);
 
@@ -337,6 +340,7 @@ static void prvSetupHardware(void) {
     
     
     if (err) {
+        printToTerminal("\n\n------FILESYSTEM FORMAT REQUIRED------\n");
         printToTerminal("FORMATTING FILESYSTEM\n");
         fs_format();
         printToTerminal("FILESYSTEM FORMATTED\n");
@@ -344,6 +348,10 @@ static void prvSetupHardware(void) {
         fs_mount();
         printToTerminal("FILESYSTEM MOUNTED\n");
     }
+
+    printToTerminal("OPENING FILES...\n");
+    openFiles();
+    printToTerminal("FILES OPEN!\n");
 }
 
 #define CSP_DEFAULT_PRIORITY 2
@@ -399,6 +407,7 @@ void vApplicationMallocFailedHook(void) {
      provide information on how the remaining heap might be fragmented). */
 
     // TODO - Log event!
+    printToTerminal("Malloc Failed Hook!\n");
 //    taskDISABLE_INTERRUPTS();
 //    for( ;; );
 }
@@ -436,13 +445,14 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
 //    uint8_t reason=0;
 //    getLastRebootReason(&reason);
 //    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
-    taskDISABLE_INTERRUPTS();
+    // taskDISABLE_INTERRUPTS();
     custom_MSS_UART_polled_tx_string(&g_mss_uart0,
             (const uint8_t*) "Stack Overflow! ", strlen("Stack Overflow! ") + 1);
     custom_MSS_UART_polled_tx_string(&g_mss_uart0,
             (const uint8_t*) pcTaskName, strlen(pcTaskName) + 1);
-    for (;;)
-        ;
+    //restart the task that overflowed
+    for(;;);
+
 }
 /*-----------------------------------------------------------*/
 

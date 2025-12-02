@@ -310,6 +310,7 @@ void SPI_transfer_block
     uint16_t transit = 0U;         /* Number of bytes "in flight" to avoid FIFO errors */
 
     HAL_ASSERT( NULL_INSTANCE != this_spi );
+    uint32_t timeout = 1000000;
 
     if( NULL_INSTANCE != this_spi )
     {
@@ -415,7 +416,7 @@ void SPI_transfer_block
              * the slave but we still have to keep discarding any read data that
              * corresponds with one of our command bytes.
              */
-            while( transfer_idx < cmd_byte_size )
+            while( transfer_idx < cmd_byte_size && timeout--)
             {
                 if( transit < this_spi->fifo_depth )
                 {

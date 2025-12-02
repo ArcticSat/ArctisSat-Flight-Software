@@ -88,6 +88,8 @@ QueueHandle_t telemetryQueue;
 
 extern volatile uint8_t flashSystemReady;
 
+int telemReadFlag;
+
 
 uint8_t cameraPowerStatus;
 uint8_t ADCSPowerStatus;

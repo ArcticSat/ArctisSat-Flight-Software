@@ -93,7 +93,7 @@ void vCSP_Server(void *pvParameters) {
     powerPingStatus = PING_LOST;
     powerPingCount = 0;
 
-    CCLSM_DATA_ENTRY testCCLSM;
+    static CCLSM_DATA_ENTRY testCCLSM;
     
     int misses = 0;
     int lockout = 0;

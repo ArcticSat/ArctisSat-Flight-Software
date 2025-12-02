@@ -53,10 +53,15 @@ void vMissionLoop() {
     timeTaggedTask_t task;
     int seconds = 0;
     uint8_t remainingTasks;
+    telemReadFlag = 0;
     printToTerminal("Mission Operations Loop started.\n");
     for(;;) {
         vTaskDelay(1000);
-        printToTerminal(".");
+        // printToTerminal(".");
+        Calendar_t currTime;
+        ds1393_read_time(&currTime);
+        sprintf(buf, "\nSystem time: %02u:%02u:%02u\n", currTime.hour, currTime.minute, currTime.second);
+        printToTerminal(buf);
         int result;
         canWrite = 0;
         remainingTasks = 0;
@@ -69,6 +74,7 @@ void vMissionLoop() {
             printToTerminal("Task scheduled.\n");
         }
         fs_file_rewind(&timeTaggedTaskFile);
+        
         while(1) {
             result = fs_file_read(&timeTaggedTaskFile, &task, sizeof(task));
             if (result <= 0) {
@@ -86,11 +92,11 @@ void vMissionLoop() {
                 printToTerminal("Found time tagged task... ");
                 sprintf(buf, "Task seconds: %u ", task.executionTime.second);
                 printToTerminal(buf);
-                if(task.executionTime.second == 255) {
+                if(task.executionTime.second >= (uint8_t) 60) {
                     printToTerminal("Invalid task, skipping...\n");
                     continue;
                 }
-                if(task.executionTime.second <= seconds) {
+                if(compare_time(&currTime, &task.executionTime) >= 0) {
                     printToTerminal("Executing time-tagged task!\n");
                     //Execute task
                     //Mark task as executed by setting time to invalid value
