@@ -132,7 +132,6 @@ int main(void) {
 
     printToTerminal("Queue init done.\n");
 
-//    vTestFlashFull((void *)flash_devices[DATA_FLASH]);
 
     //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void *)flash_devices[DATA_FLASH],1,NULL);
     //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
@@ -290,7 +289,7 @@ static void prvSetupHardware(void) {
 
     int test = 0;
     if(test) {
-        FlashStatus_t res=flash_erase_device(flash_devices[DATA_FLASH]);
+        vTestFlashFull((void *)flash_devices[DATA_FLASH]);
     }
 //    init_mram();
     adcs_init_driver();

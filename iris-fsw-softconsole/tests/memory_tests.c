@@ -187,7 +187,7 @@ void vTestFlashFull(void *pvParameters)
         memset(data_rx,0,256);
     }
 
-    	while(1){};
+//    	while(1){};
 }
 
 void vTestFlash(void *pvParameters)
