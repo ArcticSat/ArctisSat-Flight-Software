@@ -58,6 +58,8 @@ typedef struct caughtError
     uint8_t errorData[32];
 } caughtError_t;
 
+
+
 void logError(errorType_t type, severityLevel_t sev, uint8_t* data, size_t dataLen);
 
 

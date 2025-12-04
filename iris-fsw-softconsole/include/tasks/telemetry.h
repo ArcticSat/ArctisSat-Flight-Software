@@ -71,7 +71,7 @@ typedef struct {
     uint16_t index;
     uint32_t crc;
     uint8_t footer;
-    uint8_t headerStr[16];
+    uint8_t headerStr[10];
     uint8_t data[64];
 } radioPacket_t;
 
@@ -380,6 +380,8 @@ void logPowerTelem(char*, int);
 void logADCSTelem(char*, int);
 void logTelem(char*, int);
 void logMessage(char*);
+
+void printToTerminal(char*);
 
 void syncFiles();
 

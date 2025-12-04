@@ -47,3 +47,5 @@ void InitMissionOperations(void);
 void InitNormalOperations(void);
 void scheduleTimeTaggedTask(timeTaggedTask_t *task);
 void HandleTm(csp_conn_t * conn, csp_packet_t * packet);
+void scheduleTTTFromQueue();
+void executeTTT();

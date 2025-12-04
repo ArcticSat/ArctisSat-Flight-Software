@@ -165,7 +165,7 @@ int main(void) {
 //    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
 //    vTaskSuspend(vCanServer_h);
     // This task handles all incoming CSP packets and routes them to the appropriate handler.
-    status = xTaskCreate(vCSP_Server, "cspServer", 200, NULL, 1,
+    status = xTaskCreate(vCSP_Server, "cspServer ", 200, NULL, 1,
             &vCSP_Server_h);
     printToTerminal("CSP Server task created. Status: ");
     delay_cycles(100000);
@@ -175,7 +175,7 @@ int main(void) {
 
     // This task reads from the tx queue and sends packets out over CSP.
     // TODO rename this task
-    status = xTaskCreate(vTestCspClient, "CSP Tx", 200, NULL, 1, NULL);
+    status = xTaskCreate(vTestCspClient, "CSP Tx    ", 200, NULL, 1, NULL);
     printToTerminal("CSP Client task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -183,7 +183,7 @@ int main(void) {
 
 
     // This task reads from the UART Rx queue and handles them
-    status = xTaskCreate(commsHandlerTask, "UART Handle", 300, NULL, 1, NULL);
+    status = xTaskCreate(commsHandlerTask, "UARTHandle", 300, NULL, 1, NULL);
     printToTerminal("UART Handler task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -191,7 +191,7 @@ int main(void) {
 
 
     // This task dispatches packets in the TX queue over UART
-    status = xTaskCreate(commsTransmitterTask, "UART Tx", 200, NULL, 1, NULL);
+    status = xTaskCreate(commsTransmitterTask, "UART Tx   ", 200, NULL, 1, NULL);
     printToTerminal("UART Transmitter task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");    
@@ -199,23 +199,23 @@ int main(void) {
 
 
     // This task reads from the UART and puts packets in the Rx queue
-    status = xTaskCreate(commsReceiverTask, "UART Rx", 300, NULL, 1, NULL);
+    status = xTaskCreate(commsReceiverTask, "UART Rx   ", 300, NULL, 1, NULL);
     printToTerminal("UART Receiver task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
-    // This task drives ADCS
-    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
-    printToTerminal("ADCS Driver task created. Status: ");
-    delay_cycles(100000);
-    printToTerminal(status ? "Success\n" : "Failure\n");
-    j = xPortGetFreeHeapSize();
+//    // This task drives ADCS
+//    status = xTaskCreate(vADCSDriver, "ADCS handler", 100, NULL, 1, NULL);
+//    printToTerminal("ADCS Driver task created. Status: ");
+//    delay_cycles(100000);
+//    printToTerminal(status ? "Success\n" : "Failure\n");
+//    j = xPortGetFreeHeapSize();
 
 
     // This task drives power
-    status = xTaskCreate(vPowerDriver, "PWR handler", 200, NULL, 1, NULL);
+    status = xTaskCreate(vPowerDriver, "PWRHandler", 200, NULL, 1, NULL);
     printToTerminal("Power Driver task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -223,7 +223,7 @@ int main(void) {
 
 
     // TODO fix this task
-    status = xTaskCreate(telemetryManager, "Telem", 500, NULL, 1, NULL);
+    status = xTaskCreate(telemetryManager, "Telemetry ", 500, NULL, 1, NULL);
     printToTerminal("Telemetry Manager task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
@@ -231,14 +231,14 @@ int main(void) {
 
 
     //Main loop, does all the typical stuff
-    status = xTaskCreate(vMissionLoop, "Mission", 500, NULL, 1, NULL);
+    status = xTaskCreate(vMissionLoop, "Mission   ", 500, NULL, 1, NULL);
     printToTerminal("Mission Operations Loop task created. Status: ");
     delay_cycles(100000);
     printToTerminal(status ? "Success\n" : "Failure\n");
     j = xPortGetFreeHeapSize();
 
 
-    status = xTaskCreate(vHealthAndSafety, "HealthAndSafety", 700, NULL, 1,
+    status = xTaskCreate(vHealthAndSafety, "HlthSafety", 700, NULL, 1,
             NULL);
     printToTerminal("Health and Safety task created. Status: ");
     delay_cycles(100000);
@@ -276,7 +276,7 @@ static void prvSetupHardware(void) {
 
 //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-//    init_WD();
+    init_WD();
     init_rtc();
     printToTerminal("RTC INIT\n");
     delay_cycles(10000);
