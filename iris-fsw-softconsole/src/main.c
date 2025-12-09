@@ -140,10 +140,10 @@ static inline uint32_t swap_uint32(uint32_t val) {
 // Function to generate the CCSDS packet into the buffer
 void generate_ccsds_packet(void) {
     // --- 1. Define Example Data (Matching the successful parsing attempt) ---
-    uint32_t sh_coarse = 305419896;
-    int8_t   voltage   = -83;
-    uint32_t sh_fine   = 633805;
-    uint32_t op_mode   = 7;
+    uint32_t sh_coarse = 0xDEADBEEF;
+    int8_t   voltage   = 69;
+    uint32_t sh_fine   = 4206769;
+    uint32_t op_mode   = 1;
     uint32_t spacer    = 0; // Use 0 for filler/spacer.
 
     // ... [Sensor Array Data remains the same] ...
@@ -187,15 +187,15 @@ void generate_ccsds_packet(void) {
     uint16_t sh_subseconds = 0x9ABC;
     uint32_t sh_status = 0xDEADBEEF;
 
-    // SH - Seconds (32 bits)
-    uint32_t sh_seconds_be = swap_uint32(sh_seconds);
-    memcpy(ptr, &sh_seconds_be, 4); ptr += 4;
-    // SH - Subseconds (16 bits)
-    uint16_t sh_subseconds_be = swap_uint16(sh_subseconds);
-    memcpy(ptr, &sh_subseconds_be, 2); ptr += 2;
-    // SH - Status (32 bits)
-    uint32_t sh_status_be = swap_uint32(sh_status);
-    memcpy(ptr, &sh_status_be, 4); ptr += 4;
+//    // SH - Seconds (32 bits)
+//    uint32_t sh_seconds_be = swap_uint32(sh_seconds);
+//    memcpy(ptr, &sh_seconds_be, 4); ptr += 4;
+//    // SH - Subseconds (16 bits)
+//    uint16_t sh_subseconds_be = swap_uint16(sh_subseconds);
+//    memcpy(ptr, &sh_subseconds_be, 2); ptr += 2;
+//    // SH - Status (32 bits)
+//    uint32_t sh_status_be = swap_uint32(sh_status);
+//    memcpy(ptr, &sh_status_be, 4); ptr += 4;
 
     // --- 3.3. Data Payload (2056 bytes) ---
 
