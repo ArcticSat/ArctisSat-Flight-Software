@@ -10,25 +10,42 @@
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include <FreeRTOS-Kernel/include/task.h>
 
+#include "drivers/device/watchdog.h"
 #include "tasks/telemetry.h"
 
+char buf[32];
+caughtError_t receivedError;
 void vHealthAndSafety() {
-  caughtError_t receivedError;
   uint8_t loopCount = 0;
-  char buf[32];
   printToTerminal("Health and Safety Task started.\n");
   for (;;) {
     handleErrors();
+//    loopCount++;
     size_t freeHeapBytes = xPortGetFreeHeapSize();
-    if (loopCount % 100 == 0) {
+    if (loopCount == 100) {
       syncFiles();
-    } else if (loopCount % 50 == 0) {
-			sprintf(buf, "H&S Loop %d: Free heap bytes: %lu\n", loopCount,
-							(unsigned long)freeHeapBytes);
-			printToTerminal(buf);
-		}
-    loopCount++;
+      loopCount = 0;
+    }
+
+    if (loopCount == 50) {
+      // sprintf(buf, "H&S Loop %d: Free heap bytes: %lu\n", loopCount,
+      //         (unsigned long)freeHeapBytes);
+//      printToTerminal(buf);
+      for (int i = 0; i < MAX_MONITORED_TASKS; i++) {
+        // print stack high water mark for each monitored task
+        if (monitoredTasks[i] != NULL) {
+          UBaseType_t highWaterMark = uxTaskGetStackHighWaterMark(monitoredTasks[i]);
+
+          volatile uint8_t j = 0;
+          snprintf(buf, 32, "Task %d High Water Mark: %lu\n", i,
+                   (unsigned long)highWaterMark);
+          printToTerminal(buf);
+        }
+      }
+    }
+    service_WD();
     vTaskDelay(100);
+    loopCount++;
   }
 }
 

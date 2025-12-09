@@ -33,14 +33,21 @@
 // Maximum CSP packet size
 #define DLC_MAX 256 // TBC
 
-uint8_t preRtosPrintRaw;
-
+/***********************************************************/
+//File handles for telemetry files
 lfs_file_t powerFile;
 lfs_file_t adcsFile;
 lfs_file_t cdhFile;
 lfs_file_t payloadFile;
 lfs_file_t genericFile;
 lfs_file_t timeTaggedTaskFile;
+
+/*
+FreeRTOS Queues
+*/
+QueueHandle_t commsTxQueue;
+QueueHandle_t commsRxQueue;
+QueueHandle_t telemetryQueue;
 
 typedef enum {
     PING_LOST = 0x00,
@@ -56,10 +63,11 @@ typedef struct {
 } telemetryPacket_t;
 
 typedef struct {
-    Calendar_t timestamp;
+    uint32_t header;
+    uint8_t length;
     uint8_t reporting_device;
     uint8_t telem_id;
-    uint8_t length;
+    Calendar_t timestamp;
     uint8_t data[];
 } mytelemetryPacket_t;
 
@@ -80,20 +88,8 @@ typedef struct {
     char data[64];
 } telemPacket_t;
 
-QueueHandle_t commsTxQueue;
-QueueHandle_t commsRxQueue;
-
-QueueHandle_t telemetryQueue;
-
-
 extern volatile uint8_t flashSystemReady;
-
 int telemReadFlag;
-
-
-uint8_t cameraPowerStatus;
-uint8_t ADCSPowerStatus;
-uint8_t OtherPowerStatus;
 
 typedef struct {
   uint16_t VOLTAGE_IN;
@@ -341,55 +337,67 @@ typedef enum {
 
 
 /**********************************************************/
-
-//typedef struct{
-//	uint8_t second;
-//	uint8_t minute;
-//	uint8_t hour;
-//	uint8_t day;
-//	uint8_t month;
-//	uint8_t year;
-//	uint8_t weekday;
-//	uint8_t week;
-//
-//}Calendar_t;
-
-
-//typedef struct{
-//
-//	Calendar_t timestamp;
-//	CommandId_t telem_id;		//Make sure there is less than 255 commands/telemetry ids for any subsystem. Or change to uint16_t.
-//	uint8_t length;
-//	uint8_t* data;
-//
-//} telemetryPacket_t;
-//
-
-/**********************************************************/
+/*
+This function unpacks raw telemetry data into a telemetryPacket_t struct.
+Parameters:
+	data - pointer to raw telemetry data
+	output - pointer to telemetryPacket_t struct to store unpacked data
+*/
 void unpackTelemetry(uint8_t * data, telemetryPacket_t* output);//Unpacks the telemetry into the telemetry packet struct.
+
+/*
+This function sets the CSP initialization state to be used in monitoring functions.
+Parameters:
+	state - 1 if CSP is initialized, 0 otherwise
+*/
+void set_csp_init(int state);
+
+
+/*
+This function returns whether the CSP is up.
+*/
+int is_csp_up();
+
+/*
+This function manages telemetry operations including requesting, committing, and downlinking telemetry.
+*/
+void telemetryManager();
+
+/*
+These functions log telemetry data for specific subsystems.
+Parameters:
+	data - pointer to telemetry data
+	len - length of the telemetry data
+*/
+void logCDHTelem(char *data, int len);
+void logPowerTelem(char*, int);
+void logADCSTelem(char*, int);
+void logPayloadTelem(char*, int);
+
+/*
+This function stores a string in the generic telemetry log.
+Parameters:
+	data - pointer to null-terminated string to log
+*/
+void logMessage(char*);
+
+
+/*
+This function synchronizes files. Should be called periodically to ensure data integrity.
+*/
+void syncFiles();
+
+int preRtosPrintRaw;
+
+
+int printf(const char *fmt, ...);
+void logTelem(char*, int);
+void printToTerminal(char*);
+void printMsg(char * msg);
 void sendTelemetry(telemetryPacket_t * packet);//Sends telemetry to CDH.
 void sendTelemetry_direct(telemetryPacket_t * packet,csp_conn_t * conn); //For directly responding to a message.
 void sendCommand(telemetryPacket_t * packet,uint8_t addr);//Sends a cmd packet to the cmd port of the subsytem at address addr.
 void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr); //Sends telemetry directly to a subsystem.
-void printMsg(char * msg);
-int printf(const char *fmt, ...);
-void set_csp_init(int state);
-int is_csp_up();
-void telemetryManager();
-void logPowerTelem(char*, int);
-void logADCSTelem(char*, int);
-void logTelem(char*, int);
-void logMessage(char*);
-
-void printToTerminal(char*);
-
-void syncFiles();
-
-int powerPingStatus;
-int powerPingCount;
-
-int ADCSPingStatus;
-int ADCSPingCount;
 
 
 /**********************************************************/

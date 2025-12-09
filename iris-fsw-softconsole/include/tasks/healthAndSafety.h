@@ -10,8 +10,26 @@
 
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include <FreeRTOS-Kernel/include/queue.h>
+#include <FreeRTOS-Kernel/include/task.h>
 
 #include "csp_server.h"
+
+QueueHandle_t errorQueue;
+
+#define MAX_MONITORED_TASKS 10
+#define CSP_SERVER_TASK_INDEX 0
+#define CSP_TX_TASK_INDEX 1
+#define UART_HANDLER_TASK_INDEX 2
+#define UART_TX_TASK_INDEX 3
+#define UART_RX_TASK_INDEX 4
+#define ADCS_DRIVER_TASK_INDEX 5
+#define POWER_DRIVER_TASK_INDEX 6
+#define TELEMETRY_TASK_INDEX 7
+#define MISSION_TASK_INDEX 8
+#define HEALTH_AND_SAFETY_TASK_INDEX 9
+
+//array of task handles
+TaskHandle_t monitoredTasks[MAX_MONITORED_TASKS];
 
 
 typedef enum errorType
@@ -59,12 +77,19 @@ typedef struct caughtError
 } caughtError_t;
 
 
-
+/*This function logs an error to the health and safety system.
+Parameters:
+    type - The type of error (from errorType_t enum)
+    sev - The severity level of the error (from severityLevel_t enum)
+    data - Pointer to additional data about the error
+    dataLen - Length of the additional data
+*/
 void logError(errorType_t type, severityLevel_t sev, uint8_t* data, size_t dataLen);
 
 
-QueueHandle_t errorQueue;
-
+/*
+FreeRTOS Task for Health and Safety monitoring. Handles error processing and system health checks.
+*/
 void vHealthAndSafety();
 
 

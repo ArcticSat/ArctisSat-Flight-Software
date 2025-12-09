@@ -76,6 +76,8 @@ void sendData(char* buffer, int len, int dest) {
 //------------------------------------------------------------------------------
 
 int lossLockout = 0;
+uint8_t powerPingStatus = PING_LOST;
+uint8_t powerPingCount = 0;
 
 void vCSP_Server(void *pvParameters) {
     vTaskDelay(1000);

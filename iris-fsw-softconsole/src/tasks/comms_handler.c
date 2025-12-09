@@ -17,6 +17,7 @@
 #include "tasks/csp_server.h"
 #include "tasks/telemetry.h"
 #include "tests.h"
+#include "application/CCSDS.h"
 
 #define READ_POINTER_START_ADDR 0x0000
 #define WRITE_POINTER_START_ADDR 0x0004
@@ -96,89 +97,6 @@ void commsReceiverTask() {
       idx++;
     }
 
-    if (idx > 0) {
-      if (buf_Rx0[0] == 0xAA && buf_Rx0[1] == 0xBB && buf_Rx0[2] == 0xCC &&
-          xTaskToNotify) {
-        xTaskNotify(xTaskToNotify, 0, eNoAction);
-      } else {
-        /* Ensure null termination */
-        if (i >= (int)sizeof(buf_Rx0))
-          buf_Rx0[sizeof(buf_Rx0) - 1] = '\0';
-        else
-          buf_Rx0[i] = '\0';
-
-        if (strncmp((char*)buf_Rx0, "SHD", 3) == 0) {
-          int mm, dd, hh, minu, ssn;
-          if (sscanf((char*)buf_Rx0, "SHD %d %d %d %d %d", &mm, &dd, &hh, &minu,
-                     &ssn) == 5) {
-            timeTaggedTask_t task;
-            task.taskFunction = NULL;
-            /* Preserve current year if available */
-            task.executionTime.year = 25;
-            task.executionTime.month = (uint8_t)mm;
-            task.executionTime.day = (uint8_t)dd;
-            task.executionTime.hour = (uint8_t)hh;
-            task.executionTime.minute = (uint8_t)minu;
-            task.executionTime.second = (uint8_t)ssn;
-            task.period = 0;
-            task.isRecurring = false;
-
-            snprintf(buf, sizeof(buf), "Scheduling: %02d/%02d %02d:%02d:%02d\n",
-                     mm, dd, hh, minu, ssn);
-            printToTerminal(buf);
-
-            scheduleTimeTaggedTask(&task);
-            printToTerminal("OK");
-          } else {
-            printToTerminal("SHD parse error\n");
-          }
-        } else {
-          // i am going to have another test command for setting the time
-          // it will be TIME HH MM SS please do that
-          if (strncmp((char*)buf_Rx0, "TIME", 4) == 0) {
-            int hh, mm, ss;
-            if (sscanf((char*)buf_Rx0, "TIME %d %d %d", &hh, &mm, &ss) == 3) {
-              Calendar_t currTime;
-              currTime.hour = (uint8_t)hh;
-              currTime.minute = (uint8_t)mm;
-              currTime.second = (uint8_t)ss;
-              set_rtc(&currTime);
-
-              snprintf(buf, sizeof(buf), "RTC Time Set to: %02d:%02d:%02d\n",
-                       hh, mm, ss);
-              printToTerminal(buf);
-              ds1393_read_time(&currTime);
-              snprintf(buf, sizeof(buf), "RTC Time Now: %02d:%02d:%02d\n",
-                       currTime.hour, currTime.minute, currTime.second);
-              printToTerminal(buf);
-            } else {
-              printToTerminal("TIME parse error\n");
-            }
-            // next add the DATE command that takes DATE YY MM DD
-          } else if (strncmp((char*)buf_Rx0, "DATE", 4) == 0) {
-            int yy, mm, dd;
-            if (sscanf((char*)buf_Rx0, "DATE %d %d %d", &yy, &mm, &dd) == 3) {
-              Calendar_t currDate;
-              ds1393_read_time(&currDate);
-              currDate.year = (uint8_t)yy;
-              currDate.month = (uint8_t)mm;
-              currDate.day = (uint8_t)dd;
-              set_rtc(&currDate);
-            } else {
-              printToTerminal("DATE parse error\n");
-            }
-          } else if (strncmp((char*)buf_Rx0, "DUMPTEL", 7) == 0) {
-            telemReadFlag = 1;
-            printToTerminal("Telemetry dump flag set.\n");
-          }
-        }
-        // radioPacket_t packet;
-        // packet.len = i;
-        // memcpy(packet.data, buf_Rx0, i);
-        // packet.type = buf_Rx0[0];
-        // xQueueSendToBack(commsRxQueue, &packet, portMAX_DELAY);
-      }
-    }
     vTaskDelay(5);
   }
 }

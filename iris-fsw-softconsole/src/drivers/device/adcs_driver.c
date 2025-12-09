@@ -66,9 +66,18 @@ void vADCSDriver(void * pvParameters) {
     vTaskDelay(700);
 
 	printToTerminal("ADCS Driver Task started.\n");
+	uint8_t gyroMeasurements[6];
+	uint8_t magMeasurements[6];
+	char* buf[64];
+	uint8_t i;
 	for(;;) {
 	    AdcsDriverError_t status = pingAdcs();
-		vTaskDelay(500);
+		i++;
+		setTorqueRodPolarity(MAGNETORQUER_Y, TR_POLARITY_POS);
+		setTorqueRodPwm(MAGNETORQUER_Y, i);
+		setTorqueRodState(MAGNETORQUER_Y, TR_STATE_ON);
+		vTaskDelay(10);
+
 		// logError(ERR_ADCS_LOST, NULL, 0);
 	}
 }

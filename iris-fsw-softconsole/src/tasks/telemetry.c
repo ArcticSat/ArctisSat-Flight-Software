@@ -222,6 +222,7 @@ void logTelemCustom(char *data, int len, int reporting_device)
         return;
 
     ds1393_read_time(&pkt->timestamp);
+    pkt->header = 0xABABABAB;
     pkt->reporting_device = reporting_device;
     pkt->telem_id = 2;
     pkt->length = len;
