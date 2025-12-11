@@ -221,13 +221,18 @@ void generate_ccsds_packet(void) {
     volatile int j = 0;
 }
 
+// Creates a CCSDS packet containing a string payload.
+// Returns packet length in bytes (header + payload).
+// `out_buf` must have enough space for header + string.
+
+
 
 int main(void) {
   preRtosPrintRaw = 1;
   prvSetupHardware();
 
   uint8_t buf[256];
-  generate_ccsds_packet();
+  int packet_size = build_ccsds_string_packet(buf, "Hello, CCSDS!");
   volatile int jingle = 0;
   BaseType_t status;
 
