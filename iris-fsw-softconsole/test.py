@@ -27,32 +27,39 @@ doneReading = 0
 
 file = None
 
-def keyboard_sender():
-    """Thread 3: Read from keyboard and send over serial"""
-    print("Starting keyboard sender thread...")
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+
+
+def udp_to_serial():
+    global ser
+    """Thread 3: Read from localhost:10025 UDP and write to serial port"""
+    print("Starting UDP->Serial thread...")
     try:
-        ser_write = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(("127.0.0.1", 10025))
+        sock.settimeout(1.0)
         while not stop_event.is_set():
             try:
-                line = input()
-            except (EOFError, KeyboardInterrupt):
-                stop_event.set()
-                break
-            if line.strip().lower() in ('exit', 'quit'):
-                stop_event.set()
-                break
-            try:
-                ser_write.write(line.encode('utf-8') + b'\n')
-                ser_write.flush()
+                data, _ = sock.recvfrom(4096)
+                if data:
+                    print(data)
+                    ser.write(data)
+                    ser.flush()
+            except socket.timeout:
+                continue
             except Exception as e:
-                print(f"Serial write error: {e}")
+                print(f"UDP->Serial error: {e}")
                 break
     except Exception as e:
-        print(f"Keyboard sender error: {e}")
+        print(f"UDP->Serial setup error: {e}")
     finally:
         try:
-            ser_write.close()
-        except:
+            ser.close()
+        except Exception:
+            pass
+        try:
+            sock.close()
+        except Exception:
             pass
 
 
@@ -62,9 +69,10 @@ def read_serial():
     global file
     global fileLock
     global doneReading
+    global ser
+
     print("Starting serial read thread...")
     try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
         with open(OUTPUT_FILE, 'wb') as file:
             while not stop_event.is_set():
                 sleep(0.05)
@@ -139,9 +147,11 @@ if __name__ == '__main__':
     try:
         t1 = threading.Thread(target=read_serial, daemon=True)
         t2 = threading.Thread(target=split_by_apid, daemon=True)
-        
+        t3 = threading.Thread(target=udp_to_serial, daemon=True)
+
         t1.start()
         t2.start()
+        t3.start()
         
         while True:
             pass  # Keep the main thread alive
@@ -150,4 +160,5 @@ if __name__ == '__main__':
         stop_event.set()  # Signal threads to stop
         t1.join()
         t2.join()
+        t3.join()
         sys.exit(0)
