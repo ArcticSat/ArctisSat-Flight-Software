@@ -343,7 +343,7 @@ int main(void) {
   j = xPortGetFreeHeapSize();
 
   // TODO fix this task
-  status = xTaskCreate(telemetryManager, "Telemetry ", 300, NULL, 1,
+  status = xTaskCreate(telemetryManager, "Telemetry ", 600, NULL, 1,
                        &monitoredTasks[TELEMETRY_TASK_INDEX]);
   printToTerminal("Telemetry Manager task created. Status: ");
   delay_cycles(100000);

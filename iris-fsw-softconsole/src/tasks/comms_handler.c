@@ -41,17 +41,7 @@ volatile int CTS = 1;
 static TaskHandle_t xTaskToNotify = NULL;
 
 void sendImagePacket(char* data, int len, int index) {
-  int currLen = len;
-  radioPacket_t packet;
-  packet.header = 0xAA;
-  packet.footer = 0xBB;
-  packet.index = index;
-  packet.len = len;
-  memcpy(packet.data, data, len);
-  packet.type = 0x99;
-  uint32_t tempCRC = crc32b((char*)&packet, 64 + 6);
-  packet.crc = tempCRC;
-  xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
+
 }
 
 
@@ -61,11 +51,11 @@ void sendImagePacket(char* data, int len, int index) {
 #define CCSDS_VERSION        0
 #define CCSDS_TYPE_TM        0
 #define CCSDS_SECONDARY_HDR  0   // set to 1 if you want it
-#define CCSDS_APID_STRING    10
+#define CCSDS_APID_STRING    69
 int build_ccsds_string_packet(uint8_t *out_buf, const char *str)
 {
     uint16_t packet_len = strlen(str);  // payload size
-    uint16_t ccsds_len  = packet_len - 1; // Length field = (data_bytes - 1)
+    uint16_t ccsds_len  = packet_len + 1; // Length field = (data_bytes - 1)
 
     // --- PRIMARY HEADER ---
 
@@ -89,22 +79,25 @@ int build_ccsds_string_packet(uint8_t *out_buf, const char *str)
     out_buf[4] = (ccsds_len >> 8) & 0xFF;
     out_buf[5] = (ccsds_len >> 0) & 0xFF;
 
+    //16-bit packet type field set to 0x01 for string packets
+    out_buf[6] = 0x69;
+    out_buf[7] = 0x69;
+
     // --- PAYLOAD (the string) ---
-    memcpy(&out_buf[6], str, packet_len);
+    memcpy(&out_buf[8], str, packet_len);
 
     // return total packet size: 6 bytes header + payload
-    return 6 + packet_len;
+    return 8 + packet_len;
 }
 
-int build_ccsds_data_packet(uint8_t *out_buf, const char *str)
+int build_ccsds_data_packet(uint8_t *out_buf, uint16_t type, uint8_t *data, uint8_t data_len)
 {
-    uint16_t packet_len = strlen(str);  // payload size
-    uint16_t ccsds_len  = packet_len - 1; // Length field = (data_bytes - 1)
+    uint16_t packet_len = data_len;  // payload size
+    uint16_t ccsds_len  = packet_len + 1; // Length field = (data_bytes - 1)
 
     // --- PRIMARY HEADER ---
-
+    uint16_t packet_id;
     // Byte 0-1: Packet ID
-    uint16_t packet_id = 0;
     packet_id |= (CCSDS_VERSION & 0x7) << 13;           // version (3 bits)
     packet_id |= (CCSDS_TYPE_TM & 0x1) << 12;           // type    (1 bit)
     packet_id |= (CCSDS_SECONDARY_HDR & 0x1) << 11;     // sec hdr (1 bit)
@@ -123,11 +116,14 @@ int build_ccsds_data_packet(uint8_t *out_buf, const char *str)
     out_buf[4] = (ccsds_len >> 8) & 0xFF;
     out_buf[5] = (ccsds_len >> 0) & 0xFF;
 
-    // --- PAYLOAD (the string) ---
-    memcpy(&out_buf[6], str, packet_len);
+    //Packet ID
+    out_buf[6] = (type >> 8) & 0xFF;
+    out_buf[7] = (type >> 0) & 0xFF;
 
+    // --- PAYLOAD (the string) ---
+    memcpy(&out_buf[8], data, packet_len);
     // return total packet size: 6 bytes header + payload
-    return 6 + packet_len;
+    return 8 + packet_len;
 }
 
 static uint8_t buf[256];
@@ -143,81 +139,152 @@ void commsTransmitterTask() {
     // xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
     if (xQueueReceive(commsTxQueue, &packet, portMAX_DELAY) == pdTRUE) {
       vTaskSuspendAll();
-      int sendLen = build_ccsds_string_packet(buf, (char*)packet->data);
-      custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf,
-                                       sendLen);
-      sendLen = build_ccsds_data_packet(buf, (char*)packet->data);
-      custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf,
-                                       sendLen);
+      int sendLen = build_ccsds_data_packet(buf, packet->type, (uint8_t*)packet->data, packet->len);
+      custom_MSS_UART_polled_tx_string(&g_mss_uart0, buf, sendLen);
       vPortFree(packet);
       xTaskResumeAll();
     }
   }
 }
 
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+
+#define CCSDS_PRIMARY_HDR_LEN 6
+
+typedef struct {
+    uint16_t apid;
+    uint8_t  sec_hdr_flag;
+    uint8_t  pkt_type;
+    uint16_t seq_count;
+    uint16_t data_len;   // number of bytes in data field - 1
+    const uint8_t *packet_start;
+    size_t total_len;    // header + data
+} ccsds_packet_t;
+
+/**
+ * Try to extract one CCSDS packet from buffer
+ * Returns 1 if a full packet was found, 0 otherwise
+ */
+int ccsds_extract_packet(const uint8_t *buf, size_t buf_len, ccsds_packet_t *out)
+{
+    if (buf_len < CCSDS_PRIMARY_HDR_LEN)
+        return 0;
+
+    // Primary header
+    uint16_t word0 = (buf[0] << 8) | buf[1];
+    uint16_t word1 = (buf[2] << 8) | buf[3];
+    uint16_t word2 = (buf[4] << 8) | buf[5];
+
+    // Version must be 0 (bits 13..15)
+    if ((word0 >> 13) != 0)
+        return 0;
+
+    out->pkt_type     = (word0 >> 12) & 0x1;
+    out->sec_hdr_flag = (word0 >> 11) & 0x1;
+    out->apid         = word0 & 0x07FF;
+
+    out->seq_count    = word1 & 0x3FFF;
+    out->data_len     = word2;
+
+    out->total_len = CCSDS_PRIMARY_HDR_LEN + out->data_len + 1;
+
+    if (buf_len < out->total_len)
+        return 0;
+
+    out->packet_start = buf;
+    return 1;
+}
+
+uint8_t buf_Rx0[1024];
+ccsds_packet_t extracted_packet;
+
 void commsReceiverTask() {
-  int i;
+  uint32_t ulNumRecvBytes;
+	uint8_t ucUARTByte;
+	BaseType_t xResult;
+	volatile uint8_t *my_buffer = uart0buffer;
+	volatile size_t *uxUnreadBytes = &uxUART0UnreadBytes;
+
+	size_t uxBytesRead;
   vTaskDelay(500);
-  char buf[32];
   printToTerminal("COMMS Receiver task started.\n");
   for (;;) {
-    uint8_t buf_Rx0[32];
     //        i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, 32);
-
-    uint8_t idx = 0;
-    // read until you get a newline character
-    while (MSS_UART_get_rx(&g_mss_uart0, &buf_Rx0[idx], 1)) {
-      if (buf_Rx0[idx] == '\n' || idx >= 31) {
-        buf_Rx0[idx] = '\0';
-        break;
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    if (*uxUnreadBytes > 0) {
+      taskENTER_CRITICAL();
+      {
+        memcpy(buf_Rx0, my_buffer, *uxUnreadBytes);
+        uxBytesRead = *uxUnreadBytes;
+        *uxUnreadBytes -= *uxUnreadBytes;
       }
-      idx++;
-    }
+      taskEXIT_CRITICAL();
 
-    vTaskDelay(5);
+      size_t processed = 0;
+      while (processed < uxBytesRead) {
+        if (ccsds_extract_packet(&buf_Rx0[processed],
+                                 uxBytesRead - processed,
+                                 &extracted_packet)) {
+          // Full packet extracted
+          static radioPacket_t rxPacket;
+          rxPacket.type = extracted_packet.apid;  // using APID as type
+          rxPacket.len = extracted_packet.data_len + 1;
+          rxPacket.index = extracted_packet.seq_count;
+          memcpy(rxPacket.data,
+                 extracted_packet.packet_start + CCSDS_PRIMARY_HDR_LEN,
+                 rxPacket.len);
+
+          xQueueSendToBack(commsRxQueue, &rxPacket, portMAX_DELAY);
+
+          processed += extracted_packet.total_len;
+        } else {
+          // No more full packets
+          break;
+        }
+      }
+    }
   }
 }
 
 void sendDataPacket(char* data, int len, uint8_t type) {
-  int remLen = len;
-  int copyLen = (remLen > 64) ? 64 : remLen;
-  int index = 0;
-
-  do {
-    radioPacket_t packet;
-    packet.header = 0xAA;
-    packet.footer = 0xBB;
-
-    packet.len = len;
-    packet.index = index;
-
-    index++;
-    memcpy(packet.data, data, copyLen);
-    remLen -= copyLen;
-    packet.type = type;
-    uint32_t tempCRC = 69;  // crc32b((char*) &packet, 6 + 64);
-    packet.crc = tempCRC;
-
-    if (remLen > 64) {
-      packet.continued = 1;
-      copyLen = 64;
-    } else {
-      packet.continued = 0;
-      copyLen = remLen;
-    }
-
-    xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
-  } while (remLen > 0);
+//  int remLen = len;
+//  int copyLen = (remLen > 64) ? 64 : remLen;
+//  int index = 0;
+//
+//  do {
+//    radioPacket_t packet;
+//    packet.header = 0xAA;
+//    packet.footer = 0xBB;
+//
+//    packet.len = len;
+//    packet.index = index;
+//
+//    index++;
+//    memcpy(packet.data, data, copyLen);
+//    remLen -= copyLen;
+//    packet.type = type;
+//    uint32_t tempCRC = 69;  // crc32b((char*) &packet, 6 + 64);
+//    packet.crc = tempCRC;
+//
+//    if (remLen > 64) {
+//      packet.continued = 1;
+//      copyLen = 64;
+//    } else {
+//      packet.continued = 0;
+//      copyLen = remLen;
+//    }
+//
+//    xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
+//  } while (remLen > 0);
 }
 
-void sendRawData(char* data, int len) {
+void sendRawData(uint8_t* data, uint16_t type, int len) {
   // Allocate enough memory for header + data
   radioPacket_t* pkt = pvPortMalloc(sizeof(radioPacket_t) + len);
   if (!pkt) return;
-
-  pkt->header = 0xAA;
-  pkt->footer = 0xBB;
-  pkt->type = 0x01;  // Terminal message type
+  pkt->type = type;  // Terminal message type
   pkt->len = len;
   pkt->index = 0;
 
@@ -239,9 +306,7 @@ void printToTerminal(char* msg) {
   if (!pkt) return;
 
   memcpy(pkt->headerStr, pcTaskGetName(NULL), strlen(pcTaskGetName(NULL)));
-  pkt->header = 0xAA;
-  pkt->footer = 0xBB;
-  pkt->type = 0x01;  // Terminal message type
+  pkt->type = 0x02;  // Terminal message type
   pkt->len = strlen(msg) + 1;
   pkt->index = 0;
 

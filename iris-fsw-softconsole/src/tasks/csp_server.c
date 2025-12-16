@@ -79,6 +79,18 @@ int lossLockout = 0;
 uint8_t powerPingStatus = PING_LOST;
 uint8_t powerPingCount = 0;
 
+void unpack_2_floats(const uint8_t *buf, float *f1, float *f2)
+{
+    uint32_t u;
+
+    u = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    memcpy(f1, &u, sizeof(float));
+
+    u = (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
+    memcpy(f2, &u, sizeof(float));
+}
+
+
 void vCSP_Server(void *pvParameters) {
     vTaskDelay(1000);
     csp_conn_t *conn = NULL;
@@ -99,6 +111,8 @@ void vCSP_Server(void *pvParameters) {
     
     int misses = 0;
     int lockout = 0;
+    float msbVoltage;
+    float msbCurrent;
     //TODO: Check return of csp_bind and listen, then handle errors.
     //TODO make this so much better!
     printToTerminal("CSP Server starting\n");
@@ -125,6 +139,13 @@ void vCSP_Server(void *pvParameters) {
 			}
 
 			switch(dest_port){
+			    case 5: {
+                    sendRawData((char*)packet->data, 0x01, packet->length);
+                    // unpack_2_floats(packet->data, &msbVoltage, &msbCurrent);
+
+                break;
+                }
+
 				default:{
 						csp_service_handler(conn,packet);
 						break;

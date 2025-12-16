@@ -72,13 +72,10 @@ typedef struct {
 } mytelemetryPacket_t;
 
 typedef struct {
-    uint8_t header;
-    uint8_t type;
+	uint16_t type;
     uint8_t len;
     uint8_t continued;
     uint16_t index;
-    uint32_t crc;
-    uint8_t footer;
     uint8_t headerStr[10];
     uint8_t data[64];
 } radioPacket_t;

@@ -28,6 +28,11 @@ QueueHandle_t errorQueue;
 #define MISSION_TASK_INDEX 8
 #define HEALTH_AND_SAFETY_TASK_INDEX 9
 
+uint8_t powerStatus;
+uint8_t adcsStatus;
+uint8_t commsStatus;
+
+
 //array of task handles
 TaskHandle_t monitoredTasks[MAX_MONITORED_TASKS];
 
@@ -45,6 +50,7 @@ typedef enum errorType
     ERR_POWER_END,
     //ADCS errors
     ERR_ADCS_LOST,
+    WARN_ADCS_COMMS_RESTORED,
     ERR_ADCS_NO_RESPONSE,
     ERR_SUN_SENSOR_FAIL,
     ERR_GYRO_FAIL,

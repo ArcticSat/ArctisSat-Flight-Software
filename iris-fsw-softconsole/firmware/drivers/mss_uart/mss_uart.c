@@ -465,7 +465,7 @@ MSS_UART_tx_complete
  * See mss_uart.h for details of how to use this function.
  */
 size_t
-MSS_UART_get_rx
+ MSS_UART_get_rx
 (
     mss_uart_instance_t * this_uart,
     uint8_t * rx_buff,

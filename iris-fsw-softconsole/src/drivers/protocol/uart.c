@@ -44,9 +44,7 @@
 static const IRQn_Type xUART0_IRQ = UART0_IRQn;
 static const IRQn_Type xUART1_IRQ = UART1_IRQn;
 
-static uint8_t uart0buffer[UART_BUFFER_SIZE];
 static uint8_t copied_buffer[UART_BUFFER_SIZE];
-static size_t uxUART0UnreadBytes;
 
 TaskHandle_t xUART0RxTaskToNotify;
 SemaphoreHandle_t xUARTMutex;
@@ -79,7 +77,7 @@ void vInitializeUARTs(uint32_t ulBaud0)
 
 
 	/* Set the UART Rx notification function to trigger after a single byte is received. */
-//	MSS_UART_set_rx_handler(&g_mss_uart0, prvUARTRxNotificationHandler, MSS_UART_FIFO_SINGLE_BYTE );
+	MSS_UART_set_rx_handler(&g_mss_uart0, prvUARTRxNotificationHandler, MSS_UART_FIFO_SINGLE_BYTE );
 }
 
 void vTaskUARTBridge(void *pvParameters)
@@ -118,11 +116,11 @@ void vTaskUARTBridge(void *pvParameters)
 //		prvUARTSend(&g_mss_uart0, (const uint8_t *) copied_buffer, uxBytesRead);
 
 		/* Do any special processing based on the origin on the data */
-		if(my_uart == &g_mss_uart0)
-		{
-//			prvProcessUART0(copied_buffer, uxBytesRead);
-		    csp_kiss_rx(&uartInterface, copied_buffer, uxBytesRead, NULL);
-		}
+// 		if(my_uart == &g_mss_uart0)
+// 		{
+// //			prvProcessUART0(copied_buffer, uxBytesRead);
+// 		    csp_kiss_rx(&uartInterface, copied_buffer, uxBytesRead, NULL);
+// 		}
 	}
 }
 
@@ -132,10 +130,10 @@ static void prvUARTRxNotificationHandler( mss_uart_instance_t *pxUART )
 {
 	portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 	TaskHandle_t xTaskToNotify = xUART0RxTaskToNotify;
-	uint8_t *target_buffer = uart0buffer ;
+	volatile uint8_t *target_buffer = uart0buffer ;
 
 	size_t uxNumBytesRecvd;
-	size_t *uxUnreadBytes = &uxUART0UnreadBytes ;
+	volatile size_t *uxUnreadBytes = &uxUART0UnreadBytes ;
 
 	/* Read the UART's FIFO */
 	uxNumBytesRecvd = MSS_UART_get_rx(pxUART, target_buffer + *uxUnreadBytes, sizeof(target_buffer));
@@ -148,7 +146,7 @@ static void prvUARTRxNotificationHandler( mss_uart_instance_t *pxUART )
 		vTaskNotifyGiveFromISR(xTaskToNotify, &xHigherPriorityTaskWoken);
 
 		/* portEND_SWITCHING_ISR() or portYIELD_FROM_ISR() can be used here. */
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+//		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 	}
 }
 

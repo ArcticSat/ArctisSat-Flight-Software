@@ -27,7 +27,7 @@ doneReading = 0
 
 file = None
 
-ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.001)
 
 
 def udp_to_serial():
@@ -75,10 +75,10 @@ def read_serial():
     try:
         with open(OUTPUT_FILE, 'wb') as file:
             while not stop_event.is_set():
-                sleep(0.05)
+                sleep(0.01)
                 data = ser.read(1024)
                 if data:
-                    fileLock.acquire(timeout=0)
+                    fileLock.acquire(timeout=10000)
                     file.write(data)
                     file.flush()
                     fileLock.release()
@@ -108,7 +108,7 @@ def split_by_apid():
                 array_shape="expand",   # makes the data field expand
                 ),
             ])
-            fileLock.acquire(timeout=0)
+            fileLock.acquire(timeout=10000)
             # result = pkt.load('mypackets.bin', include_primary_header = True)
             # print(ccsdspy.utils.count_packets('mypackets.bin', return_missing_bytes=False))
             packets = ccsdspy.utils.split_packet_bytes('mypackets.bin', include_primary_header=False)
@@ -118,9 +118,6 @@ def split_by_apid():
             tm_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
             for packet in packetsWithHeader:
-                #write to UDP port 10015
-                # packet = bytes("BIG CHUNGUS", "utf-8")
-                # ensure packet is bytes and append 0x00
                 packet = bytes(packet) + b'\x00'
                 tm_socket.sendto(packet, ("127.0.0.1", 10015))
 

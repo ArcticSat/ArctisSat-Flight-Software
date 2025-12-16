@@ -66,17 +66,42 @@ void vADCSDriver(void * pvParameters) {
     vTaskDelay(700);
 
 	printToTerminal("ADCS Driver Task started.\n");
-	uint8_t gyroMeasurements[6];
+	uint8_t gyroMeasurements[12];
+	uint16_t combinedGyro[3];
 	uint8_t magMeasurements[6];
 	char* buf[64];
 	uint8_t i;
+	uint8_t adcsLossCount = 0;
 	for(;;) {
 	    AdcsDriverError_t status = pingAdcs();
-		i++;
-		setTorqueRodPolarity(MAGNETORQUER_Y, TR_POLARITY_POS);
-		setTorqueRodPwm(MAGNETORQUER_Y, i);
-		setTorqueRodState(MAGNETORQUER_Y, TR_STATE_ON);
-		vTaskDelay(10);
+		getGyroMeasurementsRaw(GYRO_1, gyroMeasurements);
+		
+		if(status != ADCS_DRIVER_NO_ERROR)
+		{
+			adcsLossCount++;
+			if(adcsLossCount >= 5 && adcsStatus == 1)
+			{
+				logError(ERR_ADCS_LOST, SEV_CRITICAL, NULL, 0);
+				adcsStatus = 0;
+			}
+		}
+		else
+		{
+			adcsLossCount = 0;
+			if(adcsStatus == 0)
+			{
+				logError(WARN_ADCS_COMMS_RESTORED, SEV_WARNING, NULL, 0);
+				adcsStatus = 1;
+			}
+		}
+		
+		for(i=0;i<3;i++)
+		{
+			combinedGyro[i] = (gyroMeasurements[2*i] << 8) | gyroMeasurements[2*i+1];
+		}
+
+		sendRawData((uint8_t*)combinedGyro, 0x10, 6);
+		vTaskDelay(100);
 
 		// logError(ERR_ADCS_LOST, NULL, 0);
 	}
