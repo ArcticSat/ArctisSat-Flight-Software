@@ -256,28 +256,50 @@ int ccsds_extract_packet(const uint8_t *buf, size_t buf_len, ccsds_packet_t *out
     return 1;
 }
 
-void process_incoming_packet(uint8_t *packet) {
-    // 1. Check if it's our CFDP Type (0xCFDF) at bytes 6-7
-    if (packet[6] == 0xCF && packet[7] == 0xDF) {
-
-        // 2. Check if bit 4 of the CFDP Header is 1 (File Directive)
-        if ((packet[8] & 0x10) == 0x10) {
-
-            // 3. Check Directive Code at byte 12
-            uint8_t directive = packet[12];
-
-            if (directive == 0x04) {
-                // It's an EOF! Send ACK(0x04)
-                uint8_t out_buf[15];
-                generate_manual_cfdp_ack(out_buf, my_seq++, 0x04);
-                // transmit(out_buf);
-            }
-        }
-    }
-}
-
 uint8_t buf_Rx0[1024];
 ccsds_packet_t extracted_packet;
+
+int create_cfdp_nack_payload(uint8_t *out_data, uint32_t start, uint32_t end) {
+    out_data[0] = 0x20; 
+    out_data[1] = 0x09; // 1 (code) + 4 (start) + 4 (end)
+    out_data[2] = 0x00; 
+    out_data[3] = 0x01;
+    out_data[4] = 0x08; // Directive: NACK
+    
+    // Manual Big Endian conversion
+    out_data[5] = (start >> 24) & 0xFF; out_data[6] = (start >> 16) & 0xFF;
+    out_data[7] = (start >> 8) & 0xFF;  out_data[8] = start & 0xFF;
+    out_data[9] = (end >> 24) & 0xFF;   out_data[10] = (end >> 16) & 0xFF;
+    out_data[11] = (end >> 8) & 0xFF;  out_data[12] = end & 0xFF;
+    return 13;
+}
+
+int create_cfdp_ack_payload(uint8_t *out_data, uint8_t acked_dir) {
+    out_data[0] = 0x20; // Version 1, File Directive
+    out_data[1] = 0x03; // ACK body length (3 bytes)
+    out_data[2] = 0x00; // Entity ID len
+    out_data[3] = 0x01; // Transaction Seq len
+    out_data[4] = 0x06; // Directive: ACK
+    out_data[5] = (acked_dir << 4) | 0x01; // EOF + Active Status
+    out_data[6] = 0x00; // No Error
+    return 7;
+}
+
+uint8_t check_if_cfdp_ack_needed(uint8_t *packet) {
+    // 1. Check your Type ID at bytes 6-7. 
+    // Data uses 0x3400, EOF uses 0x2400 (as seen in your last packet)
+    if (packet[6] != 0x34 && packet[6] != 0x24) return 0;
+
+    // 2. CFDP PDU starts at byte 8. 
+    // Bit 4 of PDU Byte 0: 1 = Directive, 0 = Data.
+    if ((packet[8] & 0x10) == 0x10) {
+        // 3. Directive Code is at Packet Byte 12
+        uint8_t dir = packet[12];
+        // 0x04 (EOF) and 0x05 (Finished) require ACKs
+        if (dir == 0x04 || dir == 0x05) return dir;
+    }
+    return 0;
+}
 
 void commsReceiverTask() {
   uint32_t ulNumRecvBytes;
@@ -306,6 +328,23 @@ void commsReceiverTask() {
         if (ccsds_extract_packet(&buf_Rx0[processed],
                                  uxBytesRead - processed,
                                  &extracted_packet)) {
+
+          uint8_t ack_type = check_if_cfdp_ack_needed(&buf_Rx0[processed]);
+
+          if (ack_type != 0) {
+            // 2. Prepare the ACK packet
+            // Assuming you have a way to allocate or use a static radioPacket_t
+            radioPacket_t* ack_pkt = pvPortMalloc(sizeof(radioPacket_t));
+            if (ack_pkt != NULL) {
+              ack_pkt->type = 0x2400;  // Your CFDP Type ID for Directives
+
+              // 3. Generate only the 7-byte CFDP PDU
+              ack_pkt->len = create_cfdp_ack_payload(ack_pkt->data, ack_type);
+
+              // 4. Send to the TX queue so the satellite replies
+              xQueueSendToBack(commsTxQueue, &ack_pkt, 0);
+            }
+          }
           // Full packet extracted
           static radioPacket_t rxPacket;
           rxPacket.type = extracted_packet.apid;  // using APID as type
@@ -315,7 +354,6 @@ void commsReceiverTask() {
 
           xQueueSendToBack(commsRxQueue, &rxPacket, portMAX_DELAY);
 
-          process_incoming_packet(&buf_Rx0[processed]);
           processed += extracted_packet.total_len;
         } else {
           // No more full packets
@@ -327,35 +365,7 @@ void commsReceiverTask() {
 }
 
 void sendDataPacket(char* data, int len, uint8_t type) {
-//  int remLen = len;
-//  int copyLen = (remLen > 64) ? 64 : remLen;
-//  int index = 0;
-//
-//  do {
-//    radioPacket_t packet;
-//    packet.header = 0xAA;
-//    packet.footer = 0xBB;
-//
-//    packet.len = len;
-//    packet.index = index;
-//
-//    index++;
-//    memcpy(packet.data, data, copyLen);
-//    remLen -= copyLen;
-//    packet.type = type;
-//    uint32_t tempCRC = 69;  // crc32b((char*) &packet, 6 + 64);
-//    packet.crc = tempCRC;
-//
-//    if (remLen > 64) {
-//      packet.continued = 1;
-//      copyLen = 64;
-//    } else {
-//      packet.continued = 0;
-//      copyLen = remLen;
-//    }
-//
-//    xQueueSendToBack(commsTxQueue, &packet, portMAX_DELAY);
-//  } while (remLen > 0);
+
 }
 
 void sendRawData(uint8_t* data, uint16_t type, int len) {
