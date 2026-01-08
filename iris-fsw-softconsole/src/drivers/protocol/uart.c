@@ -50,6 +50,10 @@ TaskHandle_t xUART0RxTaskToNotify;
 SemaphoreHandle_t xUARTMutex;
 QueueHandle_t xReplyQueue;
 
+void setTaskToNotify(TaskHandle_t task) {
+    xUART0RxTaskToNotify = task;
+}
+
 void vInitializeUARTs(uint32_t ulBaud0)
 {
 	/* Initialize UART 0 */
@@ -143,7 +147,10 @@ static void prvUARTRxNotificationHandler( mss_uart_instance_t *pxUART )
 		*uxUnreadBytes += uxNumBytesRecvd;
 
 		/* Notify the receiving task */
-		vTaskNotifyGiveFromISR(xTaskToNotify, &xHigherPriorityTaskWoken);
+		if( xTaskToNotify != NULL ) {
+		    vTaskNotifyGiveFromISR(xTaskToNotify, &xHigherPriorityTaskWoken);
+//		    portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		}
 
 		/* portEND_SWITCHING_ISR() or portYIELD_FROM_ISR() can be used here. */
 //		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );

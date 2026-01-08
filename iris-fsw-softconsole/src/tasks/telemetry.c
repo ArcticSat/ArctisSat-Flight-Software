@@ -206,7 +206,7 @@ void downlinkTelem()
                 }
                 else
                 {
-                    sendRawData(&buf, readStatus);
+                    sendRawData(&buf, 0x21, readStatus);
                 }
             }
         }

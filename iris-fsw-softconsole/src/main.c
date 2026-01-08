@@ -321,6 +321,8 @@ int main(void) {
   // This task reads from the UART and puts packets in the Rx queue
   status = xTaskCreate(commsReceiverTask, "UART Rx   ", 200, NULL, 1,
                        &monitoredTasks[UART_RX_TASK_INDEX]);
+
+  setTaskToNotify(monitoredTasks[UART_RX_TASK_INDEX]);
   printToTerminal("UART Receiver task created. Status: ");
   delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");

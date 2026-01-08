@@ -44,7 +44,6 @@ void sendImagePacket(char* data, int len, int index) {
 
 }
 
-
 #include <stdint.h>
 #include <string.h>
 
@@ -90,6 +89,9 @@ int build_ccsds_string_packet(uint8_t *out_buf, const char *str)
     return 8 + packet_len;
 }
 
+
+static uint16_t seq = 0;
+
 int build_ccsds_data_packet(uint8_t *out_buf, uint16_t type, uint8_t *data, uint8_t data_len)
 {
     uint16_t packet_len = data_len;  // payload size
@@ -108,9 +110,12 @@ int build_ccsds_data_packet(uint8_t *out_buf, uint16_t type, uint8_t *data, uint
 
     // Byte 2-3: Sequence Control
     // Using: packet is standalone (seq flags = 3), count = 0
-    uint16_t seq = (3 << 14) | 0;
-    out_buf[2] = (seq >> 8) & 0xFF;
-    out_buf[3] = (seq >> 0) & 0xFF;
+    //get 14 bits of seq:
+    uint16_t seq_count = seq & 0x3FFF;
+    uint16_t seq_val = (3 << 14) | seq_count;
+    out_buf[2] = (seq_val >> 8) & 0xFF;
+    out_buf[3] = (seq_val >> 0) & 0xFF;
+    seq++;
 
     // Byte 4-5: Packet Length
     out_buf[4] = (ccsds_len >> 8) & 0xFF;
@@ -124,6 +129,60 @@ int build_ccsds_data_packet(uint8_t *out_buf, uint16_t type, uint8_t *data, uint
     memcpy(&out_buf[8], data, packet_len);
     // return total packet size: 6 bytes header + payload
     return 8 + packet_len;
+}
+
+#define DEBUG_APID 0x69
+
+int generate_manual_cfdp_ack(uint8_t *buf, uint16_t seq_count, uint8_t acked_dir) {
+    // Primary Header (6 bytes) + Type (2 bytes)
+    buf[0] = 0x18; buf[1] = 0x69; // APID 0x69
+    buf[2] = 0xC0 | ((seq_count >> 8) & 0x3F); buf[3] = seq_count & 0xFF;
+    buf[4] = 0x00; buf[5] = 0x08; // Length: (2 Type + 7 CFDP) - 1 = 8
+
+    // Custom Type (2 bytes)
+    buf[6] = 0xCF; buf[7] = 0xDF;
+
+    // CFDP PDU (7 bytes)
+    buf[8]  = 0x20; // Version 1, File Directive
+    buf[9]  = 0x03; // ACK body is 3 bytes
+    buf[10] = 0x00; // Entity ID len (1 byte)
+    buf[11] = 0x01; // Seq len (2 bytes)
+    buf[12] = 0x06; // Directive: ACK
+    buf[13] = (acked_dir << 4) | 0x01; // Acked Dir + Status Active
+    buf[14] = 0x00; // Condition: No Error
+
+    return 15; 
+}
+
+int generate_manual_cfdp_nack(uint8_t *buf, uint16_t seq_count, uint32_t start, uint32_t end) {
+    // Primary Header (6 bytes) + Type (2 bytes)
+    buf[0] = 0x18; buf[1] = 0x69; // APID 0x69
+    buf[2] = 0xC0 | ((seq_count >> 8) & 0x3F); buf[3] = seq_count & 0xFF;
+    buf[4] = 0x00; buf[5] = 0x0E; // Length: (2 Type + 13 CFDP) - 1 = 14
+
+    // Custom Type (2 bytes)
+    buf[6] = 0xCF; buf[7] = 0xDF;
+
+    // CFDP PDU (13 bytes)
+    buf[8]  = 0x20; // Version 1, File Directive
+    buf[9]  = 0x09; // NACK body is 9 bytes
+    buf[10] = 0x00; 
+    buf[11] = 0x01;
+    buf[12] = 0x08; // Directive: NACK
+    
+    // Manual Big Endian packing for 'start' offset
+    buf[13] = (start >> 24) & 0xFF;
+    buf[14] = (start >> 16) & 0xFF;
+    buf[15] = (start >> 8) & 0xFF;
+    buf[16] = start & 0xFF;
+
+    // Manual Big Endian packing for 'end' offset
+    buf[17] = (end >> 24) & 0xFF;
+    buf[18] = (end >> 16) & 0xFF;
+    buf[19] = (end >> 8) & 0xFF;
+    buf[20] = end & 0xFF;
+
+    return 21; // Total packet size
 }
 
 static uint8_t buf[256];
@@ -197,6 +256,26 @@ int ccsds_extract_packet(const uint8_t *buf, size_t buf_len, ccsds_packet_t *out
     return 1;
 }
 
+void process_incoming_packet(uint8_t *packet) {
+    // 1. Check if it's our CFDP Type (0xCFDF) at bytes 6-7
+    if (packet[6] == 0xCF && packet[7] == 0xDF) {
+
+        // 2. Check if bit 4 of the CFDP Header is 1 (File Directive)
+        if ((packet[8] & 0x10) == 0x10) {
+
+            // 3. Check Directive Code at byte 12
+            uint8_t directive = packet[12];
+
+            if (directive == 0x04) {
+                // It's an EOF! Send ACK(0x04)
+                uint8_t out_buf[15];
+                generate_manual_cfdp_ack(out_buf, my_seq++, 0x04);
+                // transmit(out_buf);
+            }
+        }
+    }
+}
+
 uint8_t buf_Rx0[1024];
 ccsds_packet_t extracted_packet;
 
@@ -212,13 +291,13 @@ void commsReceiverTask() {
   printToTerminal("COMMS Receiver task started.\n");
   for (;;) {
     //        i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, 32);
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    if (*uxUnreadBytes > 0) {
+		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    while (*uxUnreadBytes > 0) {
       taskENTER_CRITICAL();
       {
         memcpy(buf_Rx0, my_buffer, *uxUnreadBytes);
         uxBytesRead = *uxUnreadBytes;
-        *uxUnreadBytes -= *uxUnreadBytes;
+        *uxUnreadBytes -= uxBytesRead;
       }
       taskEXIT_CRITICAL();
 
@@ -232,12 +311,11 @@ void commsReceiverTask() {
           rxPacket.type = extracted_packet.apid;  // using APID as type
           rxPacket.len = extracted_packet.data_len + 1;
           rxPacket.index = extracted_packet.seq_count;
-          memcpy(rxPacket.data,
-                 extracted_packet.packet_start + CCSDS_PRIMARY_HDR_LEN,
-                 rxPacket.len);
+          memcpy(rxPacket.data, &buf_Rx0[processed + CCSDS_PRIMARY_HDR_LEN], rxPacket.len);
 
           xQueueSendToBack(commsRxQueue, &rxPacket, portMAX_DELAY);
 
+          process_incoming_packet(&buf_Rx0[processed]);
           processed += extracted_packet.total_len;
         } else {
           // No more full packets
@@ -331,7 +409,20 @@ void commsHandlerTask() {
 
   for (;;) {
     if (xQueueReceive(commsRxQueue, &rxPacket, portMAX_DELAY) == pdTRUE) {
-      volatile int j = 5;
+        if(rxPacket.type == 2045) {
+            //file packet
+            //log just the data in a file to test
+            logADCSTelem((char*)(rxPacket.data), rxPacket.len);
+        } else {
+            uint8_t CCSDS_command_type = rxPacket.data[9];
+            switch (CCSDS_command_type) {
+            case 0x05: //dump telemetry command
+              telemReadFlag = 1;
+              break;
+            default:
+                break;
+            }
+          }
     }
   }
 }
