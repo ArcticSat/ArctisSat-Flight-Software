@@ -394,7 +394,7 @@ void printToTerminal(char* msg) {
   if (!pkt) return;
 
   memcpy(pkt->headerStr, pcTaskGetName(NULL), strlen(pcTaskGetName(NULL)));
-  pkt->type = 0x02;  // Terminal message type
+  pkt->type = MSG_TYPE_DEBUG_STRING;  // Terminal message type
   pkt->len = strlen(msg) + 1;
   pkt->index = 0;
 

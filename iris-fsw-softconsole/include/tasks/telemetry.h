@@ -297,6 +297,14 @@ typedef enum
 	IMMED_COMMANDS_END,
 } CommandId_t;
 // Task IDs
+
+typedef enum {
+	MSG_TYPE_TELEMETRY = 0,
+	MSG_TYPE_COMMAND = 1,
+	MSG_TYPE_DEBUG_STRING = 2
+	MSG_TYPE_POWER_MSB_DATA = 3,
+	MSG_TYPE_POWER_CCLSM_DATA = 4,
+} SpaceToGroundMessageType_t;
 typedef enum {
 	// CDH tasks,
 	TASK_CDH_END,
