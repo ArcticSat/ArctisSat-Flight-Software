@@ -40,17 +40,8 @@ typedef struct customPacket {
 // ENUMERATIONS AND STRUCTS
 //------------------------------------------------------------------------------
 
-// This will be used by spi reveicer, can receiver and uart revceiver(for debugging), and
-// the operations task, so this should probably be in the operations.h file.
-typedef struct{
-
-    QueueHandle_t command_queue;
-    QueueHandle_t data_queue;
-
-} InputQueues_t;
 
 QueueHandle_t txQueue;
-
 
 void sendData(char*, int, int);
 

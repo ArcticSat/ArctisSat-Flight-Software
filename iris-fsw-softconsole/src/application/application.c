@@ -16,6 +16,8 @@
 #include "application/memory_manager.h"
 #include "application/sc_deployment.h"
 
+#include "tasks/telemetry.h"
+
 #include "application/cdh.h"
 #include "application/eps.h"
 #include "application/payload.h"
@@ -44,114 +46,115 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+int canWrite = 0;
+char buf[32];
+
+void vMissionLoop() {
+    int seconds = 0;
+    uint8_t remainingTasks;
+    telemReadFlag = 0;
+    printToTerminal("Mission Operations Loop started.\n");
+    uint8_t loopCount = 0;
+    for(;;) {
+        Calendar_t currTime;
+        //Check time tagged tasks
+        scheduleTTTFromQueue();
+        executeTTT();
+        //Handle mission states
+        //
+        //
+        //
+        if(loopCount % 20 == 0) {
+            ds1393_read_time(&currTime);
+            sprintf(buf, "System time: %02u:%02u:%02u\n", currTime.hour, currTime.minute, currTime.second);
+            printToTerminal(buf);
+            loopCount = 0;
+        }
+        vTaskDelay(500);
+        loopCount++;
+    }
+}
+
+
+void scheduleTimeTaggedTask(timeTaggedTask_t* task)
+{
+    xQueueSendToBack(taskQueue, task, portMAX_DELAY);
+}
+
+void scheduleTTTFromQueue() {
+    static timeTaggedTask_t task;
+    int result = 0;
+    if(xQueueReceive(taskQueue, &task, 0) == pdTRUE) {
+        printToTerminal("\nScheduling time-tagged task...\n");
+        fs_file_seek(&timeTaggedTaskFile, 0, LFS_SEEK_END);
+        result = fs_file_write(&timeTaggedTaskFile, &task, sizeof(task));
+        if(result < 0) {
+            printToTerminal("Error writing time-tagged task to file\n");
+            return;
+        }
+        fs_file_sync(&timeTaggedTaskFile);
+        printToTerminal("Task scheduled.\n");
+    }
+    fs_file_rewind(&timeTaggedTaskFile);
+}
+
+void executeTTT() {
+    Calendar_t currTime;
+    ds1393_read_time(&currTime);
+    int remainingTasks = 0;
+
+    static timeTaggedTask_t task;
+    int result;
+    while(1) {
+    result = fs_file_read(&timeTaggedTaskFile, &task, sizeof(task));
+    if (result <= 0) {
+        if(fs_file_size(&timeTaggedTaskFile) > 0) {
+            printToTerminal("End of time-tagged tasks\n");
+        }
+        if(!remainingTasks && fs_file_size(&timeTaggedTaskFile) > 0) {
+            printToTerminal("No remaining tasks. Formatting file\n");
+            fs_file_rewind(&timeTaggedTaskFile);
+            fs_file_truncate(&timeTaggedTaskFile, 0);
+            fs_file_sync(&timeTaggedTaskFile);
+        }
+        break;
+    } else {
+        printToTerminal("Found time tagged task... ");
+        sprintf(buf, "Task time: %u %u %u ", task.executionTime.hour, task.executionTime.minute, task.executionTime.second);
+        printToTerminal(buf);
+        if(task.executionTime.second >= (uint8_t) 60) {
+            continue;
+        }
+        if(compare_time(&currTime, &task.executionTime) >= 0) {
+            printToTerminal("Executing time-tagged task!\n");
+            //Execute task
+            //Mark task as executed by setting time to invalid value
+            task.executionTime.second = 255;
+            //Seek back to the position of this task
+            fs_file_seek(&timeTaggedTaskFile, -((lfs_soff_t)sizeof(task)), LFS_SEEK_CUR);
+            fs_file_write(&timeTaggedTaskFile, &task, sizeof(task));
+            fs_file_sync(&timeTaggedTaskFile);
+
+            printToTerminal("Task marked as executed.\n");
+        } else {
+            printToTerminal("Task not due yet.\n");
+            remainingTasks = 1;
+        }
+    }
+    }
+}
+
 void InitMissionOperations(void)
 {
-#ifdef INIT_COMMS
-    // Turn on comms
-    setLoadSwitch(LS_COMS, SWITCH_ON);
-#endif
-	// Initialize the memory manager
-	init_memory_manager();
-	// Initialize the spacecraft's status
-	int result_fs;
-	result_fs = InitSpacecraftStatus();
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-#ifdef DEPLOYMENT_CONFIG
-		InitiateSpacecraftDeployment();
-#endif
-		setDeploymentStartupState(DPL_STATE_DEPLOYED);
-	}
 
-	uint8_t rebootReason=REBOOT_UNKNOWN;
-	getLastRebootReason(&rebootReason);
-	if((rebootReason & REBOOT_OTA_UPDATE) && rebootReason != 0xFF){
-
-	    //We need to powercycle the cdh for the FS, coreSPI etc to work.
-	    //But first, SET the reboot reason to "request" so we don't boot loop.
-	    int res = setLastRebootReason(REBOOT_POWER_REQUEST);
-
-	    //Only request if the last step passes.
-	    if(res == MEM_MGR_OK){
-
-	        //Send command to power to reset.
-	        //printf("Power cycled CDH\n ");
-	    	//powercycleCDH();
-	    	resetLoadSwitch(LS_CDH);
-
-	        //Shouldn't ever get here, if we do... just continue on, we will have to manually fix.
-	        printf("cdh request pwr cycle failed!\n");
-	    }
-
-	}
-
-	int result;
-	ScStatus_t sc_status;
-	result = getScStatus(&sc_status);
-	// Format data
-	uint8_t buf[sizeof(result)+SC_STATUS_SIZE_BYTES] = {0};
-	memcpy(buf,&result,sizeof(result));
-	memcpy(&buf[sizeof(result)],&sc_status,sizeof(SC_STATUS_SIZE_BYTES));
-	// Send telemetry packet
-	telemetryPacket_t tmpkt = {0};
-	tmpkt.telem_id = CDH_SPACECRAFT_STATUS_ID;
-	tmpkt.length = sizeof(result)+SC_STATUS_SIZE_BYTES;
-	tmpkt.data = buf;
-	sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-
-	//Send the results of the prvSetupHardware.
-    telemetryPacket_t hwStatPkt = {0};
-    hwStatPkt.telem_id = CDH_HW_STATUS_ID;
-    hwStatPkt.length = sizeof(HardwareCheck_t);
-    hwStatPkt.data = (uint8_t*)&setupHardwareStatus;
-    sendTelemetryAddr(&hwStatPkt, GROUND_CSP_ADDRESS);
-
-
-	// Resume tasks
-	vTaskResume(vSunPointing_h);
-#ifdef INCLUDE_TASK_CAN_SERVER
-	vTaskResume(vCanServer_h);
-#endif
-#ifdef INCLUDE_TASK_TTT
-	vTaskResume(vTTTScheduler_h);
-#endif
-#ifdef INCLUDE_TASK_FW_MANAGER
-    if(get_fs_status() == FS_OK){
-    	vTaskResume(vFw_Update_Mgr_Task_h);
-    }
-#endif
 }
 
 void InitNormalOperations(void)
 {
-	// Check deployment state
-	uint8_t deployment_state;
-	getDeploymentStartupState(&deployment_state);
-	if(deployment_state == DPL_STATE_STOWED)
-	{
-		InitiateSpacecraftDeployment();
-		setDeploymentStartupState(DPL_STATE_DEPLOYED);
-	}
 
-	// Resume tasks
-//	vTaskResume(vCanServer_h);
-//	vTaskResume(vTTTScheduler_h);
-//	vTaskResume(vFw_Update_Mgr_Task_h);
 }
 
 void HandleTm(csp_conn_t * conn, csp_packet_t * packet)
 {
-	int src = csp_conn_src(conn);
-	switch(src){
-		case PAYLOAD_CSP_ADDRESS:{
-			HandlePayloadTlm(conn,packet);
-			break;
-		}
-		default:{
-			break;
-		}
-	}
+
 }

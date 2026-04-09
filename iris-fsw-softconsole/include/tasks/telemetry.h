@@ -33,20 +33,51 @@
 // Maximum CSP packet size
 #define DLC_MAX 256 // TBC
 
+/***********************************************************/
+//File handles for telemetry files
+lfs_file_t powerFile;
+lfs_file_t adcsFile;
+lfs_file_t cdhFile;
+lfs_file_t payloadFile;
+lfs_file_t genericFile;
+lfs_file_t timeTaggedTaskFile;
+
+/*
+FreeRTOS Queues
+*/
+QueueHandle_t commsTxQueue;
+QueueHandle_t commsRxQueue;
+QueueHandle_t telemetryQueue;
+
 typedef enum {
     PING_LOST = 0x00,
     PING_FOUND = 0x01
 } pingStatus_t;
 
 typedef struct {
-    uint8_t header;
-    uint8_t type;
+	Calendar_t timestamp;
+	uint8_t reporting_device;
+	uint8_t telem_id;
+	uint8_t length;
+	uint8_t *data;
+} telemetryPacket_t;
+
+typedef struct {
+    uint32_t header;
+    uint8_t length;
+    uint8_t reporting_device;
+    uint8_t telem_id;
+    Calendar_t timestamp;
+    uint8_t data[];
+} mytelemetryPacket_t;
+
+typedef struct {
+	uint16_t type;
     uint8_t len;
     uint8_t continued;
     uint16_t index;
+    uint8_t headerStr[10];
     uint8_t data[64];
-    uint32_t crc;
-    uint8_t footer;
 } radioPacket_t;
 
 typedef struct {
@@ -54,29 +85,8 @@ typedef struct {
     char data[64];
 } telemPacket_t;
 
-QueueHandle_t commsTxQueue;
-QueueHandle_t commsRxQueue;
-
-QueueHandle_t powerLogQueue;
-QueueHandle_t adcsLogQueue;
-QueueHandle_t logLogQueue;
-
-uint8_t imageFlag;
-uint8_t takeImage;
-uint8_t downlinkImage;
-uint8_t broadcastTelemFlag;
-uint8_t formatFSFlag;
-
 extern volatile uint8_t flashSystemReady;
-
-
-uint8_t cameraPowerStatus;
-uint8_t ADCSPowerStatus;
-uint8_t OtherPowerStatus;
-
-lfs_file_t powerTelemFile;
-lfs_file_t adcsTelemFile;
-lfs_file_t logTelemFile;
+int telemReadFlag;
 
 typedef struct {
   uint16_t VOLTAGE_IN;
@@ -121,29 +131,7 @@ typedef enum
     POWER_GET_ALL_SOLAR_ARRAY_CURRENTS_ID,
     POWER_TELEMETRY_END,
 	/*** PAYLOAD TELEMETRY ***/
-	PAYLOAD_POWER_GOOD_ID,
-	PAYLOAD_BOARD_TEMP_ID,
-	PAYLOAD_SAMPLE_TEMP_ID,
-	PAYLOAD_FULL_IMAGE_ID,
-	PAYLOAD_SAMPLE_LOC_ID,
-	PAYLOAD_CAMERA_TIME_ID,
-	PAYLOAD_ERROR_ID,
-	PAYLOAD_FULL_IMAGE_RX, //Only for debugging remove later
-	PAYLOAD_FILE_LIST_ID,
-	PAYLOAD_META_ID,
-	PAYLOAD_IMAGE_INFO,
-	PAYLOAD_IMAGE_CAPTURE_ERROR_ID,
-	PAYLOAD_ACK,
-	PAYLOAD_MSG_ID,
-	PAYLOAD_CMD_CONFIRM_ID,
-	PAYLOAD_CMD_ERROR_ID,
-	PAYLOAD_I2C_REG_READ16_CMD,
-	PAYLIAD_I2C_RECEIVE_CMD,
-	PAYLOAD_CAMERA_SELECT_CMD,
-	PAYLOAD_WRITE_CUSTOM_REGLIST_CMD,
-	PAYLOAD_REGLIST_CONFIG_CMD,
-	PAYLOAD_GET_IMAGE_TX_DEST_ADDR_ID,
-	PAYLOAD_TELEMETRY_END,
+	//TBD
 	/*** ADCS TELEMETRY ***/
 	ADCS_MESAUREMENT_GYRO_ID,
 	ADCS_MESAUREMENT_MAGNETOMETER_ID,
@@ -222,44 +210,7 @@ typedef enum
 	// POWER COMMANDS END
 	POWER_COMMANDS_END,
 	/*** PAYLOAD COMMANDS ***/
-	PAYLOAD_POWER_GOOD_CMD,
-	PAYLOAD_BOARD_TEMP_CMD,
-	PAYLOAD_SAMPLE_TEMP_CMD,
-	PAYLOAD_FULL_IMAGE_CMD,
-	PAYLOAD_TAKE_IMAGE_CAM1_CMD,
-	PAYLOAD_TAKE_IMAGE_CAM2_CMD,
-	PAYLOAD_CAM1_ON_CMD,
-	PAYLOAD_CAM2_ON_CMD,
-	PAYLOAD_CAM1_OFF_CMD,
-	PAYLOAD_CAM2_OFF_CMD,
-	PAYLOAD_CAM1_RESET_CMD,
-	PAYLOAD_CAM2_RESET_CMD,
-	PAYLOAD_ENTER_LOW_POWER_CMD,
-	PAYLOAD_EXIT_LOW_POWER_CMD,
-	PAYLOAD_FILE_LIST_CMD,
-	PAYLOAD_SHUTDOWN_CMD,
-	PAYLOAD_TURNONCAM1_CMD,
-	PAYLOAD_CAMERA_SENSOR_INIT,
-	PAYLOAD_CAMERA_HANDSHAKE,
-	PAYLOAD_CAMERA_SET_I2C_WRITE_ADDRESS,
-	PAYLOAD_CAMERA_SET_I2C_READ_ADDRESS,
-	PAYLOAD_CAMERA_SET_I2C_TIMEOUT,
-	PAYLOAD_CAMERA_I2C_TRANSMIT,
-	PAYLOAD_CAMERA_I2C_RECEIVE,
-	PAYLOAD_CAMERA_WRITE_REG_LIST,
-	PAYLOAD_CAMERA_TEST_INIT,
-	PAYLOAD_MOUNT_FS,
-	PAYLOAD_UNMOUNT_FS,
-	PAYLOAD_RESTART_FS,
-	PAYLOAD_DELETE_IMG,
-	PAYLOAD_TRANSFER_META,
-	PAYLOAD_SWAP_MODE,
-	PAYLOAD_TRANSFER_IMAGE_CMD,
-	PAYLOAD_FORMAT_FS_CMD,
-	PAYLOAD_SET_AUTO_EXPOSURE_CMD,
-	PAYLOAD_GET_IMAGE_TX_DEST_ADDR_CMD,
-	PAYLOAD_SET_IMAGE_TX_DEST_ADDR_CMD,
-	PAYLOAD_COMMANDS_END,
+	//TBD
 	/*** ADCS COMMANDS ***/
 	ADCS_INIT_CMD,
 	ADCS_TX_RX_CMD,
@@ -346,6 +297,14 @@ typedef enum
 	IMMED_COMMANDS_END,
 } CommandId_t;
 // Task IDs
+
+typedef enum {
+	MSG_TYPE_TELEMETRY = 0,
+	MSG_TYPE_COMMAND = 1,
+	MSG_TYPE_DEBUG_STRING = 2,
+	MSG_TYPE_POWER_MSB_DATA = 3,
+	MSG_TYPE_POWER_CCLSM_DATA = 4,
+} SpaceToGroundMessageType_t;
 typedef enum {
 	// CDH tasks,
 	TASK_CDH_END,
@@ -383,51 +342,67 @@ typedef enum {
 
 
 /**********************************************************/
-
-//typedef struct{
-//	uint8_t second;
-//	uint8_t minute;
-//	uint8_t hour;
-//	uint8_t day;
-//	uint8_t month;
-//	uint8_t year;
-//	uint8_t weekday;
-//	uint8_t week;
-//
-//}Calendar_t;
-
-
-typedef struct{
-
-	Calendar_t timestamp;
-	CommandId_t telem_id;		//Make sure there is less than 255 commands/telemetry ids for any subsystem. Or change to uint16_t.
-	uint8_t length;
-	uint8_t* data;
-
-} telemetryPacket_t;
-
-
-/**********************************************************/
+/*
+This function unpacks raw telemetry data into a telemetryPacket_t struct.
+Parameters:
+	data - pointer to raw telemetry data
+	output - pointer to telemetryPacket_t struct to store unpacked data
+*/
 void unpackTelemetry(uint8_t * data, telemetryPacket_t* output);//Unpacks the telemetry into the telemetry packet struct.
+
+/*
+This function sets the CSP initialization state to be used in monitoring functions.
+Parameters:
+	state - 1 if CSP is initialized, 0 otherwise
+*/
+void set_csp_init(int state);
+
+
+/*
+This function returns whether the CSP is up.
+*/
+int is_csp_up();
+
+/*
+This function manages telemetry operations including requesting, committing, and downlinking telemetry.
+*/
+void telemetryManager();
+
+/*
+These functions log telemetry data for specific subsystems.
+Parameters:
+	data - pointer to telemetry data
+	len - length of the telemetry data
+*/
+void logCDHTelem(char *data, int len);
+void logPowerTelem(char*, int);
+void logADCSTelem(char*, int);
+void logPayloadTelem(char*, int);
+
+/*
+This function stores a string in the generic telemetry log.
+Parameters:
+	data - pointer to null-terminated string to log
+*/
+void logMessage(char*);
+
+
+/*
+This function synchronizes files. Should be called periodically to ensure data integrity.
+*/
+void syncFiles();
+
+int preRtosPrintRaw;
+
+
+int printf(const char *fmt, ...);
+void logTelem(char*, int);
+void printToTerminal(char*);
+void printMsg(char * msg);
 void sendTelemetry(telemetryPacket_t * packet);//Sends telemetry to CDH.
 void sendTelemetry_direct(telemetryPacket_t * packet,csp_conn_t * conn); //For directly responding to a message.
 void sendCommand(telemetryPacket_t * packet,uint8_t addr);//Sends a cmd packet to the cmd port of the subsytem at address addr.
 void sendTelemetryAddr(telemetryPacket_t * packet,uint8_t addr); //Sends telemetry directly to a subsystem.
-void printMsg(char * msg);
-int printf(const char *fmt, ...);
-void set_csp_init(int state);
-int is_csp_up();
-void telemetryManager();
-void logPowerTelem(char*, int);
-void logADCSTelem(char*, int);
-void logTelem(char*, int);
-void logMessage(char*);
-
-int powerPingStatus;
-int powerPingCount;
-
-int ADCSPingStatus;
-int ADCSPingCount;
 
 
 /**********************************************************/

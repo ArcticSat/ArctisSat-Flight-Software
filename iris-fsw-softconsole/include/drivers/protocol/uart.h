@@ -19,6 +19,10 @@
 
 #include "drivers/mss_uart/mss_uart.h"
 
+volatile uint8_t uart0buffer[256];
+volatile size_t uxUART0UnreadBytes;
+
+
 void vInitializeUARTs(uint32_t baud0);
 void vTaskUARTBridge(void *pvParameters);
 static void prvUARTRxNotificationHandler( mss_uart_instance_t *pxUART );

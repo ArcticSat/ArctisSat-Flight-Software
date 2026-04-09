@@ -21,6 +21,14 @@
 // STRUCTS AND STRUCT TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+typedef struct {
+    void (*taskFunction)(void);
+    Calendar_t executionTime; // in epoch time
+    uint32_t period; // in seconds, 0 if one-time task
+    bool isRecurring;
+} timeTaggedTask_t;
+
+QueueHandle_t taskQueue;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -34,6 +42,10 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+void vMissionLoop();
 void InitMissionOperations(void);
 void InitNormalOperations(void);
+void scheduleTimeTaggedTask(timeTaggedTask_t *task);
 void HandleTm(csp_conn_t * conn, csp_packet_t * packet);
+void scheduleTTTFromQueue();
+void executeTTT();

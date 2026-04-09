@@ -34,16 +34,15 @@
 //#define FS_CACHE_SIZE		256
 //#define FS_LOOKAHEAD_SIZE   2048  //Should probably be much smaller...
 
-//The following parameters seems to work for the W25N.
 #define FS_READ_SIZE        512
-#define FS_PROG_SIZE		512
-#define FS_BLOCK_SIZE		(64 * 2048) //Must be in brackets since we divide by this in the code!
-#define FS_CACHE_SIZE		512
+#define FS_PROG_SIZE        512
+#define FS_BLOCK_SIZE       (64 * 2048) //Must be in brackets since we divide by this in the code!
+#define FS_CACHE_SIZE       512
 
-#define FS_LOOKAHEAD_SIZE	512
-#define FS_BLOCK_CYCLES		500
+#define FS_LOOKAHEAD_SIZE   512
+#define FS_BLOCK_CYCLES     500
 
-#define FS_MAX_OPEN_FILES	5
+#define FS_MAX_OPEN_FILES	8
 
 //For testing only. This will offset the location where filesystem is mounted.
 //Set to 0!
@@ -644,8 +643,8 @@ int fs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *
 
 }
 
-int fs_prog(const struct lfs_config *c, lfs_block_t block,lfs_off_t off, const void *buffer, lfs_size_t size){
 
+int fs_prog(const struct lfs_config *c, lfs_block_t block,lfs_off_t off, const void *buffer, lfs_size_t size){
 	int result = FS_OK;
 
 	uint32_t addr = (block*FS_BLOCK_SIZE)+off+FS_MOUNT_OFFSET;

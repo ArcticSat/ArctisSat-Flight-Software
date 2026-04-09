@@ -18,6 +18,7 @@
 #include "board_definitions.h"
 #include "application/telemetry_manager.h"
 #include "task.h"
+#include "tasks/healthAndSafety.h"
 
 #define SPI_EFFICIENT
 
@@ -62,8 +63,47 @@ volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 
 
 void vADCSDriver(void * pvParameters) {
+    vTaskDelay(700);
+
+	printToTerminal("ADCS Driver Task started.\n");
+	uint8_t gyroMeasurements[12];
+	uint16_t combinedGyro[3];
+	uint8_t magMeasurements[6];
+	char* buf[64];
+	uint8_t i;
+	uint8_t adcsLossCount = 0;
 	for(;;) {
-		vTaskDelay(500);
+	    AdcsDriverError_t status = pingAdcs();
+		getGyroMeasurementsRaw(GYRO_1, gyroMeasurements);
+		
+		if(status != ADCS_DRIVER_NO_ERROR)
+		{
+			adcsLossCount++;
+			if(adcsLossCount >= 5 && adcsStatus == 1)
+			{
+				logError(ERR_ADCS_LOST, SEV_CRITICAL, NULL, 0);
+				adcsStatus = 0;
+			}
+		}
+		else
+		{
+			adcsLossCount = 0;
+			if(adcsStatus == 0)
+			{
+				logError(WARN_ADCS_COMMS_RESTORED, SEV_WARNING, NULL, 0);
+				adcsStatus = 1;
+			}
+		}
+		
+		for(i=0;i<3;i++)
+		{
+			combinedGyro[i] = (gyroMeasurements[2*i] << 8) | gyroMeasurements[2*i+1];
+		}
+
+		sendRawData((uint8_t*)combinedGyro, 0x10, 6);
+		vTaskDelay(100);
+
+		// logError(ERR_ADCS_LOST, NULL, 0);
 	}
 }
 
@@ -98,132 +138,7 @@ void vTestAdcsDriverInterface(void * pvParameters)
 
 	while(1)
 	{
-//		/*** Gyro data ***/
-//		memcpy(gyro_buf,0,6*sizeof(uint8_t));
-//		// Get raw data
-//		driver_status = (uint8_t) getGyroMeasurementsRaw(gyro_id, gyro_buf);
-//		// Convert
-//		memcpy(gyro_data,0,3*sizeof(float));
-//		for(i=0; i < 3; i++){
-//			uint16_t gyro_raw;
-//			gyro_raw = ((uint16_t)  gyro_buf[2*i]);
-//			gyro_raw |= (((uint16_t) gyro_buf[2*i+1]) << 8);
-//			float_buf[i] = convertGyroDataRawToRadiansPerSecond(gyro_raw);
-//			gyro_raw16[i] = gyro_raw;
-//			gyro_raw_int16[i] = (int16_t) gyro_raw16[i];
-//			gyro_raw_short[i] = (short) gyro_raw16[i];
-//		}
-//		// Orient
-//		if(gyro_id == GYRO_1){
-//			gyro_data[0] = -float_buf[1]; // X <-- (-Y)
-//			gyro_data[1] =  float_buf[0]; // Y <--   X
-//			gyro_data[2] =  float_buf[2]; // Z <--   Z
-//		} else if(gyro_id == GYRO_2) {
-//			gyro_data[0] =  float_buf[0]; // X <--   X
-//			gyro_data[1] = -float_buf[1]; // Y <-- (-Y)
-//			gyro_data[2] =  float_buf[2]; // Z <--   Z
-//		}
-//		// Send telemetry
-//		memcpy(buf,0,20);
-//		tmpkt.telem_id = ADCS_GYROSCOPE_DATA_ID;
-//		tmpkt.length = 14;
-//		buf[0] = driver_status;
-//		buf[1] = gyro_id;
-//		memcpy(&buf[2],gyro_data,3*sizeof(float));
-//		tmpkt.data = buf;
-//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-//		int x = 7;
-//		vTaskDelay(10);
-
-//		/*** Mag data ***/
-//		// Get raw data
-//		// Convert
-//		memcpy(mag_buf,0,3*sizeof(float));
-//		driver_status = (uint8_t) getMagnetometerMeasurementsRaw(mag_id, mag_buf);
-//		for(i=0; i < 3; i++){
-//			uint16_t mag_raw = 0;
-//			mag_raw |= ((uint16_t)  mag_buf[2*i]);
-//			mag_raw |= (((uint16_t) mag_buf[2*i+1]) << 8);
-//			float_buf[i] = convertMagDataRawToTeslas(mag_raw);
-//		}
-//		// Orient, offset
-//		mag_data[0] =  float_buf[0]; // X <--   X
-//		mag_data[1] = -float_buf[1]; // Y <-- (-Y)
-//		mag_data[2] =  float_buf[2]; // Z <--   Z
-//		for(i=0; i < 3; i++)
-//		{
-//			mag_data[i] -= mag_offsets[i];
-//			mag_data[i] *= 1000000.0;
-//		}
-//		// Send telemetry
-//		memcpy(buf,0,20);
-//		tmpkt.telem_id = ADCS_MAGNETOMETER_DATA_ID;
-//		tmpkt.length = 14;
-//		buf[0] = driver_status;
-//		buf[1] = mag_id;
-//		memcpy(&buf[2],mag_data,3*sizeof(float));
-//		tmpkt.data = buf;
-//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-//		int j = 7;
-
-//		vTaskDelay(10);
-
-		/*** Sun data ***/
-//		driver_status = sunSensorSelect(SUN_SENSOR_1);
-//		vTaskDelay(10);
-//		driver_status = getSunSensorMeasurementsRaw(sun_buf);
-//		// Send meta data
-//		tmpkt.telem_id = ADCS_SS_META_ID;
-//		tmpkt.length = 12;
-//		tmpkt.data = buf;
-//		buf[0] = (uint8_t) driver_status;
-//		memcpy(&buf[1],sun_buf,12);
-//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-//		vTaskDelay(10);
-//		// Send raw data
-//		tmpkt.telem_id = ADCS_SS_RAW_ID;
-//		tmpkt.length = 20;
-//		for(i=0; i < 124; i+=20){
-//			tmpkt.data = &sun_buf[i];
-//			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-//			vTaskDelay(10);
-//		}
-//		// Send angle
-//		sunAngle = AngleDecompose(sun_buf,3);
-//		tmpkt.telem_id = ADCS_SS_ANGLE_ID;
-//		tmpkt.length = 4;
-//		tmpkt.data = buf;
-//		memcpy(buf,&sunAngle,sizeof(sunAngle));
-//		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-//		int x = 7;
-//		vTaskDelay(10);
-
-		// Unit vector
-		driver_status = sunSensorSelect(SUN_SENSOR_PRIMARY_Z);
-		vTaskDelay(10);
-		driver_status = getSunSensorMeasurementsRaw(z_sun_buf);
-		vTaskDelay(10);
-		z_angle = AngleDecompose(z_sun_buf,3);
-//		z_angle -= z_angle;
-		z_angle *= ss_z_sign_flip;
-		driver_status = sunSensorSelect(SUN_SENSOR_PRIMARY_X);
-		vTaskDelay(10);
-		driver_status = getSunSensorMeasurementsRaw(x_sun_buf);
-		vTaskDelay(10);
-		x_angle = AngleDecompose(x_sun_buf,3);
-		x_angle *= ss_x_sign_flip;
-
-		float unit_vector[2] = {0.0};
-		unit_vector[0] = sin(x_angle);
-		unit_vector[1] = sin(z_angle);
-
-		tmpkt.telem_id = ADCS_SS_UNIT_VECTOR_ID;
-		tmpkt.length = 8;
-		tmpkt.data = buf;
-		memcpy(buf,&unit_vector,sizeof(unit_vector));
-		sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-
-		vTaskDelay(2000);
+		
 
 	}
 }

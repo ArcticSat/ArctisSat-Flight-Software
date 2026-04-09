@@ -36,6 +36,8 @@
 #include "taskhandles.h"
 #include "drivers/protocol/uart.h"
 
+#include "tasks/healthAndSafety.h"
+
 //#include "version.h"
 
 #include "FreeRTOS.h"
@@ -73,13 +75,24 @@ void sendData(char* buffer, int len, int dest) {
 // FUNCTIONS
 //------------------------------------------------------------------------------
 
+int lossLockout = 0;
+uint8_t powerPingStatus = PING_LOST;
+uint8_t powerPingCount = 0;
+
+void unpack_2_floats(const uint8_t *buf, float *f1, float *f2)
+{
+    uint32_t u;
+
+    u = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    memcpy(f1, &u, sizeof(float));
+
+    u = (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
+    memcpy(f2, &u, sizeof(float));
+}
+
+
 void vCSP_Server(void *pvParameters) {
-
-    uint8_t result = configure_csp();
-    if (result) {
-        set_csp_init(1);
-    }
-
+    vTaskDelay(1000);
     csp_conn_t *conn = NULL;
     csp_packet_t *packet = NULL;
     csp_socket_t *socket = csp_socket(0);
@@ -94,14 +107,17 @@ void vCSP_Server(void *pvParameters) {
     powerPingStatus = PING_LOST;
     powerPingCount = 0;
 
-    CCLSM_DATA_ENTRY testCCLSM;
-
+    static CCLSM_DATA_ENTRY testCCLSM;
+    
     int misses = 0;
     int lockout = 0;
+    float msbVoltage;
+    float msbCurrent;
     //TODO: Check return of csp_bind and listen, then handle errors.
     //TODO make this so much better!
+    printToTerminal("CSP Server starting\n");
     while(1) {
-		conn = csp_accept(socket, CSP_MAX_DELAY);
+		conn = csp_accept(socket, 500);
 		if(conn){
 			packet = csp_read(conn,0);
 			int sourceID = csp_conn_src(conn);
@@ -111,32 +127,25 @@ void vCSP_Server(void *pvParameters) {
                 case 0x00: //power ID
                 {
                     powerPingCount = 0;
+                    if(lockout) {
+                        logError(WARN_POWER_COMMS_RESTORED, SEV_WARNING, NULL, 0);
+                        // logPowerTelem("Power restored!\n", strlen("Power restored!\n")+1);
+                    }
+                    lockout = 0;
                     powerPingStatus = PING_FOUND;
+
                     break;
                 }
 			}
 
 			switch(dest_port){
-				case CSP_COMMS_PASSTHROUGH:{
-				    printToTerminal(packet->data);
-				    logPowerTelem(packet->data, packet->length);
-				    break;
-				}
-				case 0x04: {
-				    printToTerminal(packet->data);
-				    break;
-				}
-				case 0x05: //powinfo port
-				    sendDataPacket(packet->data, packet->length, 0x05);
-                    logPowerTelem(packet->data, packet->length);
-				    break;
-				case 10: //CCLSM DATA PACKET
-                    {
-                    memcpy(&testCCLSM, packet->data, sizeof(CCLSM_DATA_ENTRY));
-//                    logPowerTelem(packet->data, packet->length);
-                    int boi = 50;
-                    break;
-                    }
+			    case 5: {
+                    sendRawData((char*)packet->data, 0x01, packet->length);
+                    // unpack_2_floats(packet->data, &msbVoltage, &msbCurrent);
+
+                break;
+                }
+
 				default:{
 						csp_service_handler(conn,packet);
 						break;
@@ -152,6 +161,11 @@ void vCSP_Server(void *pvParameters) {
 		if(powerPingCount > 5) {
 		    powerPingStatus = PING_LOST;
 		    powerPingCount = 5;
+            if(lockout == 0){
+                lockout = 1;
+                logPowerTelem("Power lost!\n", strlen("Power lost!\n")+1);
+                logError(ERR_POWER_LOST, SEV_CRITICAL, NULL, 0);
+            }
         }
 //		vTaskDelay(500);
 	} // while(1)
