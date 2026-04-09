@@ -54,7 +54,7 @@ volatile float ss_x_sign_flip =  1.0;
 volatile float ss_z_sign_flip = -1.0;
 // Eclipse variables
 volatile Calendar_t eclipseBounds[2] = {0xFF};
-// Backwards variables
+// Sun-angle threshold cache.
 volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
@@ -63,13 +63,13 @@ volatile double sun_angle_max_vector_length = sin(SUN_MAX_DETECTABLE_ANGLE);
 
 
 void vADCSDriver(void * pvParameters) {
+    (void)pvParameters;
+
     vTaskDelay(700);
 
 	printToTerminal("ADCS Driver Task started.\n");
 	uint8_t gyroMeasurements[12];
 	uint16_t combinedGyro[3];
-	uint8_t magMeasurements[6];
-	char* buf[64];
 	uint8_t i;
 	uint8_t adcsLossCount = 0;
 	for(;;) {
@@ -109,26 +109,7 @@ void vADCSDriver(void * pvParameters) {
 
 void vTestAdcsDriverInterface(void * pvParameters)
 {
-	int i;
-	telemetryPacket_t tmpkt = {0};
-	uint8_t buf[20];
-	uint8_t driver_status;
-	uint8_t gyro_id = GYRO_1;
-	MagnetometerId_t mag_id = MAGNETOMETER_1;
-	uint8_t gyro_buf[6] = {0};
-	uint16_t gyro_raw16[3] = {0};
-	int16_t  gyro_raw_int16[3] = {0};
-	short  gyro_raw_short[3] = {0};
-	uint8_t mag_buf[6] = {0};
-	float float_buf[3];
-	float gyro_data[3] = {0};
-	float mag_data[3] = {0};
-
-	uint8_t sun_buf[164];
-	uint8_t x_sun_buf[164];
-	uint8_t z_sun_buf[164];
-	float sunAngle = 0.0;
-	float z_angle,x_angle;
+	(void)pvParameters;
 
 	setLoadSwitch(LS_ADCS,SWITCH_OFF);
 	vTaskDelay(1000);
@@ -138,7 +119,8 @@ void vTestAdcsDriverInterface(void * pvParameters)
 
 	while(1)
 	{
-		
+		// Keep task alive for manual interface testing.
+		vTaskDelay(1000);
 
 	}
 }
@@ -149,8 +131,7 @@ void vTestAdcsDriverInterface(void * pvParameters)
  */
 AdcsDriverError_t adcs_init_driver(void)
 {
-	AdcsDriverError_t status = ADCS_DRIVER_NO_ERROR;
-	return status;
+	return ADCS_DRIVER_NO_ERROR;
 }
 
 #ifdef SPI_EFFICIENT
@@ -251,7 +232,7 @@ AdcsDriverError_t adcsSyncSpi(void)
 	uint8_t cycles = 0;
 	while(cmd_ack != 0xFF && cycles != MAX_SYNC_CYCLES)
 	{
-		AdcsDriverError_t status = adcsTxRx(&cmd_id,1,&cmd_ack,0);
+		status = adcsTxRx(&cmd_id,1,&cmd_ack,0);
 		cycles++;
 	}
 
@@ -429,9 +410,10 @@ AdcsDriverError_t getGyroMeasurementsRaw(GyroId_t gyroNumber, uint8_t * gyroMeas
 #ifdef GYRO_SIM_ENG_VALUE
 	return ADCS_DRIVER_NO_ERROR;
 #else
+	(void)gyroNumber;
+
     // Get command ID
     uint8_t cmd_id = 0x02;
-    uint8_t bruh[12];
     // SPI transactions
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
@@ -545,10 +527,10 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 	return status;
 #endif
 }
-/*** Torque rod data conversion ***/
+/*** Torque rod conversion ***/
 double dipoleToVoltage(double dipole)
 {
-	// TODO: check abs()
+	// TODO: use fabs() for doubles.
     if(abs(dipole) > MAX_DIPOLE) {
         return MAX_VOLTAGE * ((dipole >= 0) ? 1 : -1); //convert to proper sign with ternary
     }
@@ -613,24 +595,24 @@ float AngleDecompose(uint8_t *RXBuff,uint8_t selec )
 //	uint8_t sunDataRxSize[4] = {18,36,72,144};
 	uint8_t Temp = ROMask[selec];
 	float FirstPxlFrac=0;
-	uint16_t AngFrac=0;
 
-	while(RXBuff[i] != 255 && i < sunDataRxSize[selec])       //Skips the unilluminated pixels
+	while(RXBuff[i] != 255 && i < sunDataRxSize[selec])       // Skip dark pixels.
 	{
 		i++;
 	}
-	while(!(RXBuff[i] & Temp))  //Honestly don't remember why I had this
+	while(!(RXBuff[i] & Temp))  // Walk bit fields until first lit pixel fraction.
 	{
 		Temp = Temp >> ROShift[selec];
 		j++;
 		if(j>=ROShift[3-selec])
 		break;
 	}
-	switch (selec)      // This depends on the readout mode which is specified with "selec". The code does some binary operations which I do not recall how I wrote, but it should work.
-	{                   // As far as I recall, this code essentially breaks down the gathered raw data to find the first pixel with light, and figures out the fraction.
+	// Decode first illuminated pixel from selected readout mode.
+	switch (selec)
+	{
 		case 0:
-		FirstPxlPosition = ((i-sunBufferOffset)*ROShift[3-selec]) + j+1;      // FirstPxlPosition is the position of the first fully illuminated pixel
-		FirstPxlFrac = 0;                                   // Fraction of the partially illuminated pixel which should be before the fully illuminated pixel. These then get added up in the final step
+		FirstPxlPosition = ((i-sunBufferOffset)*ROShift[3-selec]) + j+1;
+		FirstPxlFrac = 0;
 		break;
 		case 1:
 		FirstPxlPosition = (i*ROShift[3-selec]) + j+1;
@@ -835,7 +817,7 @@ AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id)
 
 
 	/*** Calibrate Mag. Z ***/
-	// Activate +X
+	// Activate +Z
 	setTorqueRodPolarity(MAGNETORQUER_Z, TR_POLARITY_POS);
 	vTaskDelay(command_delay_ms);
 	setTorqueRodPwm(MAGNETORQUER_Z, 255);
@@ -864,7 +846,7 @@ AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id)
 	vTaskDelay(command_delay_ms);
 	setTorqueRodPwm(MAGNETORQUER_Z,255);
 	vTaskDelay(activation_time_ms);
-	// Sample Mag. X
+	// Sample Mag. Z
 	for(i=0; i < MAGNETOMETER_CALIBRATION_SAMPLES; i++)
 	{
 		uint16_t rawMag;
@@ -882,7 +864,7 @@ AdcsDriverError_t CalibrateMagnetometer(MagnetometerId_t mag_id)
 	// De-activate -Z
 	setTorqueRodPwm(MAGNETORQUER_Z,0);
 
-	// Calculate X offset
+	// Calculate Z offset
 	mag_z_offset = (T_avg_pos + T_avg_neg) / 2;
 
 	return status;

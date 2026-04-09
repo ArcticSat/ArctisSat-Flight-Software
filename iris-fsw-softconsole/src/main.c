@@ -40,6 +40,7 @@
  */
 
 /* Standard includes. */
+#include <stdint.h>
 
 /* Library includes */
 #include <csp/csp.h>
@@ -101,9 +102,7 @@ TaskHandle_t vTestAdcsDriverInterface_h;
 HardwareCheck_t setupHardwareStatus = {0};
 
 static void prvSetupHardware(void);
-static void vTestCspServer(void* pvParameters);
-static void vTestCspClient(void* pvParameters);
-static void vTestingTask(void* pvParams);
+static void CSPClient(void* pvParameters);
 
 void vApplicationMallocFailedHook(void);
 void vApplicationIdleHook(void);
@@ -117,127 +116,16 @@ static void delay_cycles(volatile uint32_t incycles) {
   }
 }
 
-#define GRID_SIZE 32
-#define SENSOR_ARRAY_LEN (GRID_SIZE * GRID_SIZE)
-#define PACKET_SIZE 2072
-
-uint8_t ccsds_packet_buffer[PACKET_SIZE];
-
-// --- Helper functions for Big-Endian byte swap ---
-static inline uint16_t swap_uint16(uint16_t val) {
-    return (val << 8) | (val >> 8);
-}
-
-static inline uint32_t swap_uint32(uint32_t val) {
-    // Standard big-endian conversion (e.g., for SHCOARSE)
-    return (val << 24) | ((val & 0x0000FF00) << 8) | \
-           ((val & 0x00FF0000) >> 8) | (val >> 24);
-}
-
-// Function to generate the CCSDS packet into the buffer
-// ... [Includes and Helper Functions] ...
-
-// Function to generate the CCSDS packet into the buffer
-void generate_ccsds_packet(void) {
-    // --- 1. Define Example Data (Matching the successful parsing attempt) ---
-    uint32_t sh_coarse = 0xDEADBEEF;
-    int8_t   voltage   = 69;
-    uint32_t sh_fine   = 4206769;
-    uint32_t op_mode   = 1;
-    uint32_t spacer    = 0; // Use 0 for filler/spacer.
-
-    // ... [Sensor Array Data remains the same] ...
-    uint16_t sensor_grid_data[SENSOR_ARRAY_LEN];
-    for (int i = 0; i < SENSOR_ARRAY_LEN; i++) {
-        sensor_grid_data[i] = (uint16_t)i;
-    }
-
-    // --- 2. Assemble Packed 32-bit Field (Host Order) ---
-    // [SHFINE (20) | OPMODE (3) | SPACER (1) | VOLTAGE (8)]
-    uint32_t packed_fields = (sh_fine << 12) |
-                             (op_mode << 9) |
-                             (spacer << 8) |
-                             ((uint8_t)voltage);
-
-    // --- 3. Start writing to the buffer ---
-    uint8_t *ptr = ccsds_packet_buffer;
-
-    // --- 3.1. Primary Header (6 bytes) ---
-    uint16_t apid = 123;
-    uint16_t sequence_count = 5;
-    uint16_t data_length = 2065; // (10 SH + 2056 Data) - 1 = 2066 - 1
-
-    // PH-1 (Version=0, Type=1 (Telemetry), SecHeader=1, APID=123)
-    uint16_t ph1 = (0 << 13) | (1 << 12) | (1 << 11) | apid;
-    uint16_t ph1_be = swap_uint16(ph1);
-    memcpy(ptr, &ph1_be, 2); ptr += 2; // Write 0x187B
-
-    // PH-2 (SequenceFlags=3 (Standalone), SequenceCount=5)
-    uint16_t ph2 = (3 << 14) | sequence_count;
-    uint16_t ph2_be = swap_uint16(ph2);
-    memcpy(ptr, &ph2_be, 2); ptr += 2; // Write 0xC005
-
-    // PH-3 (Data Length = 2065)
-    uint16_t ph3_be = swap_uint16(data_length);
-    memcpy(ptr, &ph3_be, 2); ptr += 2; // Write 0x0811
-
-    // --- 3.2. Secondary Header (10 bytes) ---
-    // Use the values that were successfully parsed before
-    uint32_t sh_seconds = 0x12345678;
-    uint16_t sh_subseconds = 0x9ABC;
-    uint32_t sh_status = 0xDEADBEEF;
-
-//    // SH - Seconds (32 bits)
-//    uint32_t sh_seconds_be = swap_uint32(sh_seconds);
-//    memcpy(ptr, &sh_seconds_be, 4); ptr += 4;
-//    // SH - Subseconds (16 bits)
-//    uint16_t sh_subseconds_be = swap_uint16(sh_subseconds);
-//    memcpy(ptr, &sh_subseconds_be, 2); ptr += 2;
-//    // SH - Status (32 bits)
-//    uint32_t sh_status_be = swap_uint32(sh_status);
-//    memcpy(ptr, &sh_status_be, 4); ptr += 4;
-
-    // --- 3.3. Data Payload (2056 bytes) ---
-
-    // 1. SHCOARSE (32 bits)
-    uint32_t sh_coarse_be = swap_uint32(sh_coarse);
-    memcpy(ptr, &sh_coarse_be, 4);
-    ptr += 4;
-
-    // 2. Packed Fields (32 bits)
-    // Write in Big-Endian order (MSB first)
-    *ptr++ = (uint8_t)(packed_fields >> 24);
-    *ptr++ = (uint8_t)(packed_fields >> 16);
-    *ptr++ = (uint8_t)(packed_fields >> 8);
-    *ptr++ = (uint8_t)(packed_fields);
-
-    // 3. SENSOR_GRID (1024 * 16-bit uint)
-    for (int i = 0; i < SENSOR_ARRAY_LEN; i++) {
-        uint16_t val_be = swap_uint16(sensor_grid_data[i]);
-        memcpy(ptr, &val_be, 2);
-        ptr += 2;
-    }
-
-    volatile int j = 0;
-}
-
-// Creates a CCSDS packet containing a string payload.
-// Returns packet length in bytes (header + payload).
-// `out_buf` must have enough space for header + string.
-
-
-
 int main(void) {
+  // Use raw UART prints until task-based comms is up.
   preRtosPrintRaw = 1;
   prvSetupHardware();
 
-  uint8_t buf[256];
-  int packet_size = build_ccsds_string_packet(buf, "Hello, CCSDS!");
-  volatile int jingle = 0;
   BaseType_t status;
 
   printToTerminal("\n\n###########  Queue init...  ############\n");
 
+  // Core inter-task queues.
   txQueue = xQueueCreate(5, sizeof(satPacket));
   commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t*));
   commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
@@ -252,13 +140,10 @@ int main(void) {
   //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void
   //    *)flash_devices[DATA_FLASH],1,NULL);
   //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
-  //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void
-  //*)flash_devices[DATA_FLASH],1,NULL); 	  status =
-  //xTaskCreate(vTestFlashFull,"Test Flash",2000,(void
-  //*)flash_devices[PROGRAM_FLASH],1,NULL);
-  //        status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-  //    status = xTaskCreate(vTestRTC,"Test
-  //    RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
+  //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void*) flash_devices[DATA_FLASH],1,NULL); 	  status =
+  //    status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void*) flash_devices[PROGRAM_FLASH],1,NULL);
+  //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+  //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
   //    xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL); status =
   //    xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL); status =
   //    xTaskCreate(vTestCANTx,"Test CAN
@@ -278,104 +163,51 @@ int main(void) {
 
   printToTerminal("\n\n###########  Begin task init...  ############\n");
 
-  // TODO add handling and logging to all the task status
-  // Need to suspend this task until the CSP stack is up and running.
-  // If we start pumping CAN messages into CSP before it is ready it will crash.
-  // The task is resumed in the CSP server once it is ready.
-  //    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
-  //    vTaskSuspend(vCanServer_h);
   // This task handles all incoming CSP packets and routes them to the
   // appropriate handler.
-  status = xTaskCreate(vCSP_Server, "cspServer ", 200, NULL, 1,
-                       &monitoredTasks[CSP_SERVER_TASK_INDEX]);
+  status = xTaskCreate(vCSP_Server, "cspServer ", 200, NULL, 1, &monitoredTasks[CSP_SERVER_TASK_INDEX]);
   printToTerminal("CSP Server task created. Status: ");
-  delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");
-  volatile int j = xPortGetFreeHeapSize();
+  (void)xPortGetFreeHeapSize();
 
   // This task reads from the tx queue and sends packets out over CSP.
   // TODO rename this task
-  status = xTaskCreate(vTestCspClient, "CSP Tx    ", 200, NULL, 1,
-                       &monitoredTasks[CSP_TX_TASK_INDEX]);
+  status = xTaskCreate(CSPClient, "CSP Tx    ", 200, NULL, 1, &monitoredTasks[CSP_TX_TASK_INDEX]);
   printToTerminal("CSP Client task created. Status: ");
-  delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+  (void)xPortGetFreeHeapSize();
 
-  // This task reads from the UART Rx queue and handles them
-  status = xTaskCreate(commsHandlerTask, "UARTHandle", 300, NULL, 1,
-                       &monitoredTasks[UART_HANDLER_TASK_INDEX]);
+  // This task reads from the UART Rx queue and executes on them
+  status = xTaskCreate(commsHandlerTask, "UARTHandle", 300, NULL, 1, &monitoredTasks[UART_HANDLER_TASK_INDEX]);
   printToTerminal("UART Handler task created. Status: ");
-  delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+  (void)xPortGetFreeHeapSize();
 
   // This task dispatches packets in the TX queue over UART
-  status = xTaskCreate(commsTransmitterTask, "UART Tx   ", 200, NULL, 1,
-                       &monitoredTasks[UART_TX_TASK_INDEX]);
+  status = xTaskCreate(commsTransmitterTask, "UART Tx   ", 200, NULL, 1, &monitoredTasks[UART_TX_TASK_INDEX]);
   printToTerminal("UART Transmitter task created. Status: ");
-  delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+  (void)xPortGetFreeHeapSize();
 
   // This task reads from the UART and puts packets in the Rx queue
-  status = xTaskCreate(commsReceiverTask, "UART Rx   ", 200, NULL, 1,
-                       &monitoredTasks[UART_RX_TASK_INDEX]);
-
+  status = xTaskCreate(commsReceiverTask, "UART Rx   ", 200, NULL, 1, &monitoredTasks[UART_RX_TASK_INDEX]);
+  // Save handle so UART ISR can notify this task.
   setTaskToNotify(monitoredTasks[UART_RX_TASK_INDEX]);
   printToTerminal("UART Receiver task created. Status: ");
-  delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+  (void)xPortGetFreeHeapSize();
 
-  //    // This task drives ADCS
-  status = xTaskCreate(vADCSDriver, "ADCS handler", 300, NULL, 1,
-                       &monitoredTasks[ADCS_DRIVER_TASK_INDEX]);
+  // This task drives ADCS.
+  status = xTaskCreate(vADCSDriver, "ADCS handler", 300, NULL, 1, &monitoredTasks[ADCS_DRIVER_TASK_INDEX]);
   printToTerminal("ADCS Driver task created. Status: ");
-  delay_cycles(100000);
   printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+  (void)xPortGetFreeHeapSize();
 
-  // This task drives power
-  status = xTaskCreate(vPowerDriver, "PWRHandler", 200, NULL, 1,
-                       &monitoredTasks[POWER_DRIVER_TASK_INDEX]);
-  printToTerminal("Power Driver task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
-
-  // TODO fix this task
-  status = xTaskCreate(telemetryManager, "Telemetry ", 600, NULL, 1,
-                       &monitoredTasks[TELEMETRY_TASK_INDEX]);
-  printToTerminal("Telemetry Manager task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
-
-  // Main loop, does all the typical stuff
-  status = xTaskCreate(vMissionLoop, "Mission   ", 600, NULL, 1,
-                       &monitoredTasks[MISSION_TASK_INDEX]);
-  printToTerminal("Mission Operations Loop task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
-
-  status = xTaskCreate(vHealthAndSafety, "HlthSafety", 500, NULL, 1,
-                       &monitoredTasks[HEALTH_AND_SAFETY_TASK_INDEX]);
-  printToTerminal("Health and Safety task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
-
-  printToTerminal("Free heap bytes before scheduler start: ");
-  char heapStr[20];
-  snprintf(heapStr, 20, "%lu\n", j);
-  printToTerminal(heapStr);
   printToTerminal("\n\n###########  Starting scheduler...  ############\n");
+  // Switch terminal output to queued path once scheduler runs.
   preRtosPrintRaw = 0;
 
   vTaskStartScheduler();
-
   return 0;
 }
 
@@ -384,78 +216,54 @@ int main(void) {
 /*-----------------------------------------------------------*/
 FlashStatus_t data_flash_status = FLASH_ERROR;
 FlashStatus_t program_flash_status = FLASH_ERROR;
+
 static void prvSetupHardware(void) {
+  // UART first so boot logs are visible.
   vInitializeUARTs(MSS_UART_115200_BAUD);
   printToTerminal("\n\n\n\n\n\n###########  System init...  ############\n");
-
-  delay_cycles(10000);
-
   printToTerminal("UART INIT\n");
-  delay_cycles(10000);
-
-  //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS |
-  //    MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
   init_WD();
   init_rtc();
   printToTerminal("RTC INIT\n");
-  delay_cycles(10000);
-
   setupHardwareStatus.spi_init = init_spi();
-
   printToTerminal("SPI INIT\n");
-  delay_cycles(10000);
-
   setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K, NULL);
   printToTerminal("CAN INIT\n");
-  delay_cycles(10000);
 
-  int test = 0;
-  if (test) {
-    vTestFlashFull((void*)flash_devices[DATA_FLASH]);
-  }
-  //    init_mram();
   adcs_init_driver();
   printToTerminal("ADCS DRIVER INIT\n");
-  delay_cycles(10000);
 
   setupHardwareStatus.CSP_init = configure_csp();
   printToTerminal("CSP CONFIGURED\n");
-  delay_cycles(10000);
 
   set_csp_init(1);
   printToTerminal("CSP INIT SET\n");
-  delay_cycles(10000);
 
   init_mram();
   printToTerminal("MRAM INIT\n");
-  delay_cycles(10000);
 
   data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
   printToTerminal("DATA FLASH INIT\n");
-  delay_cycles(10000);
 
   program_flash_status = flash_device_init(flash_devices[PROGRAM_FLASH]);
   printToTerminal("PROGRAM FLASH INIT\n");
-  delay_cycles(10000);
 
   setupHardwareStatus.data_flash_init = data_flash_status;
   setupHardwareStatus.program_flash_init = program_flash_status;
 
-  // TODO make this better - this might crash???
   FilesystemError_t stat = fs_init();
   setupHardwareStatus.fs_init = stat;
   printToTerminal("FILESYSTEM INIT\n");
-  delay_cycles(10000);
 
   printToTerminal("MOUNTING FILESYSTEM\n");
-  delay_cycles(10000);
 
+  // Mount once; fallback path handles first-boot format.
   int err = fs_mount();
   printToTerminal("FILESYSTEM MOUNTED\n");
-  delay_cycles(10000);
 
   if (err) {
+    // Test fallback: format once if mount fails.
     printToTerminal("\n\n------FILESYSTEM FORMAT REQUIRED------\n");
     printToTerminal("FORMATTING FILESYSTEM\n");
     fs_format();
@@ -477,10 +285,12 @@ static void prvSetupHardware(void) {
 #define OPTIONAL_PARAMS 0
 
 /*-----------------------------------------------------------*/
-satPacket packet;
-csp_conn_t* txconn;
-csp_packet_t* cspPacket;
-static void vTestCspClient(void* pvParameters) {
+static void CSPClient(void* pvParameters) {
+  (void)pvParameters;
+
+  satPacket packet;
+  csp_conn_t* txconn;
+  csp_packet_t* cspPacket;
   uint8_t dest;
   vTaskDelay(2000);
 
@@ -489,8 +299,10 @@ static void vTestCspClient(void* pvParameters) {
   printToTerminal("CSP Client started\n");
   while (1) {
     if (xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
+      // Packet already built by producer; this task only forwards it.
       dest = packet.dest;
       cspPacket = packet.packet;
+      // priority, src, dest, timeout, opts
       txconn = csp_connect(2, 0, dest, 1000, 0);
       csp_send(txconn, cspPacket, 0);
       csp_close(txconn);
@@ -499,14 +311,6 @@ static void vTestCspClient(void* pvParameters) {
   }
 }
 
-void vTestingTask(void* pvParams) {
-  csp_conn_t* conn = NULL;
-  csp_packet_t* outPacket = NULL;
-
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(5000));
-  }
-}
 /*-----------------------------------------------------------*/
 
 void vApplicationMallocFailedHook(void) {

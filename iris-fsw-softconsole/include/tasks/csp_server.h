@@ -44,6 +44,7 @@ typedef struct customPacket {
 QueueHandle_t txQueue;
 
 void sendData(char*, int, int);
+uint8_t configure_csp(void);
 
 
 //------------------------------------------------------------------------------

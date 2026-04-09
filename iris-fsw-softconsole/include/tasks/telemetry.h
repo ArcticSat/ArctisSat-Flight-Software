@@ -71,6 +71,14 @@ typedef struct {
     uint8_t data[];
 } mytelemetryPacket_t;
 
+/*
+	Struct for telemetry packets sent over the radio. 
+	This is what goes in the commsTxQueue and commsRxQueue. 
+	The data field can hold up to 64 bytes of data, but the 
+	actual length is specified in the len field. The type field is used 
+	to specify the type of telemetry packet, which can be used by the 
+	receiver to determine how to parse the data. 
+*/
 typedef struct {
 	uint16_t type;
     uint8_t len;
@@ -304,6 +312,7 @@ typedef enum {
 	MSG_TYPE_DEBUG_STRING = 2,
 	MSG_TYPE_POWER_MSB_DATA = 3,
 	MSG_TYPE_POWER_CCLSM_DATA = 4,
+	// Additional message types can be added here as needed
 } SpaceToGroundMessageType_t;
 typedef enum {
 	// CDH tasks,

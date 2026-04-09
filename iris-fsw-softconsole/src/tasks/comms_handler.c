@@ -7,20 +7,18 @@
 
 #include <FreeRTOS-Kernel/include/FreeRTOS.h>
 #include <FreeRTOS-Kernel/include/task.h>
-#include <csp/csp.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "application/adcs.h"
 #include "application/application.h"
+#include "application/CCSDS.h"
 #include "csp/interfaces/csp_if_can.h"
 #include "drivers/protocol/uart.h"
 #include "tasks/csp_server.h"
 #include "tasks/telemetry.h"
 #include "tests.h"
-#include "application/CCSDS.h"
-
-#define READ_POINTER_START_ADDR 0x0000
-#define WRITE_POINTER_START_ADDR 0x0004
 
 uint32_t crc32b(unsigned char* data, int size) {
   int byteIdx, bitIdx;
@@ -38,14 +36,13 @@ uint32_t crc32b(unsigned char* data, int size) {
 }
 
 volatile int CTS = 1;
-static TaskHandle_t xTaskToNotify = NULL;
 
 void sendImagePacket(char* data, int len, int index) {
-
+  // Placeholder for image downlink packetization.
+  (void)data;
+  (void)len;
+  (void)index;
 }
-
-#include <stdint.h>
-#include <string.h>
 
 #define CCSDS_VERSION        0
 #define CCSDS_TYPE_TM        0
@@ -98,7 +95,7 @@ int build_ccsds_data_packet(uint8_t *out_buf, uint16_t type, uint8_t *data, uint
     uint16_t ccsds_len  = packet_len + 1; // Length field = (data_bytes - 1)
 
     // --- PRIMARY HEADER ---
-    uint16_t packet_id;
+  uint16_t packet_id = 0;
     // Byte 0-1: Packet ID
     packet_id |= (CCSDS_VERSION & 0x7) << 13;           // version (3 bits)
     packet_id |= (CCSDS_TYPE_TM & 0x1) << 12;           // type    (1 bit)
@@ -130,8 +127,6 @@ int build_ccsds_data_packet(uint8_t *out_buf, uint16_t type, uint8_t *data, uint
     // return total packet size: 6 bytes header + payload
     return 8 + packet_len;
 }
-
-#define DEBUG_APID 0x69
 
 int generate_manual_cfdp_ack(uint8_t *buf, uint16_t seq_count, uint8_t acked_dir) {
     // Primary Header (6 bytes) + Type (2 bytes)
@@ -190,12 +185,9 @@ static uint8_t buf[256];
 
 void commsTransmitterTask() {
   static radioPacket_t* packet;
-  xTaskToNotify = xTaskGetCurrentTaskHandle();
-  uint32_t* notVal;
 
   printToTerminal("COMMS Transmitter task started.\n");
   for (;;) {
-    // xTaskNotifyWait(0, 0, notVal, portMAX_DELAY);
     if (xQueueReceive(commsTxQueue, &packet, portMAX_DELAY) == pdTRUE) {
       vTaskSuspendAll();
       int sendLen = build_ccsds_data_packet(buf, packet->type, (uint8_t*)packet->data, packet->len);
@@ -205,10 +197,6 @@ void commsTransmitterTask() {
     }
   }
 }
-
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
 
 #define CCSDS_PRIMARY_HDR_LEN 6
 
@@ -302,9 +290,6 @@ uint8_t check_if_cfdp_ack_needed(uint8_t *packet) {
 }
 
 void commsReceiverTask() {
-  uint32_t ulNumRecvBytes;
-	uint8_t ucUARTByte;
-	BaseType_t xResult;
 	volatile uint8_t *my_buffer = uart0buffer;
 	volatile size_t *uxUnreadBytes = &uxUART0UnreadBytes;
 
@@ -312,9 +297,10 @@ void commsReceiverTask() {
   vTaskDelay(500);
   printToTerminal("COMMS Receiver task started.\n");
   for (;;) {
-    //        i = MSS_UART_get_rx(&g_mss_uart0, buf_Rx0, 32);
 		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     while (*uxUnreadBytes > 0) {
+      // Critical section to safely read from the UART buffer and 
+      // update the unread byte count (unread byte count is updated by the UART ISR when new data arrives)
       taskENTER_CRITICAL();
       {
         memcpy(buf_Rx0, my_buffer, *uxUnreadBytes);
@@ -325,6 +311,7 @@ void commsReceiverTask() {
 
       size_t processed = 0;
       while (processed < uxBytesRead) {
+        // Try to extract a full CCSDS packet from the buffer starting at 'processed' index
         if (ccsds_extract_packet(&buf_Rx0[processed],
                                  uxBytesRead - processed,
                                  &extracted_packet)) {
@@ -347,7 +334,7 @@ void commsReceiverTask() {
           }
           // Full packet extracted
           static radioPacket_t rxPacket;
-          rxPacket.type = extracted_packet.apid;  // using APID as type
+          rxPacket.type = extracted_packet.apid;  // using APID as type for testing
           rxPacket.len = extracted_packet.data_len + 1;
           rxPacket.index = extracted_packet.seq_count;
           memcpy(rxPacket.data, &buf_Rx0[processed + CCSDS_PRIMARY_HDR_LEN], rxPacket.len);
@@ -365,7 +352,10 @@ void commsReceiverTask() {
 }
 
 void sendDataPacket(char* data, int len, uint8_t type) {
-
+  // Placeholder for typed packet helper.
+  (void)data;
+  (void)len;
+  (void)type;
 }
 
 void sendRawData(uint8_t* data, uint16_t type, int len) {
@@ -384,8 +374,7 @@ void sendRawData(uint8_t* data, uint16_t type, int len) {
 
 void printToTerminal(char* msg) {
   if (preRtosPrintRaw) {
-    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*)msg,
-                                     strlen(msg));
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*)msg, strlen(msg));
     return;
   }
 
@@ -404,13 +393,7 @@ void printToTerminal(char* msg) {
   xQueueSendToBack(commsTxQueue, &pkt, 0);
 }
 
-uint8_t year, month, day, hour, minute, second;
-Calendar_t time;
-Calendar_t currTime;
-char timeBuf[32];
-
 void commsHandlerTask() {
-  radioPacket_t packet;
   radioPacket_t rxPacket;
 
   vTaskDelay(1000);
@@ -419,20 +402,8 @@ void commsHandlerTask() {
 
   for (;;) {
     if (xQueueReceive(commsRxQueue, &rxPacket, portMAX_DELAY) == pdTRUE) {
-        if(rxPacket.type == 2045) {
-            //file packet
-            //log just the data in a file to test
-            logADCSTelem((char*)(rxPacket.data), rxPacket.len);
-        } else {
-            uint8_t CCSDS_command_type = rxPacket.data[9];
-            switch (CCSDS_command_type) {
-            case 0x05: //dump telemetry command
-              telemReadFlag = 1;
-              break;
-            default:
-                break;
-            }
-          }
+      // rxPacket contains the received packet from the commsReceiverTask. 
+      // We can parse it and take actions based on its content.
     }
   }
 }
