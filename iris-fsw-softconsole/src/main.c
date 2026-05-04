@@ -230,6 +230,34 @@ void generate_ccsds_packet(void) {
 int main(void) {
   preRtosPrintRaw = 1;
   prvSetupHardware();
+  
+
+  while(1) {
+    telemetryPacket_t pingPkt = { .telem_id = 16, .length = 0 };
+    csp_packet_t *packet = csp_buffer_get(sizeof(pingPkt));
+    if (packet != NULL) {
+      memcpy(packet->data, &pingPkt, sizeof(pingPkt));
+      packet->length = sizeof(pingPkt);
+
+      csp_conn_t *conn = csp_connect(CSP_PRIO_NORM, 1, 1, 1000, CSP_O_NONE);
+      if (conn) {
+        csp_send(conn, packet, 1000);
+
+        csp_packet_t *reply = csp_read(conn, 2000);
+        if (reply != NULL) {
+          // PUT A BREAKPOINT HERE TO INSPECT THE REPLY PACKET!!! Should be "chip and slot: 0 0"
+          telemetryPacket_t respPkt;
+          if (reply->length >= sizeof(respPkt)) {
+            memcpy(&respPkt, reply->data, sizeof(respPkt));
+          }
+          csp_buffer_free(reply);
+        }
+        csp_close(conn);
+      } else {
+        csp_buffer_free(packet);
+      }
+    }
+  }
 
   int i;
   volatile float a, b, c, d;
