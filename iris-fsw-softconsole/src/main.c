@@ -231,6 +231,19 @@ int main(void) {
   preRtosPrintRaw = 1;
   prvSetupHardware();
 
+  int i;
+  volatile float a, b, c, d;
+  b = 1.234;
+  c = 4.567;
+  d = 123.456;
+  while(1) {
+      volatile int q = 0;
+      for(i = 0; i < 100000; i++) {
+          a = (b * c) + d;
+      }
+      volatile int j = 0;
+  }
+
   uint8_t buf[256];
   int packet_size = build_ccsds_string_packet(buf, "Hello, CCSDS!");
   volatile int jingle = 0;
