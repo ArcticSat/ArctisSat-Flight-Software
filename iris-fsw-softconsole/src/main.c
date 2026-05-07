@@ -221,56 +221,28 @@ void generate_ccsds_packet(void) {
     volatile int j = 0;
 }
 
-// Creates a CCSDS packet containing a string payload.
-// Returns packet length in bytes (header + payload).
-// `out_buf` must have enough space for header + string.
-
+void vTestPayload();
 
 
 int main(void) {
   preRtosPrintRaw = 1;
+//  while(1) {
+//      volatile int myTestForABreakpoint = 7;
+//  }
   prvSetupHardware();
-  
 
-  while(1) {
-    telemetryPacket_t pingPkt = { .telem_id = 16, .length = 0 };
-    csp_packet_t *packet = csp_buffer_get(sizeof(pingPkt));
-    if (packet != NULL) {
-      memcpy(packet->data, &pingPkt, sizeof(pingPkt));
-      packet->length = sizeof(pingPkt);
-
-      csp_conn_t *conn = csp_connect(CSP_PRIO_NORM, 1, 1, 1000, CSP_O_NONE);
-      if (conn) {
-        csp_send(conn, packet, 1000);
-
-        csp_packet_t *reply = csp_read(conn, 2000);
-        if (reply != NULL) {
-          // PUT A BREAKPOINT HERE TO INSPECT THE REPLY PACKET!!! Should be "chip and slot: 0 0"
-          telemetryPacket_t respPkt;
-          if (reply->length >= sizeof(respPkt)) {
-            memcpy(&respPkt, reply->data, sizeof(respPkt));
-          }
-          csp_buffer_free(reply);
-        }
-        csp_close(conn);
-      } else {
-        csp_buffer_free(packet);
-      }
-    }
-  }
-
-  int i;
-  volatile float a, b, c, d;
-  b = 1.234;
-  c = 4.567;
-  d = 123.456;
-  while(1) {
-      volatile int q = 0;
-      for(i = 0; i < 100000; i++) {
-          a = (b * c) + d;
-      }
-      volatile int j = 0;
-  }
+//  int i;
+//  volatile float a, b, c, d;
+//  b = 1.234;
+//  c = 4.567;
+//  d = 123.456;
+//  while(1) {
+//      volatile int q = 0;
+//      for(i = 0; i < 100000; i++) {
+//          a = (b * c) + d;
+//      }
+//      volatile int j = 0;
+//  }
 
   uint8_t buf[256];
   int packet_size = build_ccsds_string_packet(buf, "Hello, CCSDS!");
@@ -301,7 +273,9 @@ int main(void) {
   //    status = xTaskCreate(vTestRTC,"Test
   //    RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
   //    xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL); status =
-  //    xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL); status =
+      xTaskCreate(vTestPayload,"Test SPI2",1000,NULL,1,NULL);
+      vTaskStartScheduler();
+//status =
   //    xTaskCreate(vTestCANTx,"Test CAN
   //    Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
   //    xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL); status =
@@ -418,6 +392,45 @@ int main(void) {
   vTaskStartScheduler();
 
   return 0;
+}
+
+void vTestPayload(void* pvParams) {
+    csp_conn_t *conn = NULL;
+    csp_packet_t *packet = NULL;
+    csp_socket_t *socket = csp_socket(0);
+
+    csp_bind(socket, CSP_ANY); //bind to all ports, listen to anything set to this destination address
+    csp_listen(socket, 4); //have up to 4 backlog connections for testing
+
+    //Have up to 4 backlog connections.
+    csp_listen(socket,4);
+
+    while(1) {
+      telemetryPacket_t pingPkt = { .telem_id = 16, .length = 0 };
+      csp_packet_t *packet = csp_buffer_get(sizeof(pingPkt));
+      if (packet != NULL) {
+        memcpy(packet->data, &pingPkt, sizeof(pingPkt));
+        packet->length = sizeof(pingPkt);
+
+        csp_conn_t *conn = csp_connect(CSP_PRIO_NORM, 1, 1, 1000, CSP_O_NONE);
+        if (conn) {
+          csp_send(conn, packet, 1000);
+
+          csp_packet_t *reply = csp_read(conn, 2000);
+          if (reply != NULL) {
+            // PUT A BREAKPOINT HERE TO INSPECT THE REPLY PACKET!!! Should be "chip and slot: 0 0"
+            telemetryPacket_t respPkt;
+            if (reply->length >= sizeof(respPkt)) {
+              memcpy(&respPkt, reply->data, sizeof(respPkt));
+            }
+            csp_buffer_free(reply);
+          }
+          csp_close(conn);
+        } else {
+          csp_buffer_free(packet);
+        }
+      }
+    }
 }
 
 #define USING_DATA_FLASH

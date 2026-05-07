@@ -88,45 +88,5 @@
 
 
 void vTestSPI(void *pvParameters){
-    const uint8_t buf_Tx0[] = {66};
-    const uint8_t buf_Tx1[] = {105};
-    uint8_t adcs_status = 0;
-    const uint8_t cmdID_42 = 66;
-	const uint8_t cmdID_69 = 105;
-	uint8_t cmdID = 0;
-    uint8_t buf_Rx0[32];
-    buf_Rx0[0] = 0x50;
-    uint8_t counter = 0;
-    for (;;)
-    {
-//    	buf_Rx0[0] = 0x00;
-    	uint8_t test_rd[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    	adcs_status = 1;
-    	if (counter == 0){
-    		cmdID = 0x69;
-    		counter++;
-    	}
-    	else if (counter == 1){
-    		cmdID = 0x42;
-    		counter++;
-    	}
-    	else if (counter == 2){
-    		cmdID = 0x15;
-			counter++;
-		}
-    	else if (counter == 3){
-    		cmdID = 0x18;
-			counter++;
-		}
-    	else if (counter == 4){
-    		cmdID = 0x99;
-			counter = 0;
-		}
-		adcs_status = adcsSyncSpiCommand(cmdID);
-		vTaskDelay(pdMS_TO_TICKS(50));
-		if (adcs_status == 0){
-			adcsTxRx(NULL, 0, test_rd, sizeof(test_rd));
-		}
-    	vTaskDelay(2000);
-    }
+
 }
