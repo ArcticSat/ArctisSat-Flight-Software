@@ -102,7 +102,7 @@ void vCSP_Server(void *pvParameters) {
 //    vTaskResume(vCanServer_h); //resume CAN rx handler
 
     //Have up to 4 backlog connections.
-    csp_listen(socket,4);
+//    csp_listen(socket,4);
 
     powerPingStatus = PING_LOST;
     powerPingCount = 0;
@@ -113,13 +113,18 @@ void vCSP_Server(void *pvParameters) {
     int lockout = 0;
     float msbVoltage;
     float msbCurrent;
+    volatile char testBuf[64];
     //TODO: Check return of csp_bind and listen, then handle errors.
     //TODO make this so much better!
     printToTerminal("CSP Server starting\n");
     while(1) {
 		conn = csp_accept(socket, 500);
 		if(conn){
-			packet = csp_read(conn,0);
+            packet = csp_read(conn, 500);
+            if (packet == NULL) {
+                csp_close(conn);
+                continue;
+            }
 			int sourceID = csp_conn_src(conn);
             int dest_port = csp_conn_dport(conn);
 
@@ -135,6 +140,15 @@ void vCSP_Server(void *pvParameters) {
                     powerPingStatus = PING_FOUND;
 
                     break;
+                }
+
+                case 0x01: //payload
+                {
+                    telemetryPacket_t respPkt;
+                    if (packet->length >= sizeof(respPkt)) {
+                      memcpy(testBuf, packet->data, packet->length);
+                      volatile int breakpoint = 1;
+                    }
                 }
 			}
 

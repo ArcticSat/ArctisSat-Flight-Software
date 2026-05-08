@@ -20,7 +20,7 @@
 #define POWER_CSP_ADDRESS	2
 #define COMMS_CSP_ADDRESS	3
 #define CDH_CSP_ADDRESS		4
-#define PAYLOAD_CSP_ADDRESS	5
+#define PAYLOAD_CSP_ADDRESS	1
 #define GROUND_CSP_ADDRESS	9
 
 
@@ -56,7 +56,6 @@ typedef enum {
 
 typedef struct {
 	Calendar_t timestamp;
-	uint8_t reporting_device;
 	uint8_t telem_id;
 	uint8_t length;
 	uint8_t *data;

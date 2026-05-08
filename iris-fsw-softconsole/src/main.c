@@ -98,23 +98,23 @@ TaskHandle_t vTestWD_h;
 TaskHandle_t vSunPointing_h;
 TaskHandle_t vTestAdcsDriverInterface_h;
 
-HardwareCheck_t setupHardwareStatus = {0};
+HardwareCheck_t setupHardwareStatus = { 0 };
 
 static void prvSetupHardware(void);
-static void vTestCspServer(void* pvParameters);
-static void vTestCspClient(void* pvParameters);
-static void vTestingTask(void* pvParams);
+static void vTestCspServer(void *pvParameters);
+static void vTestCspClient(void *pvParameters);
+static void vTestingTask(void *pvParams);
 
 void vApplicationMallocFailedHook(void);
 void vApplicationIdleHook(void);
-void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName);
+void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
 void vApplicationTickHook(void);
 
 static void delay_cycles(volatile uint32_t incycles) {
-  uint32_t cycles = incycles * 3;
-  while (cycles--) {
-    __asm volatile("nop");
-  }
+    uint32_t cycles = incycles * 3;
+    while (cycles--) {
+        __asm volatile("nop");
+    }
 }
 
 #define GRID_SIZE 32
@@ -130,8 +130,8 @@ static inline uint16_t swap_uint16(uint16_t val) {
 
 static inline uint32_t swap_uint32(uint32_t val) {
     // Standard big-endian conversion (e.g., for SHCOARSE)
-    return (val << 24) | ((val & 0x0000FF00) << 8) | \
-           ((val & 0x00FF0000) >> 8) | (val >> 24);
+    return (val << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8)
+            | (val >> 24);
 }
 
 // Function to generate the CCSDS packet into the buffer
@@ -141,23 +141,21 @@ static inline uint32_t swap_uint32(uint32_t val) {
 void generate_ccsds_packet(void) {
     // --- 1. Define Example Data (Matching the successful parsing attempt) ---
     uint32_t sh_coarse = 0xDEADBEEF;
-    int8_t   voltage   = 69;
-    uint32_t sh_fine   = 4206769;
-    uint32_t op_mode   = 1;
-    uint32_t spacer    = 0; // Use 0 for filler/spacer.
+    int8_t voltage = 69;
+    uint32_t sh_fine = 4206769;
+    uint32_t op_mode = 1;
+    uint32_t spacer = 0; // Use 0 for filler/spacer.
 
     // ... [Sensor Array Data remains the same] ...
     uint16_t sensor_grid_data[SENSOR_ARRAY_LEN];
     for (int i = 0; i < SENSOR_ARRAY_LEN; i++) {
-        sensor_grid_data[i] = (uint16_t)i;
+        sensor_grid_data[i] = (uint16_t) i;
     }
 
     // --- 2. Assemble Packed 32-bit Field (Host Order) ---
     // [SHFINE (20) | OPMODE (3) | SPACER (1) | VOLTAGE (8)]
-    uint32_t packed_fields = (sh_fine << 12) |
-                             (op_mode << 9) |
-                             (spacer << 8) |
-                             ((uint8_t)voltage);
+    uint32_t packed_fields = (sh_fine << 12) | (op_mode << 9) | (spacer << 8)
+            | ((uint8_t) voltage);
 
     // --- 3. Start writing to the buffer ---
     uint8_t *ptr = ccsds_packet_buffer;
@@ -170,16 +168,19 @@ void generate_ccsds_packet(void) {
     // PH-1 (Version=0, Type=1 (Telemetry), SecHeader=1, APID=123)
     uint16_t ph1 = (0 << 13) | (1 << 12) | (1 << 11) | apid;
     uint16_t ph1_be = swap_uint16(ph1);
-    memcpy(ptr, &ph1_be, 2); ptr += 2; // Write 0x187B
+    memcpy(ptr, &ph1_be, 2);
+    ptr += 2; // Write 0x187B
 
     // PH-2 (SequenceFlags=3 (Standalone), SequenceCount=5)
     uint16_t ph2 = (3 << 14) | sequence_count;
     uint16_t ph2_be = swap_uint16(ph2);
-    memcpy(ptr, &ph2_be, 2); ptr += 2; // Write 0xC005
+    memcpy(ptr, &ph2_be, 2);
+    ptr += 2; // Write 0xC005
 
     // PH-3 (Data Length = 2065)
     uint16_t ph3_be = swap_uint16(data_length);
-    memcpy(ptr, &ph3_be, 2); ptr += 2; // Write 0x0811
+    memcpy(ptr, &ph3_be, 2);
+    ptr += 2; // Write 0x0811
 
     // --- 3.2. Secondary Header (10 bytes) ---
     // Use the values that were successfully parsed before
@@ -206,10 +207,10 @@ void generate_ccsds_packet(void) {
 
     // 2. Packed Fields (32 bits)
     // Write in Big-Endian order (MSB first)
-    *ptr++ = (uint8_t)(packed_fields >> 24);
-    *ptr++ = (uint8_t)(packed_fields >> 16);
-    *ptr++ = (uint8_t)(packed_fields >> 8);
-    *ptr++ = (uint8_t)(packed_fields);
+    *ptr++ = (uint8_t) (packed_fields >> 24);
+    *ptr++ = (uint8_t) (packed_fields >> 16);
+    *ptr++ = (uint8_t) (packed_fields >> 8);
+    *ptr++ = (uint8_t) (packed_fields);
 
     // 3. SENSOR_GRID (1024 * 16-bit uint)
     for (int i = 0; i < SENSOR_ARRAY_LEN; i++) {
@@ -223,13 +224,14 @@ void generate_ccsds_packet(void) {
 
 void vTestPayload();
 
-
 int main(void) {
-  preRtosPrintRaw = 1;
+    preRtosPrintRaw = 1;
 //  while(1) {
 //      volatile int myTestForABreakpoint = 7;
 //  }
-  prvSetupHardware();
+    prvSetupHardware();
+
+//    while(1);
 
 //  int i;
 //  volatile float a, b, c, d;
@@ -244,192 +246,193 @@ int main(void) {
 //      volatile int j = 0;
 //  }
 
-  uint8_t buf[256];
-  int packet_size = build_ccsds_string_packet(buf, "Hello, CCSDS!");
-  volatile int jingle = 0;
-  BaseType_t status;
+    uint8_t buf[256];
+    int packet_size = build_ccsds_string_packet(buf, "Hello, CCSDS!");
+    volatile int jingle = 0;
+    BaseType_t status;
 
-  printToTerminal("\n\n###########  Queue init...  ############\n");
+    printToTerminal("\n\n###########  Queue init...  ############\n");
 
-  txQueue = xQueueCreate(5, sizeof(satPacket));
-  commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t*));
-  commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
-  telemetryQueue = xQueueCreate(5, sizeof(mytelemetryPacket_t*));
-  taskQueue = xQueueCreate(3, sizeof(timeTaggedTask_t));
-  errorQueue = xQueueCreate(5, sizeof(caughtError_t));
+    txQueue = xQueueCreate(5, sizeof(satPacket));
+    commsTxQueue = xQueueCreate(10, sizeof(radioPacket_t*));
+    commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
+    telemetryQueue = xQueueCreate(5, sizeof(mytelemetryPacket_t*));
+    taskQueue = xQueueCreate(3, sizeof(timeTaggedTask_t));
+    errorQueue = xQueueCreate(5, sizeof(caughtError_t));
 
-  printToTerminal("Queue init done.\n");
+    printToTerminal("Queue init done.\n");
 
-  logMessage("System booting...\n");
+    logMessage("System booting...\n");
 
-  //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void
-  //    *)flash_devices[DATA_FLASH],1,NULL);
-  //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
-  //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void
-  //*)flash_devices[DATA_FLASH],1,NULL); 	  status =
-  //xTaskCreate(vTestFlashFull,"Test Flash",2000,(void
-  //*)flash_devices[PROGRAM_FLASH],1,NULL);
-  //        status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-  //    status = xTaskCreate(vTestRTC,"Test
-  //    RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
-  //    xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL); status =
-      xTaskCreate(vTestPayload,"Test SPI2",1000,NULL,1,NULL);
-      vTaskStartScheduler();
+    //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void
+    //    *)flash_devices[DATA_FLASH],1,NULL);
+    //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
+    //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void
+    //*)flash_devices[DATA_FLASH],1,NULL); 	  status =
+    //xTaskCreate(vTestFlashFull,"Test Flash",2000,(void
+    //*)flash_devices[PROGRAM_FLASH],1,NULL);
+    //        status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
+    //    status = xTaskCreate(vTestRTC,"Test
+    //    RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
+    //    xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL); status =
+    xTaskCreate(vTestPayload, "Test SPI2", 1000, NULL, 1, NULL);
 //status =
-  //    xTaskCreate(vTestCANTx,"Test CAN
-  //    Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
-  //    xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL); status =
-  //    xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL); status =
-  //    xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
-  //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test
-  //    Priority_Queue",256,NULL,1,NULL); status =
-  //    xTaskCreate(vTestTaskScheduler,"Test time tagged task
-  //    queue",256,NULL,1,NULL); status = xTaskCreate(vTestADC, "adcTest", 160,
-  //    NULL, 1, NULL); status = xTaskCreate(vCanServer,"CAN
-  //    Rx",1000,NULL,2,&vCanServer_h); status = xTaskCreate(vTestAdcsDriver,
-  //    "ADCS handler", 500, NULL, 1, NULL);
+    //    xTaskCreate(vTestCANTx,"Test CAN
+    //    Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
+    //    xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL); status =
+    //    xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL); status =
+    //    xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
+    //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test
+    //    Priority_Queue",256,NULL,1,NULL); status =
+    //    xTaskCreate(vTestTaskScheduler,"Test time tagged task
+    //    queue",256,NULL,1,NULL); status = xTaskCreate(vTestADC, "adcTest", 160,
+    //    NULL, 1, NULL); status = xTaskCreate(vCanServer,"CAN
+    //    Rx",1000,NULL,2,&vCanServer_h); status = xTaskCreate(vTestAdcsDriver,
+    //    "ADCS handler", 500, NULL, 1, NULL);
 
-  /**THESE ARE THE MAIN FUNCTIONS**/
+    /**THESE ARE THE MAIN FUNCTIONS**/
 
-  printToTerminal("\n\n###########  Begin task init...  ############\n");
+    printToTerminal("\n\n###########  Begin task init...  ############\n");
 
-  // TODO add handling and logging to all the task status
-  // Need to suspend this task until the CSP stack is up and running.
-  // If we start pumping CAN messages into CSP before it is ready it will crash.
-  // The task is resumed in the CSP server once it is ready.
-  //    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
-  //    vTaskSuspend(vCanServer_h);
-  // This task handles all incoming CSP packets and routes them to the
-  // appropriate handler.
-  status = xTaskCreate(vCSP_Server, "cspServer ", 200, NULL, 1,
-                       &monitoredTasks[CSP_SERVER_TASK_INDEX]);
-  printToTerminal("CSP Server task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  volatile int j = xPortGetFreeHeapSize();
+    // TODO add handling and logging to all the task status
+    // Need to suspend this task until the CSP stack is up and running.
+    // If we start pumping CAN messages into CSP before it is ready it will crash.
+    // The task is resumed in the CSP server once it is ready.
+    //    status = xTaskCreate(vCanServer, "CAN Rx", 300, NULL, 1, &vCanServer_h);
+    //    vTaskSuspend(vCanServer_h);
+    // This task handles all incoming CSP packets and routes them to the
+    // appropriate handler.
+    status = xTaskCreate(vCSP_Server, "cspServer ", 200, NULL, 1,
+            &monitoredTasks[CSP_SERVER_TASK_INDEX]);
+    printToTerminal("CSP Server task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    volatile int j = xPortGetFreeHeapSize();
+    vTaskStartScheduler();
 
-  // This task reads from the tx queue and sends packets out over CSP.
-  // TODO rename this task
-  status = xTaskCreate(vTestCspClient, "CSP Tx    ", 200, NULL, 1,
-                       &monitoredTasks[CSP_TX_TASK_INDEX]);
-  printToTerminal("CSP Client task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    // This task reads from the tx queue and sends packets out over CSP.
+    // TODO rename this task
+    status = xTaskCreate(vTestCspClient, "CSP Tx    ", 200, NULL, 1,
+            &monitoredTasks[CSP_TX_TASK_INDEX]);
+    printToTerminal("CSP Client task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  // This task reads from the UART Rx queue and handles them
-  status = xTaskCreate(commsHandlerTask, "UARTHandle", 300, NULL, 1,
-                       &monitoredTasks[UART_HANDLER_TASK_INDEX]);
-  printToTerminal("UART Handler task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    // This task reads from the UART Rx queue and handles them
+    status = xTaskCreate(commsHandlerTask, "UARTHandle", 300, NULL, 1,
+            &monitoredTasks[UART_HANDLER_TASK_INDEX]);
+    printToTerminal("UART Handler task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  // This task dispatches packets in the TX queue over UART
-  status = xTaskCreate(commsTransmitterTask, "UART Tx   ", 200, NULL, 1,
-                       &monitoredTasks[UART_TX_TASK_INDEX]);
-  printToTerminal("UART Transmitter task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    // This task dispatches packets in the TX queue over UART
+    status = xTaskCreate(commsTransmitterTask, "UART Tx   ", 200, NULL, 1,
+            &monitoredTasks[UART_TX_TASK_INDEX]);
+    printToTerminal("UART Transmitter task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  // This task reads from the UART and puts packets in the Rx queue
-  status = xTaskCreate(commsReceiverTask, "UART Rx   ", 200, NULL, 1,
-                       &monitoredTasks[UART_RX_TASK_INDEX]);
+    // This task reads from the UART and puts packets in the Rx queue
+    status = xTaskCreate(commsReceiverTask, "UART Rx   ", 200, NULL, 1,
+            &monitoredTasks[UART_RX_TASK_INDEX]);
 
-  setTaskToNotify(monitoredTasks[UART_RX_TASK_INDEX]);
-  printToTerminal("UART Receiver task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    setTaskToNotify(monitoredTasks[UART_RX_TASK_INDEX]);
+    printToTerminal("UART Receiver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  //    // This task drives ADCS
-  status = xTaskCreate(vADCSDriver, "ADCS handler", 300, NULL, 1,
-                       &monitoredTasks[ADCS_DRIVER_TASK_INDEX]);
-  printToTerminal("ADCS Driver task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    //    // This task drives ADCS
+    status = xTaskCreate(vADCSDriver, "ADCS handler", 300, NULL, 1,
+            &monitoredTasks[ADCS_DRIVER_TASK_INDEX]);
+    printToTerminal("ADCS Driver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  // This task drives power
-  status = xTaskCreate(vPowerDriver, "PWRHandler", 200, NULL, 1,
-                       &monitoredTasks[POWER_DRIVER_TASK_INDEX]);
-  printToTerminal("Power Driver task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    // This task drives power
+    status = xTaskCreate(vPowerDriver, "PWRHandler", 200, NULL, 1,
+            &monitoredTasks[POWER_DRIVER_TASK_INDEX]);
+    printToTerminal("Power Driver task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  // TODO fix this task
-  status = xTaskCreate(telemetryManager, "Telemetry ", 600, NULL, 1,
-                       &monitoredTasks[TELEMETRY_TASK_INDEX]);
-  printToTerminal("Telemetry Manager task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    // TODO fix this task
+    status = xTaskCreate(telemetryManager, "Telemetry ", 600, NULL, 1,
+            &monitoredTasks[TELEMETRY_TASK_INDEX]);
+    printToTerminal("Telemetry Manager task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  // Main loop, does all the typical stuff
-  status = xTaskCreate(vMissionLoop, "Mission   ", 600, NULL, 1,
-                       &monitoredTasks[MISSION_TASK_INDEX]);
-  printToTerminal("Mission Operations Loop task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    // Main loop, does all the typical stuff
+    status = xTaskCreate(vMissionLoop, "Mission   ", 600, NULL, 1,
+            &monitoredTasks[MISSION_TASK_INDEX]);
+    printToTerminal("Mission Operations Loop task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  status = xTaskCreate(vHealthAndSafety, "HlthSafety", 500, NULL, 1,
-                       &monitoredTasks[HEALTH_AND_SAFETY_TASK_INDEX]);
-  printToTerminal("Health and Safety task created. Status: ");
-  delay_cycles(100000);
-  printToTerminal(status ? "Success\n" : "Failure\n");
-  j = xPortGetFreeHeapSize();
+    status = xTaskCreate(vHealthAndSafety, "HlthSafety", 500, NULL, 1,
+            &monitoredTasks[HEALTH_AND_SAFETY_TASK_INDEX]);
+    printToTerminal("Health and Safety task created. Status: ");
+    delay_cycles(100000);
+    printToTerminal(status ? "Success\n" : "Failure\n");
+    j = xPortGetFreeHeapSize();
 
-  printToTerminal("Free heap bytes before scheduler start: ");
-  char heapStr[20];
-  snprintf(heapStr, 20, "%lu\n", j);
-  printToTerminal(heapStr);
-  printToTerminal("\n\n###########  Starting scheduler...  ############\n");
-  preRtosPrintRaw = 0;
+    printToTerminal("Free heap bytes before scheduler start: ");
+    char heapStr[20];
+    snprintf(heapStr, 20, "%lu\n", j);
+    printToTerminal(heapStr);
+    printToTerminal("\n\n###########  Starting scheduler...  ############\n");
+    preRtosPrintRaw = 0;
 
-  vTaskStartScheduler();
+    vTaskStartScheduler();
 
-  return 0;
+    return 0;
 }
 
-void vTestPayload(void* pvParams) {
-    csp_conn_t *conn = NULL;
-    csp_packet_t *packet = NULL;
-    csp_socket_t *socket = csp_socket(0);
+void vTestPayload(void *pvParams) {
+    while (1) {
+//        /* 1) Check for inbound connections (short timeout). */
+//        csp_conn_t *srv_conn = csp_accept(socket, 100); // 100 ms
+//        if (srv_conn) {
+//            csp_packet_t *pkt = csp_read(srv_conn, 1000);
+//            if (pkt) {
+//                // Example: parse an incoming telemetry packet and optionally reply
+//                telemetryPacket_t inPkt;
+//                if (pkt->length >= sizeof(inPkt)) {
+//                    memcpy(&inPkt, pkt->data, sizeof(inPkt));
+//                    // TODO: handle `inPkt` appropriately (log/process)
+//
+//                    // Echo back the same packet as an acknowledgement
+//                }
+//                csp_buffer_free(pkt);
+//            }
+//            csp_close(srv_conn);
+//        }
 
-    csp_bind(socket, CSP_ANY); //bind to all ports, listen to anything set to this destination address
-    csp_listen(socket, 4); //have up to 4 backlog connections for testing
+        /* 2) Do outbound transmit (non-blocking if accept returned immediately). */
+        telemetryPacket_t pingPkt = { .telem_id = 16, .length = 2 };
+        csp_packet_t *out = csp_buffer_get(sizeof(pingPkt));
+        if (out != NULL) {
+            memcpy(out->data, &pingPkt, sizeof(pingPkt));
+            out->length = sizeof(pingPkt);
 
-    //Have up to 4 backlog connections.
-    csp_listen(socket,4);
-
-    while(1) {
-      telemetryPacket_t pingPkt = { .telem_id = 16, .length = 0 };
-      csp_packet_t *packet = csp_buffer_get(sizeof(pingPkt));
-      if (packet != NULL) {
-        memcpy(packet->data, &pingPkt, sizeof(pingPkt));
-        packet->length = sizeof(pingPkt);
-
-        csp_conn_t *conn = csp_connect(CSP_PRIO_NORM, 1, 1, 1000, CSP_O_NONE);
-        if (conn) {
-          csp_send(conn, packet, 1000);
-
-          csp_packet_t *reply = csp_read(conn, 2000);
-          if (reply != NULL) {
-            // PUT A BREAKPOINT HERE TO INSPECT THE REPLY PACKET!!! Should be "chip and slot: 0 0"
-            telemetryPacket_t respPkt;
-            if (reply->length >= sizeof(respPkt)) {
-              memcpy(&respPkt, reply->data, sizeof(respPkt));
+            csp_conn_t *conn = csp_connect(CSP_PRIO_NORM, 1, 0, 1000, CSP_O_NONE);
+            if (conn) {
+                csp_send(conn, out, 1000);
+                csp_close(conn);
+            } else {
+                csp_buffer_free(out);
             }
-            csp_buffer_free(reply);
-          }
-          csp_close(conn);
-        } else {
-          csp_buffer_free(packet);
         }
-      }
+
+        vTaskDelay(pdMS_TO_TICKS(1000)); // avoid tight loop
     }
 }
 
@@ -439,89 +442,89 @@ void vTestPayload(void* pvParams) {
 FlashStatus_t data_flash_status = FLASH_ERROR;
 FlashStatus_t program_flash_status = FLASH_ERROR;
 static void prvSetupHardware(void) {
-  vInitializeUARTs(MSS_UART_115200_BAUD);
-  printToTerminal("\n\n\n\n\n\n###########  System init...  ############\n");
+    vInitializeUARTs(MSS_UART_115200_BAUD);
+    printToTerminal("\n\n\n\n\n\n###########  System init...  ############\n");
 
-  delay_cycles(10000);
+    delay_cycles(10000);
 
-  printToTerminal("UART INIT\n");
-  delay_cycles(10000);
+    printToTerminal("UART INIT\n");
+    delay_cycles(10000);
 
-  //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS |
-  //    MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
+    //    MSS_UART_init(&g_mss_uart0, MSS_UART_115200_BAUD, MSS_UART_DATA_8_BITS |
+    //    MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT);
 
-  init_WD();
-  init_rtc();
-  printToTerminal("RTC INIT\n");
-  delay_cycles(10000);
+    init_WD();
+    init_rtc();
+    printToTerminal("RTC INIT\n");
+    delay_cycles(10000);
 
-  setupHardwareStatus.spi_init = init_spi();
+    setupHardwareStatus.spi_init = init_spi();
 
-  printToTerminal("SPI INIT\n");
-  delay_cycles(10000);
+    printToTerminal("SPI INIT\n");
+    delay_cycles(10000);
 
-  setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K, NULL);
-  printToTerminal("CAN INIT\n");
-  delay_cycles(10000);
+    setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_500K, NULL);
+    printToTerminal("CAN INIT\n");
+    delay_cycles(10000);
 
-  int test = 0;
-  if (test) {
-    vTestFlashFull((void*)flash_devices[DATA_FLASH]);
-  }
-  //    init_mram();
-  adcs_init_driver();
-  printToTerminal("ADCS DRIVER INIT\n");
-  delay_cycles(10000);
+    int test = 0;
+    if (test) {
+        vTestFlashFull((void*) flash_devices[DATA_FLASH]);
+    }
+    //    init_mram();
+    adcs_init_driver();
+    printToTerminal("ADCS DRIVER INIT\n");
+    delay_cycles(10000);
 
-  setupHardwareStatus.CSP_init = configure_csp();
-  printToTerminal("CSP CONFIGURED\n");
-  delay_cycles(10000);
+    setupHardwareStatus.CSP_init = configure_csp();
+    printToTerminal("CSP CONFIGURED\n");
+    delay_cycles(10000);
 
-  set_csp_init(1);
-  printToTerminal("CSP INIT SET\n");
-  delay_cycles(10000);
+    set_csp_init(1);
+    printToTerminal("CSP INIT SET\n");
+    delay_cycles(10000);
 
-  init_mram();
-  printToTerminal("MRAM INIT\n");
-  delay_cycles(10000);
+    init_mram();
+    printToTerminal("MRAM INIT\n");
+    delay_cycles(10000);
 
-  data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
-  printToTerminal("DATA FLASH INIT\n");
-  delay_cycles(10000);
+    data_flash_status = flash_device_init(flash_devices[DATA_FLASH]);
+    printToTerminal("DATA FLASH INIT\n");
+    delay_cycles(10000);
 
-  program_flash_status = flash_device_init(flash_devices[PROGRAM_FLASH]);
-  printToTerminal("PROGRAM FLASH INIT\n");
-  delay_cycles(10000);
+    program_flash_status = flash_device_init(flash_devices[PROGRAM_FLASH]);
+    printToTerminal("PROGRAM FLASH INIT\n");
+    delay_cycles(10000);
 
-  setupHardwareStatus.data_flash_init = data_flash_status;
-  setupHardwareStatus.program_flash_init = program_flash_status;
+    setupHardwareStatus.data_flash_init = data_flash_status;
+    setupHardwareStatus.program_flash_init = program_flash_status;
 
-  // TODO make this better - this might crash???
-  FilesystemError_t stat = fs_init();
-  setupHardwareStatus.fs_init = stat;
-  printToTerminal("FILESYSTEM INIT\n");
-  delay_cycles(10000);
+    // TODO make this better - this might crash???
+    FilesystemError_t stat = fs_init();
+    setupHardwareStatus.fs_init = stat;
+    printToTerminal("FILESYSTEM INIT\n");
+    delay_cycles(10000);
 
-  printToTerminal("MOUNTING FILESYSTEM\n");
-  delay_cycles(10000);
-
-  int err = fs_mount();
-  printToTerminal("FILESYSTEM MOUNTED\n");
-  delay_cycles(10000);
-
-  if (err) {
-    printToTerminal("\n\n------FILESYSTEM FORMAT REQUIRED------\n");
-    printToTerminal("FORMATTING FILESYSTEM\n");
-    fs_format();
-    printToTerminal("FILESYSTEM FORMATTED\n");
     printToTerminal("MOUNTING FILESYSTEM\n");
-    fs_mount();
-    printToTerminal("FILESYSTEM MOUNTED\n");
-  }
+    delay_cycles(10000);
 
-  printToTerminal("OPENING FILES...\n");
-  openFiles();
-  printToTerminal("FILES OPEN!\n");
+    int err = fs_mount();
+    printToTerminal("FILESYSTEM MOUNTED\n");
+    delay_cycles(10000);
+
+    if (err) {
+        printToTerminal("\n\n------FILESYSTEM FORMAT REQUIRED------\n");
+        printToTerminal("FORMATTING FILESYSTEM\n");
+        fs_format();
+        printToTerminal("FILESYSTEM FORMATTED\n");
+        printToTerminal("MOUNTING FILESYSTEM\n");
+        fs_mount();
+        printToTerminal("FILESYSTEM MOUNTED\n");
+    }
+
+    printToTerminal("OPENING FILES...\n");
+    openFiles();
+    printToTerminal("FILES OPEN!\n");
 }
 
 #define CSP_DEFAULT_PRIORITY 2
@@ -532,103 +535,104 @@ static void prvSetupHardware(void) {
 
 /*-----------------------------------------------------------*/
 satPacket packet;
-csp_conn_t* txconn;
-csp_packet_t* cspPacket;
-static void vTestCspClient(void* pvParameters) {
-  uint8_t dest;
-  vTaskDelay(2000);
+csp_conn_t *txconn;
+csp_packet_t *cspPacket;
+static void vTestCspClient(void *pvParameters) {
+    uint8_t dest;
+    vTaskDelay(2000);
 
-  // TODO Add timeout and error checking.
-  // TODO Clean up the magic numbers
-  printToTerminal("CSP Client started\n");
-  while (1) {
-    if (xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
-      dest = packet.dest;
-      cspPacket = packet.packet;
-      txconn = csp_connect(2, 0, dest, 1000, 0);
-      csp_send(txconn, cspPacket, 0);
-      csp_close(txconn);
-      csp_buffer_free(cspPacket);
+    // TODO Add timeout and error checking.
+    // TODO Clean up the magic numbers
+    printToTerminal("CSP Client started\n");
+    while (1) {
+        if (xQueueReceive(txQueue, &packet, portMAX_DELAY) == pdTRUE) {
+            dest = packet.dest;
+            cspPacket = packet.packet;
+            txconn = csp_connect(2, 0, dest, 1000, 0);
+            csp_send(txconn, cspPacket, 0);
+            csp_close(txconn);
+            csp_buffer_free(cspPacket);
+        }
     }
-  }
 }
 
-void vTestingTask(void* pvParams) {
-  csp_conn_t* conn = NULL;
-  csp_packet_t* outPacket = NULL;
+void vTestingTask(void *pvParams) {
+    csp_conn_t *conn = NULL;
+    csp_packet_t *outPacket = NULL;
 
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(5000));
-  }
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
 }
 /*-----------------------------------------------------------*/
 
 void vApplicationMallocFailedHook(void) {
-  /* vApplicationMallocFailedHook() will only be called if
-   configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
-   function that will get called if a call to pvPortMalloc() fails.
-   pvPortMalloc() is called internally by the kernel whenever a task, queue,
-   timer or semaphore is created.  It is also called by various parts of the
-   demo application.  If heap_1.c or heap_2.c are used, then the size of the
-   heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
-   FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
-   to query the size of free heap space that remains (although it does not
-   provide information on how the remaining heap might be fragmented). */
+    /* vApplicationMallocFailedHook() will only be called if
+     configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h.  It is a hook
+     function that will get called if a call to pvPortMalloc() fails.
+     pvPortMalloc() is called internally by the kernel whenever a task, queue,
+     timer or semaphore is created.  It is also called by various parts of the
+     demo application.  If heap_1.c or heap_2.c are used, then the size of the
+     heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+     FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+     to query the size of free heap space that remains (although it does not
+     provide information on how the remaining heap might be fragmented). */
 
-  // TODO - Log event!
-  printToTerminal("Malloc Failed Hook!\n");
-  //    taskDISABLE_INTERRUPTS();
-  //    for( ;; );
+    // TODO - Log event!
+    printToTerminal("Malloc Failed Hook!\n");
+    //    taskDISABLE_INTERRUPTS();
+    //    for( ;; );
 }
 /*-----------------------------------------------------------*/
 
 void vApplicationIdleHook(void) {
-  /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-   to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
-   task.  It is essential that code added to this hook function never attempts
-   to block in any way (for example, call xQueueReceive() with a block time
-   specified, or call vTaskDelay()).  If the application makes use of the
-   vTaskDelete() API function (as this demo application does) then it is also
-   important that vApplicationIdleHook() is permitted to return to its calling
-   function, because it is the responsibility of the idle task to clean up
-   memory allocated by the kernel to any task that has since been deleted. */
+    /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
+     to 1 in FreeRTOSConfig.h.  It will be called on each iteration of the idle
+     task.  It is essential that code added to this hook function never attempts
+     to block in any way (for example, call xQueueReceive() with a block time
+     specified, or call vTaskDelay()).  If the application makes use of the
+     vTaskDelete() API function (as this demo application does) then it is also
+     important that vApplicationIdleHook() is permitted to return to its calling
+     function, because it is the responsibility of the idle task to clean up
+     memory allocated by the kernel to any task that has since been deleted. */
 }
 /*-----------------------------------------------------------*/
 
-void vApplicationStackOverflowHook(TaskHandle_t pxTask, char* pcTaskName) {
-  (void)pcTaskName;
-  (void)pxTask;
+void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) {
+    (void) pcTaskName;
+    (void) pxTask;
 
-  /* Run time stack overflow checking is performed if
-   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
-   function is called if a stack overflow is detected. */
+    /* Run time stack overflow checking is performed if
+     configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
+     function is called if a stack overflow is detected. */
 
-  // TODO - Log event!
-  // Try and log to Filesystem if it still works...
-  // It doesn't work since this is in an interrupt, so things like the mutex
-  // used by FS are broken. So the  flash_write()/flsh_erase() doesn't work
-  // either since it calls vTaskDelay. The drivers already skip the delay if the
-  // scheduler is not running but I guess that check fails It should definitely
-  // be possible to get this working...
-  //    uint8_t reason=0;
-  //    getLastRebootReason(&reason);
-  //    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
-  // taskDISABLE_INTERRUPTS();
-  custom_MSS_UART_polled_tx_string(&g_mss_uart0,
-                                   (const uint8_t*)"Stack Overflow! ",
-                                   strlen("Stack Overflow! ") + 1);
-  custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*)pcTaskName,
-                                   strlen(pcTaskName) + 1);
-  // restart the task that overflowed
-  for (;;);
+    // TODO - Log event!
+    // Try and log to Filesystem if it still works...
+    // It doesn't work since this is in an interrupt, so things like the mutex
+    // used by FS are broken. So the  flash_write()/flsh_erase() doesn't work
+    // either since it calls vTaskDelay. The drivers already skip the delay if the
+    // scheduler is not running but I guess that check fails It should definitely
+    // be possible to get this working...
+    //    uint8_t reason=0;
+    //    getLastRebootReason(&reason);
+    //    setLastRebootReason(REBOOT_STACK_OVERFLOW | reason);
+    // taskDISABLE_INTERRUPTS();
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0,
+            (const uint8_t*) "Stack Overflow! ",
+            strlen("Stack Overflow! ") + 1);
+    custom_MSS_UART_polled_tx_string(&g_mss_uart0, (const uint8_t*) pcTaskName,
+            strlen(pcTaskName) + 1);
+    // restart the task that overflowed
+    for (;;)
+        ;
 }
 /*-----------------------------------------------------------*/
 
 void vApplicationTickHook(void) {
-  /* This function will be called by each tick interrupt if
-   configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
-   added here, but the tick hook is called from an interrupt context, so
-   code must not attempt to block, and only the interrupt safe FreeRTOS API
-   functions can be used (those that end in FromISR()). */
+    /* This function will be called by each tick interrupt if
+     configUSE_TICK_HOOK is set to 1 in FreeRTOSConfig.h.  User code can be
+     added here, but the tick hook is called from an interrupt context, so
+     code must not attempt to block, and only the interrupt safe FreeRTOS API
+     functions can be used (those that end in FromISR()). */
 }
 /*-----------------------------------------------------------*/
