@@ -74,7 +74,7 @@ extern QueueHandle_t  csp_rx_queue; // Global queue containing received CAN mess
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 int init_CAN(
         CANBaudRate baudrate,  // The CAN bus baud rate to use.
-		QueueHandle_t *csp_rx_queue_handle
+		QueueHandle_t csp_rx_queue_handle
         );
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

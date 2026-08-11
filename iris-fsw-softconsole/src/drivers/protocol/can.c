@@ -184,7 +184,7 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 */
 
 // Interrupt handler for testing OEM719, sends CAN messages to can_rx_queue, NOT csp
-attribute((interrupt)) void CAN_IRQHandler(void)
+__attribute__((__interrupt__)) void CAN_IRQHandler(void)
 {
     volatile uint32_t status = MSS_CAN_get_int_status(&g_can0);
     static CAN_MSGOBJECT rx_buf;
