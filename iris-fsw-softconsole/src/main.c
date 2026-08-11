@@ -286,8 +286,9 @@ int main(void) {
     //    Priority_Queue",256,NULL,1,NULL); status =
     //    xTaskCreate(vTestTaskScheduler,"Test time tagged task
     //    queue",256,NULL,1,NULL); status = xTaskCreate(vTestADC, "adcTest", 160,
-    //    NULL, 1, NULL); status = xTaskCreate(vCanServer,"CAN
-    //    Rx",1000,NULL,2,&vCanServer_h); status = xTaskCreate(vTestAdcsDriver,
+    //    NULL, 1, NULL); 
+    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+    // status = xTaskCreate(vTestAdcsDriver,
     //    "ADCS handler", 500, NULL, 1, NULL);
 
     /**THESE ARE THE MAIN FUNCTIONS**/

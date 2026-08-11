@@ -665,6 +665,25 @@ void unpackRawCanTelemetry(CANMessage_t * can_msg, telemetryPacket_t * output)
 	MSS_RTC_get_calendar_count(&output->timestamp);
 }
 
+/***
+typedef struct
+{
+    uint32_t id;                         // Message ID.
+    uint8_t  dlc;                        // Data length code (i.e. number of bytes).
+
+	union __attribute__((aligned(8))) {
+		uint8_t data[8];
+		uint16_t data16[4];
+		uint32_t data32[2];
+	};
+} CANMessage_t;
+***/
+
+/**
+ * int oem719_process_can_message(uint32_t can_id, const uint8_t *data,
+                               uint8_t dlc, oem719_gnss_solution_t *solution) {
+ */
+
 void vCanServer(void * pvParameters)
 {
 	int i;
@@ -672,38 +691,10 @@ void vCanServer(void * pvParameters)
 	telemetryPacket_t tmpkt = {0};
 	while(1)
 	{
-		bool is_backpanel_sa_current;
 		if( xQueueReceive(can_rx_queue,&rxmsg,portMAX_DELAY))
 		{
-		 /* rxmsg now contains a copy of xMessage. */
-			unpackRawCanTelemetry(&rxmsg, &tmpkt);
-			// Update tm_id queue
-			is_backpanel_sa_current = true;
-			for(i=0; i < NUM_MSVB_POLLS_FOR_BACK_SA_PANELS; i++)
-			{
-				tm_id_queue[i] = tm_id_queue[i+1];
-				if(tm_id_queue[i] != POWER_READ_MSB_VOLTAGE_ID)
-				{
-					is_backpanel_sa_current = false;
-				}
-			}
-			tm_id_queue[i] = tmpkt.telem_id;
-			// Check for back panel solar array data
-			if(is_backpanel_sa_current)
-			{
-				if(backpanel_data_count >= NUM_BACK_SOLAR_STRINGS)
-				{
-					backpanel_data_count = 0;
-				}
-				memcpy(&backpanel_sa_data[backpanel_data_count++],tmpkt.data,sizeof(float));
-#ifdef BACKPANEL_DEBUG_TELEMETRY
-				sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-#endif
-			}
-#ifdef DEBUG_TELEMETRY
-			// TODO: log telemetry
-			sendTelemetryAddr(&tmpkt, GROUND_CSP_ADDRESS);
-#endif
+            //rxmsg has gnss stuff in it
+            oem719_process_can_message(rxmsg.id, rxmsg.data, rxmsg.dlc, &tmpkt.data);
 		}
 		vTaskDelay(1100);
 	}
