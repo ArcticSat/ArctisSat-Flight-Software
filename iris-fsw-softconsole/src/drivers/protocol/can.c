@@ -20,6 +20,7 @@
 #include "drivers_config/sys_config/sys_config_mss_clocks.h"
 
 #include "tasks/telemetry.h"
+#include "drivers/oem719_driver.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -49,7 +50,7 @@ mss_can_instance_t g_can0;  // MSS CAN object instance.
 // FUNCTIONS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-int init_CAN(CANBaudRate baudrate, QueueHandle_t *csp_rx_queue_handle)
+int init_CAN(CANBaudRate baudrate, QueueHandle_t csp_rx_queue_handle)
 {
     int rc = 1;
 
@@ -99,28 +100,30 @@ int init_CAN(CANBaudRate baudrate, QueueHandle_t *csp_rx_queue_handle)
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-int CAN_transmit_message(CANMessage_t * message)
+int CAN_transmit_message(CANMessage_t *message)
 {
     CAN_MSGOBJECT msg;
     PCAN_MSGOBJECT pMsg = &msg;
     int rc = 1;
 
-    // Copy in the data to a CAN_MSGOBJECT.
     for (int ix = 0; ix < message->dlc; ix++)
     {
         pMsg->DATA[ix] = message->data[ix];
     }
 
     pMsg->DLC = message->dlc;
-
-    //There is no way for a RTR CAN message to be requested by the application
-    //code, so hard code as a normal frame.
     pMsg->RTR = 0;
-    pMsg->IDE = 1;
 
-     pMsg->ID = message->id & CAN_EXTENDED_ID_MASK;
-
-
+    if (message->id <= CAN_STANDARD_ID_MASK)
+    {
+        pMsg->IDE = 0;
+        pMsg->ID  = message->id & CAN_STANDARD_ID_MASK;
+    }
+    else
+    {
+        pMsg->IDE = 1;
+        pMsg->ID  = message->id & CAN_EXTENDED_ID_MASK;
+    }
 
     MSS_CAN_set_id(pMsg);
 
@@ -134,6 +137,7 @@ int CAN_transmit_message(CANMessage_t * message)
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Interrupt handler for the CAN interrupt. Received CAN messages are placed into a Queue.
+/*
 __attribute__((__interrupt__)) void CAN_IRQHandler(void)
 {
 
@@ -176,4 +180,70 @@ __attribute__((__interrupt__)) void CAN_IRQHandler(void)
         }
         MSS_CAN_clear_int_status(&g_can0, CAN_INT_RX_MSG); // This is needed to indicate the interrupt was serviced.
     }
+}
+*/
+
+// Interrupt handler for testing OEM719, sends CAN messages to can_rx_queue, NOT csp
+attribute((interrupt)) void CAN_IRQHandler(void)
+{
+    volatile uint32_t status = MSS_CAN_get_int_status(&g_can0);
+    static CAN_MSGOBJECT rx_buf;
+    static CANMessage_t q_buf;
+
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    if (status & CAN_INT_RX_MSG)
+    {
+        while (CAN_VALID_MSG == MSS_CAN_get_message(&g_can0, &rx_buf))
+        {
+            q_buf.id  = MSS_CAN_get_id(&rx_buf);
+            q_buf.dlc = rx_buf.DLC;
+
+            for (int ix = 0; ix < q_buf.dlc; ix++)
+            {
+                q_buf.data[ix] = rx_buf.DATA[ix];
+            }
+
+            if (q_buf.id == POW_TXID)
+            {
+                continue;
+            }
+            else if (CAN_is_oem719_message(q_buf.id))
+            {
+                if (can_rx_queue != NULL)
+                {
+                    xQueueSendToBackFromISR(can_rx_queue,
+                                            &q_buf,
+                                            &xHigherPriorityTaskWoken);
+                }
+            }
+            else if (q_buf.id == POW_RXID && 0)
+            {
+                xQueueSendToBackFromISR(can_rx_queue,
+                                        &q_buf,
+                                        &xHigherPriorityTaskWoken);
+            }
+            else
+            {
+                if (csp_rx_queue)
+                {
+                    xQueueSendToBackFromISR(csp_rx_queue,
+                                            &q_buf,
+                                            &xHigherPriorityTaskWoken);
+                }
+            }
+        }
+
+        MSS_CAN_clear_int_status(&g_can0, CAN_INT_RX_MSG);
+
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+}
+
+static int CAN_is_oem719_message(uint32_t id)
+{
+    return (id == OEM719_BESTPOS_MSG_ID) ||
+           (id == OEM719_BESTVEL_MSG_ID) ||
+           (id == OEM719_TIME_MSG_ID)     ||
+           (id == OEM719_ACK_MSG_ID);
 }

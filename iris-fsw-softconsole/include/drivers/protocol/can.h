@@ -85,7 +85,9 @@ int init_CAN(
 //  1 on success, 0 on failure.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 int CAN_transmit_message(
-		CANMessage_t * message  // Pointer to the CAN message object to send.
-        );
+		CANMessage_t * message);  // Pointer to the CAN message object to send.
+
+
+static int CAN_is_oem719_message(uint32_t id);
 
 #endif /* INCLUDE_CAN_H_ */

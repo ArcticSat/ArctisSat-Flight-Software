@@ -209,7 +209,7 @@ AdcsDriverError_t adcsTxRx(uint8_t * tx_data, uint16_t tx_size, uint8_t * rx_dat
 
 /*
  * ADCS Utility Commands
- * @return
+ * @return status = ACK (0X55) or NACK (0x75)
  */
 AdcsDriverError_t pingAdcs(void)
 {
@@ -391,7 +391,7 @@ AdcsDriverError_t setTorqueRodPwm(MagnetorquerID_t rod_number, uint8_t pwm)
 
 AdcsDriverError_t setGyroI2cAddress(uint8_t addr)
 {
-    uint8_t cmd_id = ADCS_SET_GYRO_I2C_ADDRESS;
+    uint8_t cmd_id = ADCS_SET_GYRO_I2C_ADDRESS_CMD;
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // SPI transactions
     status = adcsSyncSpiCommand(cmd_id); // Command ID
@@ -403,7 +403,7 @@ AdcsDriverError_t setGyroI2cAddress(uint8_t addr)
 
 AdcsDriverError_t getGyroMeasurementsGenericRaw(uint8_t * gyroMeasurements)
 {
-    uint8_t cmd_id = ADCS_GET_GYRO_MEASUREMENT;
+    uint8_t cmd_id = ADCS_GYRO_GET_MEASUREMENT;
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // SPI transactions
     status = adcsSyncSpiCommand(cmd_id);
@@ -464,17 +464,8 @@ AdcsDriverError_t getMagnetometerMeasurementsRaw(MagnetometerId_t magnetometerNu
 #else
     // Get command ID
     uint8_t cmd_id = -1;
-    switch(magnetometerNumber)
-    {
-    case GYRO_1:
-        cmd_id = ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_1;
-        break;
-    case GYRO_2:
-        cmd_id = ADCS_CMD_GET_MEASUREMENT_MAGNETOMETER_2;
-        break;
-    default:
-        return ADCS_ERROR_BAD_ID;
-    }
+    cmd_id = ADCS_MAGNETOMETER_GET_MEASUREMENT;
+
     // SPI transactions
     AdcsDriverError_t status = ADCS_ERROR_BAD_ACK;
     // Command ack
@@ -533,7 +524,7 @@ AdcsDriverError_t getSunSensorMeasurementsRaw(volatile uint8_t * measurements)
 #ifdef SUN_ANGLE_SIM_ENG_VALUE
 	return ADCS_DRIVER_NO_ERROR;
 #else
-	uint8_t cmd_id = ADCS_CMD_GET_MEASUREMENT_SUN_SENSOR;
+	uint8_t cmd_id = ADCS_SUN_SENSOR_GET_MEASUREMENT;
 	AdcsDriverError_t status;
 	status = adcsSyncSpiCommand(cmd_id);
 	if(status != ADCS_DRIVER_NO_ERROR)
