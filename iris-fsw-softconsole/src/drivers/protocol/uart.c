@@ -37,6 +37,7 @@
 #include "drivers/protocol/uart.h"
 #include "version.h"
 #include "drivers/software_update_driver.h"
+#include "tests/st16_test.h"
 
 #define UART_BUFFER_SIZE	256
 #define REPLY_QUEUE_SIZE	5
@@ -114,7 +115,9 @@ void vTaskUARTBridge(void *pvParameters)
 			taskEXIT_CRITICAL();
 		}
 
-
+		if ((my_uart == &g_mss_uart0) && (uxBytesRead > 0)) {
+		            st16_test_rx(copied_buffer, uxBytesRead);
+		}
 
 		/* Echo back all data to the terminal */
 //		prvUARTSend(&g_mss_uart0, (const uint8_t *) copied_buffer, uxBytesRead);
@@ -140,7 +143,10 @@ static void prvUARTRxNotificationHandler( mss_uart_instance_t *pxUART )
 	volatile size_t *uxUnreadBytes = &uxUART0UnreadBytes ;
 
 	/* Read the UART's FIFO */
-	uxNumBytesRecvd = MSS_UART_get_rx(pxUART, target_buffer + *uxUnreadBytes, sizeof(target_buffer));
+//	uxNumBytesRecvd = MSS_UART_get_rx(pxUART, target_buffer + *uxUnreadBytes, sizeof(target_buffer));
+	uxNumBytesRecvd = MSS_UART_get_rx(pxUART,
+	                                  (uint8_t *)target_buffer + *uxUnreadBytes,
+	                                  sizeof(uart0buffer) - *uxUnreadBytes);
 	if( uxNumBytesRecvd )
 	{
 		/* Increment the number of unread bytes available */

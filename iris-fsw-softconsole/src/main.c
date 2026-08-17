@@ -58,7 +58,7 @@
 /* Application includes. */
 #include "main.h"
 #include "taskhandles.h"
-// #include "drivers/protocol/can.h"
+#include "drivers/protocol/can.h"
 #include "application/cdh.h"
 #include "drivers/device/adc/AD7928.h"
 #include "drivers/device/adcs_driver.h"
@@ -76,6 +76,8 @@
 #include "tasks/scheduler.h"
 #include "tasks/telemetry.h"
 #include "tests.h"
+#include "tests/oem719_can_test.h"
+#include "tests/st16_test.h"
 // #include "application/detumbling.h"
 #include "application/CCSDS.h"
 #include "application/application.h"
@@ -96,6 +98,7 @@ TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
 TaskHandle_t vTestWD_h;
 TaskHandle_t vSunPointing_h;
+TaskHandle_t vTestGNSS_h;
 TaskHandle_t vTestAdcsDriverInterface_h;
 
 HardwareCheck_t setupHardwareStatus = { 0 };
@@ -103,6 +106,7 @@ HardwareCheck_t setupHardwareStatus = { 0 };
 static void prvSetupHardware(void);
 static void vTestCspServer(void *pvParameters);
 static void vTestCspClient(void *pvParameters);
+void gnss_test_task(void *arg);
 static void vTestingTask(void *pvParams);
 
 void vApplicationMallocFailedHook(void);
@@ -275,7 +279,7 @@ int main(void) {
     //    status = xTaskCreate(vTestRTC,"Test
     //    RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
     //    xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL); status =
-    xTaskCreate(vTestPayload, "Test SPI2", 1000, NULL, 1, NULL);
+    // xTaskCreate(vTestPayload, "Test SPI2", 1000, NULL, 1, NULL);
 //status =
     //    xTaskCreate(vTestCANTx,"Test CAN
     //    Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
@@ -287,9 +291,31 @@ int main(void) {
     //    xTaskCreate(vTestTaskScheduler,"Test time tagged task
     //    queue",256,NULL,1,NULL); status = xTaskCreate(vTestADC, "adcTest", 160,
     //    NULL, 1, NULL); 
-    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
+//    status = xTaskCreate(vCanServer,"CAN Rx",1000,NULL,2,&vCanServer_h);
     // status = xTaskCreate(vTestAdcsDriver,
     //    "ADCS handler", 500, NULL, 1, NULL);
+
+    // NEW TEST TASKS
+    status = xTaskCreate(vTaskUARTBridge,"UART0Bridge",
+            configMINIMAL_STACK_SIZE * 3,
+            &g_mss_uart0,
+            tskIDLE_PRIORITY + 2,
+            NULL);
+    /*
+         * NULL parameter means safe tests only.
+         *
+         * Use:
+         *   vTaskST16Test, (void *)1
+         *
+         * if you also want GO / COMBINATION tests enabled.
+         */
+    status = xTaskCreate(vTaskST16Test,
+            "ST16Test",
+            configMINIMAL_STACK_SIZE * 6,
+            NULL,
+            tskIDLE_PRIORITY + 1,
+            NULL);
+    // status = xTaskCreate(gnss_test_task,"GNSS Test",1000,NULL,2,&vTestGNSS_h);
 
     /**THESE ARE THE MAIN FUNCTIONS**/
 
@@ -555,6 +581,51 @@ static void vTestCspClient(void *pvParameters) {
             csp_buffer_free(cspPacket);
         }
     }
+}
+
+void gnss_test_task(void *arg)
+{
+    oem719_test_result_t result;
+
+    /*
+     * Optional software/parser self-test.
+     *
+     * Run this before the hardware test if you have not implemented
+     * oem719_reset_parser() in oem719_driver.c yet.
+     */
+    int parse_ok = oem719_driver_parse_selftest();
+
+    if (parse_ok == 0)
+    {
+        printf("OEM719 parser self-test passed.\r\n");
+    }
+    else
+    {
+        printf("OEM719 parser self-test FAILED.\r\n");
+    }
+
+    /*
+     * Hardware CAN + OEM719 communication test.
+     *
+     * Passing NULL tells the test to use can_rx_queue.
+     */
+    int comm_ok = oem719_can_comm_test(CAN_BAUD_RATE_500K,
+                                       NULL,
+                                       10000,
+                                       &result);
+
+    oem719_print_test_result(&result);
+
+    if (comm_ok == 0)
+    {
+        printf("OEM719 CAN communication test passed.\r\n");
+    }
+    else
+    {
+        printf("OEM719 CAN communication test failed.\r\n");
+    }
+
+    vTaskDelete(NULL);
 }
 
 void vTestingTask(void *pvParams) {

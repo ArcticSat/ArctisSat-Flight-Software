@@ -1,4 +1,5 @@
 #include "drivers/ST_16_driver.h"
+
 #include <string.h>
 
 /* ------- Static module variables ------- */
