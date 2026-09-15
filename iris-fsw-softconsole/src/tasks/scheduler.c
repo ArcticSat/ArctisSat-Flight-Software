@@ -25,8 +25,8 @@
 
 // User Libraries
 #include "tasks/scheduler.h"
+// compare_time() / CALENDAR_TO_LONG() live in rtc_common.h (included below).
 #include "tasks/priority_queue.h"
-#include "drivers/device/rtc/rtc_time.h"
 #include "tasks/request_code.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

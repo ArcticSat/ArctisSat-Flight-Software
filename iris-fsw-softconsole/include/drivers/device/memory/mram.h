@@ -19,14 +19,16 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 typedef enum
 {
-    MRAM_INSTANCE_0,
+    MRAM_INSTANCE_0, // MR2xH40 (MRAM1 on schematic).
+    MRAM_INSTANCE_1, // AS3016204 (MRAM2 on schematic).
     NUM_MRAM_INSTANCES
 } MRAMInstanceIndex_t;
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // GLOBALS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
-extern MRAMInstance_t mram_instances[NUM_MRAM_INSTANCES]; // Global list of MRAM instances for use with the mr2xh40 driver.
+extern MRAMInstance_t mram_instances[NUM_MRAM_INSTANCES]; // Global list of MRAM instances for use with the mr2xh40 driver. Note: MRAM_INSTANCE_1 (AS3016204) does
+                                                            // not use this struct internally (it hardcodes its SPI core), the entry is kept only for uniformity.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // FUNCTIONS
@@ -36,5 +38,35 @@ extern MRAMInstance_t mram_instances[NUM_MRAM_INSTANCES]; // Global list of MRAM
 //  Configures the SPI and GPIO configurations for all MRAM instances. Should be called once, prior to calling other MRAM functions.
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 void init_mram();
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Description:
+//  Read data from the given MRAM instance.
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void mram_read(
+    MRAMInstanceIndex_t instance, // Which MRAM instance to read from.
+    uint32_t address,             // The starting address to read from.
+    uint8_t * rd_buffer,          // The buffer to place the read data into.
+    size_t rd_buffer_size         // The size of the read buffer.
+);
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Description:
+//  Write data to the given MRAM instance.
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void mram_write(
+    MRAMInstanceIndex_t instance, // Which MRAM instance to write to.
+    uint32_t address,             // The starting address to write to.
+    uint8_t * wr_buffer,          // The buffer containing the data to write.
+    size_t wr_buffer_size         // The size of the write buffer.
+);
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Description:
+//  Clear (fill with 0xFF) the entire given MRAM instance.
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+void mram_clear(
+    MRAMInstanceIndex_t instance // Which MRAM instance to clear.
+);
 
 #endif /* MRAM_H_ */

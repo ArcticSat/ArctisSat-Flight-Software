@@ -12,6 +12,8 @@
 #include "tests.h"
 
 #include "drivers/protocol/can.h"
+#include "drivers/device/rtc/rtc_common.h"
+#include "tasks/telemetry.h"
 
 
 void vTestCANTx(void *pvParameters)

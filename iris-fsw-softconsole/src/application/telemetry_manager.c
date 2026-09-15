@@ -8,10 +8,10 @@
 
 #include "application/telemetry_manager.h"
 #include "drivers/device/memory/flash_common.h"
-#include "drivers/device/memory/MT25Q_flash.h"
+#include "drivers/device/memory/W25Q_flash.h"
 
-#define PAGE_SIZE MT25Q_PAGE_SIZE
-#define BLOCK_SIZE MT25Q_SUBSECTOR_SMALL_SIZE
+#define PAGE_SIZE W25Q_PAGE_SIZE
+#define BLOCK_SIZE W25Q_SUBSECTOR_SMALL_SIZE
 
 static bool verbosity = false;
 

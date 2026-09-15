@@ -14,14 +14,10 @@
 #include "main.h"
 #include "drivers/filesystem_driver.h"
 #include "application/memory_manager.h"
-#include "application/sc_deployment.h"
+#include "drivers/device/rtc/rtc_common.h"
+#include "drivers/device/rtc/rtc_ds1393.h"
 
 #include "tasks/telemetry.h"
-
-#include "application/cdh.h"
-#include "application/eps.h"
-#include "application/payload.h"
-#include "application/adcs.h"
 
 #include "FreeRTOS.h"
 

@@ -13,7 +13,6 @@
 // INCLUDES
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #include "tasks/telemetry.h"
-#include "application/detumbling.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // DEFINITIONS AND MACROS
@@ -30,6 +29,20 @@ typedef struct  {
 	uint8_t detumble_state;
 	uint8_t last_reboot_reason;
 } ScStatus_t;
+
+// Deployment/detumbling state values. These used to live in the (now removed) ADCS/deployment
+// modules; kept here since memory_manager still persists deployment/detumble startup state.
+typedef enum
+{
+	DPL_STATE_STOWED,
+	DPL_STATE_DEPLOYED,
+} eDeploymentState;
+
+typedef enum
+{
+	DETUMBLING_NOT_COMPLETE,
+	DETUMBLING_COMPLETE
+} eDetumbleState;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ENUMS AND ENUM TYPEDEFS
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------

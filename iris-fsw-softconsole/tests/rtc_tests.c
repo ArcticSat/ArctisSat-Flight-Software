@@ -11,12 +11,14 @@
 #include <FreeRTOS-Kernel/include/task.h>
 #include "tests.h"
 
-#include "drivers/device/rtc/rtc_time.h"
+#include "drivers/device/rtc/rtc_ds1393.h"
+#include "drivers/mss_rtc/mss_rtc.h"
 
 
 void vTestRTC(void *pvParameters)
 {
-    // Test code
+    // Test code: reads the external (ds1393) RTC and the internal MSS_RTC directly (low-level only,
+    // no mid-level resync/validation helper in this demo build).
     static volatile int error_occurred = 0;
 
     static Calendar_t buffer = {
@@ -33,21 +35,11 @@ void vTestRTC(void *pvParameters)
 
     static Calendar_t buffer2;
 
-    vTaskSuspendAll();
-//    ds1393_write_reg(0x8d, 0x38);
-//    ds1393_read_reg(0x0d, buf_readreg);
-
-    if (TIME_SUCCESS != resync_rtc())
-    {
-        error_occurred = 1;
-    }
-    xTaskResumeAll();
-
     for (;;)
     {
         vTaskSuspendAll();
         ds1393_read_time(&buffer);
-        read_rtc(&buffer2);
+        MSS_RTC_get_calendar_count(&buffer2);
         xTaskResumeAll();
         vTaskDelay(pdMS_TO_TICKS(500));
     }

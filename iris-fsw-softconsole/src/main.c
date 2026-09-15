@@ -22,8 +22,9 @@
 // - Prevent task switching instead of using mutexes for SPI read/write.
 // 2019-06-09 by Joseph Howarth
 // - Add test code for flash.
-// 2020-01-03 by Joseph Howarth
-// - Add test code for ADCS driver.
+// 2026-09-15
+// - Reduced to a small demo build: removed ADCS/EPS/CCSDS/watchdog subsystems,
+//   added a basic LittleFS read/write/list demo and a basic CSP tx/rx demo.
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 /******************************************************************************
@@ -59,15 +60,12 @@
 /* Application includes. */
 #include "main.h"
 #include "taskhandles.h"
-// #include "drivers/protocol/can.h"
-#include "application/cdh.h"
+#include "drivers/protocol/can.h"
 #include "drivers/device/adc/AD7928.h"
-#include "drivers/device/adcs_driver.h"
 #include "drivers/device/leds.h"
 #include "drivers/device/memory/flash_common.h"
 #include "drivers/device/memory/mram.h"
-#include "drivers/device/rtc/rtc_time.h"
-#include "drivers/device/watchdog.h"
+#include "drivers/device/rtc/rtc_ds1393.h"
 #include "drivers/filesystem_driver.h"
 #include "drivers/protocol/spi.h"
 #include "drivers/protocol/uart.h"
@@ -77,17 +75,10 @@
 #include "tasks/scheduler.h"
 #include "tasks/telemetry.h"
 #include "tests.h"
-// #include "application/detumbling.h"
-#include "application/CCSDS.h"
 #include "application/application.h"
 #include "application/memory_manager.h"
-#include "application/sun_pointing.h"
 #include "tasks/comms_handler.h"
-#include "tasks/healthAndSafety.h"
 
-// #define SERVER
-// #define CLIENT
-// #define CAN_SERVER
 #define CSP_SERVER
 
 TaskHandle_t xUART0RxTaskToNotify;
@@ -95,14 +86,15 @@ TaskHandle_t vTTTScheduler_h;
 TaskHandle_t vFw_Update_Mgr_Task_h;
 TaskHandle_t vCanServer_h;
 TaskHandle_t vCSP_Server_h;
-TaskHandle_t vTestWD_h;
-TaskHandle_t vSunPointing_h;
-TaskHandle_t vTestAdcsDriverInterface_h;
+
+// Handles for the tasks main() creates, indexed by the *_TASK_INDEX defines in taskhandles.h.
+TaskHandle_t monitoredTasks[MAX_MONITORED_TASKS];
 
 HardwareCheck_t setupHardwareStatus = {0};
 
 static void prvSetupHardware(void);
 static void CSPClient(void* pvParameters);
+static void vLittleFsDemo(void* pvParameters);
 
 void vApplicationMallocFailedHook(void);
 void vApplicationIdleHook(void);
@@ -131,33 +123,22 @@ int main(void) {
   commsRxQueue = xQueueCreate(10, sizeof(radioPacket_t));
   telemetryQueue = xQueueCreate(5, sizeof(mytelemetryPacket_t*));
   taskQueue = xQueueCreate(3, sizeof(timeTaggedTask_t));
-  errorQueue = xQueueCreate(5, sizeof(caughtError_t));
 
   printToTerminal("Queue init done.\n");
 
   logMessage("System booting...\n");
 
-  //    status = xTaskCreate(vTestFlashFull,"Test Flash",6000,(void
-  //    *)flash_devices[DATA_FLASH],1,NULL);
-  //	  status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,10,NULL);
-  //	  status = xTaskCreate(vTestFlash,"Test Flash",2000,(void*) flash_devices[DATA_FLASH],1,NULL); 	  status =
-  //    status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void*) flash_devices[PROGRAM_FLASH],1,NULL);
+  // Other onboard tests (see tests/tests.h + tests/*.c) can be wired up here manually, e.g.:
+  //    status = xTaskCreate(vTestFlashFull,"Test Flash",2000,(void*) flash_devices[DATA_FLASH],1,NULL);
   //    status = xTaskCreate(vTestMRAM,"Test MRAM",512,NULL,1,NULL);
-  //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
-  //    xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL); status =
-  //    xTaskCreate(vTestSPI,"Test SPI2",1000,NULL,1,NULL); status =
-  //    xTaskCreate(vTestCANTx,"Test CAN
-  //    Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL); status =
-  //    xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL); status =
-  //    xTaskCreate(vTestCspServer,"Test CSP Server",1000,NULL,1,NULL); status =
-  //    xTaskCreate(vTestCanServer,"Test CAN Rx",1000,NULL,2,&vTestCanServer_h);
-  //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test
-  //    Priority_Queue",256,NULL,1,NULL); status =
-  //    xTaskCreate(vTestTaskScheduler,"Test time tagged task
-  //    queue",256,NULL,1,NULL); status = xTaskCreate(vTestADC, "adcTest", 160,
-  //    NULL, 1, NULL); status = xTaskCreate(vCanServer,"CAN
-  //    Rx",1000,NULL,2,&vCanServer_h); status = xTaskCreate(vTestAdcsDriver,
-  //    "ADCS handler", 500, NULL, 1, NULL);
+  //    status = xTaskCreate(vTestRTC,"Test RTC",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+  //    status = xTaskCreate(vTestSPI,"Test SPI",1000,NULL,1,NULL);
+  //    status = xTaskCreate(vTestCANTx,"Test CAN Tx",configMINIMAL_STACK_SIZE,NULL,1,NULL);
+  //    status = xTaskCreate(vTestCANRx,"Test CAN Rx",500,NULL,10,NULL);
+  //    status = xTaskCreate(vTaskTest_Priority_Queue,"Test Priority_Queue",256,NULL,1,NULL);
+  //    status = xTaskCreate(vTestTaskScheduler,"Test time tagged task queue",256,NULL,1,NULL);
+  //    status = xTaskCreate(vTestADC, "adcTest", 160, NULL, 1, NULL);
+  //    status = xTaskCreate(vTestFS, "fsTest", 512, NULL, 1, NULL);
 
   /**THESE ARE THE MAIN FUNCTIONS**/
 
@@ -197,9 +178,10 @@ int main(void) {
   printToTerminal(status ? "Success\n" : "Failure\n");
   (void)xPortGetFreeHeapSize();
 
-  // This task drives ADCS.
-  status = xTaskCreate(vADCSDriver, "ADCS handler", 300, NULL, 1, &monitoredTasks[ADCS_DRIVER_TASK_INDEX]);
-  printToTerminal("ADCS Driver task created. Status: ");
+  // Basic LittleFS demo: writes a file, reads it back, and lists the directory, all logged to
+  // terminal. Runs once, then deletes itself.
+  status = xTaskCreate(vLittleFsDemo, "FS Demo   ", 400, NULL, 1, NULL);
+  printToTerminal("LittleFS demo task created. Status: ");
   printToTerminal(status ? "Success\n" : "Failure\n");
   (void)xPortGetFreeHeapSize();
 
@@ -223,16 +205,16 @@ static void prvSetupHardware(void) {
   printToTerminal("\n\n\n\n\n\n###########  System init...  ############\n");
   printToTerminal("UART INIT\n");
 
-  init_WD();
-  init_rtc();
+  // Bring up the external (ds1393) and internal (MSS_RTC) RTCs. This used to live in a "mid-level" init_rtc()
+  // helper, but that module isn't part of this demo build, so it's inlined here instead.
+  ds1393_init();
+  MSS_RTC_init(MSS_RTC_CALENDAR_MODE, TICKS_TO_SECONDS);
+  MSS_RTC_start();
   printToTerminal("RTC INIT\n");
   setupHardwareStatus.spi_init = init_spi();
   printToTerminal("SPI INIT\n");
   setupHardwareStatus.can_init = init_CAN(CAN_BAUD_RATE_250K, NULL);
   printToTerminal("CAN INIT\n");
-
-  adcs_init_driver();
-  printToTerminal("ADCS DRIVER INIT\n");
 
   setupHardwareStatus.CSP_init = configure_csp();
   printToTerminal("CSP CONFIGURED\n");
@@ -309,6 +291,52 @@ static void CSPClient(void* pvParameters) {
       csp_buffer_free(cspPacket);
     }
   }
+}
+
+/*-----------------------------------------------------------*/
+// Basic LittleFS demo: exercises write / read-back / directory listing on the DATA_FLASH-backed
+// filesystem, logging everything to the terminal. Runs once and then deletes itself.
+static void vLittleFsDemo(void* pvParameters) {
+  (void)pvParameters;
+
+  vTaskDelay(1000);
+  printToTerminal("\n\n###########  LittleFS demo starting...  ############\n");
+
+  const char* demoPath = "demo.txt";
+  const char* demoContents = "Hello from the ArctisSat CDH LittleFS demo!\n";
+  char readBuf[80] = {0};
+
+  lfs_file_t demoFile = {0};
+  int res = fs_file_open(&demoFile, demoPath, LFS_O_RDWR | LFS_O_CREAT | LFS_O_TRUNC);
+  if (res != FS_OK) {
+    printToTerminal("LittleFS demo: failed to open demo file for write.\n");
+  } else {
+    res = fs_file_write(&demoFile, demoContents, strlen(demoContents));
+    printToTerminal("LittleFS demo: wrote demo file.\n");
+    fs_file_close(&demoFile);
+  }
+
+  res = fs_file_open(&demoFile, demoPath, LFS_O_RDONLY);
+  if (res != FS_OK) {
+    printToTerminal("LittleFS demo: failed to open demo file for read.\n");
+  } else {
+    int readBytes = fs_file_read(&demoFile, readBuf, sizeof(readBuf) - 1);
+    fs_file_close(&demoFile);
+    if (readBytes > 0) {
+      readBuf[readBytes] = '\0';
+      printToTerminal("LittleFS demo: read back -> ");
+      printToTerminal(readBuf);
+    } else {
+      printToTerminal("LittleFS demo: read back failed.\n");
+    }
+  }
+
+  printToTerminal("LittleFS demo: directory listing:\n");
+  fs_list_dir("/", 0);
+
+  printToTerminal("###########  LittleFS demo complete.  ############\n\n");
+
+  vTaskDelete(NULL);
 }
 
 /*-----------------------------------------------------------*/

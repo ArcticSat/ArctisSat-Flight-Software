@@ -37,6 +37,27 @@
 #define MAX_YEARS  99u
 #define YEAR_OFFSET 2000u
 
+// The internal RTC runs off of the 50 MHz RC clock.
+#define TICKS_TO_SECONDS 50000000u
+
+// Rough conversions for the helper macro below.
+#define SECONDS_IN_MINUTE 60
+#define MINUTES_IN_HOUR   60
+#define HOURS_IN_DAY      24
+#define DAYS_IN_MONTH     31
+#define MONTHS_IN_YEAR    12
+
+#define SECONDS_IN_HOUR   (SECONDS_IN_MINUTE * MINUTES_IN_HOUR)
+#define SECONDS_IN_MONTH  (SECONDS_IN_HOUR * HOURS_IN_DAY * DAYS_IN_MONTH)
+#define SECONDS_IN_YEAR   (SECONDS_IN_MONTH * MONTHS_IN_YEAR)
+
+// Helper macro used to convert a Calendar_t object to an unsigned long (for comparison operations). Note that it
+// does not correlate one to one into seconds since epoch.
+#define CALENDAR_TO_LONG(time) (time)->second \
+                               + (time)->minute * SECONDS_IN_MINUTE \
+							   + (time)->hour   * SECONDS_IN_HOUR \
+							   + (time)->month  * SECONDS_IN_MONTH \
+							   + (time)->year   * SECONDS_IN_YEAR
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 // STRUCTURES AND STRUCTURE TYPEDEFS
@@ -59,6 +80,29 @@
 
 typedef mss_rtc_calendar_t Calendar_t;
 
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Description:
+//  Compare two calendar times, and check which is later than the other. The times are assumed to be valid.
+//
+// Returns:
+//  -1, if time1 is earlier than time2
+//  0, if time1 is equal to time2
+//  1, if time1 is later than time2
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+static inline int compare_time(Calendar_t * time1, Calendar_t * time2)
+{
+	unsigned long time1_long = CALENDAR_TO_LONG(time1);
+	unsigned long time2_long = CALENDAR_TO_LONG(time2);
 
+	if (time1_long < time2_long)
+	{
+		return -1;
+	}
+	else if (time1_long > time2_long)
+	{
+		return 1;
+	}
+	return 0;
+}
 
 #endif /* RTC_COMMON_H_ */

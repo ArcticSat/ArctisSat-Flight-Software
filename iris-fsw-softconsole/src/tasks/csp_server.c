@@ -4,7 +4,6 @@
 #include "tasks/csp_server.h"
 #include "main.h"
 #include "tasks/telemetry.h"
-#include "application/cdh.h"
 
 #include "csp/csp.h"
 #include "csp/interfaces/csp_if_can.h"
@@ -77,6 +76,11 @@ void vCSP_Server(void *pvParameters) {
             (void)dest_port;
 
             if (packet != NULL) {
+                // Basic CSP receive demo: just log what came in.
+                char logbuf[96];
+                int printable = (packet->length < sizeof(packet->data)) ? packet->length : (int)sizeof(logbuf) - 40;
+                snprintf(logbuf, sizeof(logbuf), "CSP RX from %d (%d bytes): %.*s\n", sourceID, packet->length, printable, (const char*)packet->data);
+                printToTerminal(logbuf);
                 csp_buffer_free(packet);
             }
             csp_close(conn);
