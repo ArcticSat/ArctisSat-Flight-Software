@@ -180,7 +180,7 @@ int main(void) {
 
   // Basic LittleFS demo: writes a file, reads it back, and lists the directory, all logged to
   // terminal. Runs once, then deletes itself.
-  status = xTaskCreate(vLittleFsDemo, "FS Demo   ", 400, NULL, 1, NULL);
+  status = xTaskCreate(vLittleFsDemo, "FS Demo   ", 600, NULL, 1, NULL);
   printToTerminal("LittleFS demo task created. Status: ");
   printToTerminal(status ? "Success\n" : "Failure\n");
   (void)xPortGetFreeHeapSize();
@@ -303,7 +303,7 @@ static void vLittleFsDemo(void* pvParameters) {
   printToTerminal("\n\n###########  LittleFS demo starting...  ############\n");
 
   const char* demoPath = "demo.txt";
-  const char* demoContents = "Hello from the ArctisSat CDH LittleFS demo!\n";
+  const char* demoContents = "\nHello from the ArctisSat CDH LittleFS demo!\n";
   char readBuf[80] = {0};
 
   lfs_file_t demoFile = {0};
@@ -331,10 +331,10 @@ static void vLittleFsDemo(void* pvParameters) {
     }
   }
 
-  printToTerminal("LittleFS demo: directory listing:\n");
+  printToTerminal("\nLittleFS demo: directory listing:\n");
   fs_list_dir("/", 0);
 
-  printToTerminal("###########  LittleFS demo complete.  ############\n\n");
+  printToTerminal("\n###########  LittleFS demo complete.  ############\n\n");
 
   vTaskDelete(NULL);
 }

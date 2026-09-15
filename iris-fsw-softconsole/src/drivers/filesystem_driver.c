@@ -190,7 +190,7 @@ int fs_list_dir(char * path,int recursive){
             break;
         }
 
-        printf("%s %d %d", info.name, info.type, info.size);
+        printf("\n%s %d %d", info.name, info.type, info.size);
     }
 
     err = lfs_dir_close(&lfs, &dir);
