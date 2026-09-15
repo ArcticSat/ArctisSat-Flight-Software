@@ -488,7 +488,7 @@ void vTaskST16Test(void *pvParameters)
     bool run_optional_commands = (pvParameters != NULL);
 
     if (!st16_test_init()) {
-        printf("[ST16] Test initialization failed\n");
+        printToTerminal("[ST16] Test initialization failed\n");
         vTaskDelete(NULL);
         return;
     }
@@ -501,9 +501,9 @@ void vTaskST16Test(void *pvParameters)
     bool pass = st16_test_run(run_optional_commands);
 
     if (pass) {
-        printf("[ST16] Test task complete: PASS\n");
+        printToTerminal("[ST16] Test task complete: PASS\n");
     } else {
-        printf("[ST16] Test task complete: FAIL\n");
+        printToTerminal("[ST16] Test task complete: FAIL\n");
     }
 
     vTaskDelete(NULL);

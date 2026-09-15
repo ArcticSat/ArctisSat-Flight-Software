@@ -296,11 +296,12 @@ int main(void) {
     //    "ADCS handler", 500, NULL, 1, NULL);
 
     // NEW TEST TASKS
-    status = xTaskCreate(vTaskUARTBridge,"UART0Bridge",
-            configMINIMAL_STACK_SIZE * 3,
-            &g_mss_uart0,
-            tskIDLE_PRIORITY + 2,
-            NULL);
+  //status = xTaskCreate(vTaskUARTBridge,"UART0Bridge",
+    //        configMINIMAL_STACK_SIZE * 3,
+//            &g_mss_uart0,
+//            tskIDLE_PRIORITY + 2,
+//            NULL);
+
     /*
          * NULL parameter means safe tests only.
          *
@@ -309,12 +310,13 @@ int main(void) {
          *
          * if you also want GO / COMBINATION tests enabled.
          */
-    status = xTaskCreate(vTaskST16Test,
-            "ST16Test",
-            configMINIMAL_STACK_SIZE * 6,
-            NULL,
-            tskIDLE_PRIORITY + 1,
-            NULL);
+//    status = xTaskCreate(vTaskST16Test,
+//            "ST16Test",
+//            configMINIMAL_STACK_SIZE * 6,
+//            NULL,
+//            tskIDLE_PRIORITY + 1,
+//            NULL);
+
     // status = xTaskCreate(gnss_test_task,"GNSS Test",1000,NULL,2,&vTestGNSS_h);
 
     /**THESE ARE THE MAIN FUNCTIONS**/
