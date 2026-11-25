@@ -310,12 +310,12 @@ int main(void) {
          *
          * if you also want GO / COMBINATION tests enabled.
          */
-//    status = xTaskCreate(vTaskST16Test,
-//            "ST16Test",
-//            configMINIMAL_STACK_SIZE * 6,
-//            NULL,
-//            tskIDLE_PRIORITY + 1,
-//            NULL);
+    status = xTaskCreate(vTaskST16Test,
+            "ST16Test",
+            configMINIMAL_STACK_SIZE * 6,
+            NULL,
+            tskIDLE_PRIORITY + 1,
+            NULL);
 
     // status = xTaskCreate(gnss_test_task,"GNSS Test",1000,NULL,2,&vTestGNSS_h);
 
